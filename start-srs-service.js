@@ -41,15 +41,22 @@ async function startService() {
     console.log(`   - 申诉接口: http://${config.host}:${config.port}/orasrs/v1/appeal`);
     console.log(`   - 透明化: http://${config.host}:${config.port}/orasrs/v1/explain?ip=1.2.3.4`);
     console.log(`   - 健康检查: http://${config.host}:${config.port}/health`);
+    console.log(`   - 监控指标: http://${config.host}:${config.port}/metrics`);
+    console.log(`   - 服务状态: http://${config.host}:${config.port}/status`);
     console.log('\n⚠️  重要提醒: 此服务提供咨询建议，最终决策由客户端做出');
     
     // 定期输出服务统计（每5分钟）
     setInterval(() => {
       const stats = orasrsService.getStats();
+      const metrics = orasrsService.metricsCollector.getMetricsSnapshot();
       console.log(`\n📊 OraSRS 服务统计 [${new Date().toISOString()}]`);
       console.log(`   缓存评估数: ${stats.engineStats.cachedAssessments}`);
       console.log(`   待处理申诉: ${stats.engineStats.pendingAppeals}`);
       console.log(`   关键服务白名单: ${stats.engineStats.criticalServiceWhitelistSize}`);
+      console.log(`   总请求数: ${metrics.requests.total}`);
+      console.log(`   平均响应时间: ${metrics.responseTime.avg.toFixed(2)}ms`);
+      console.log(`   活跃连接数: ${metrics.activeConnections}`);
+      console.log(`   错误总数: ${metrics.errors.total}`);
     }, 5 * 60 * 1000); // 5分钟
     
   } catch (error) {

@@ -5,7 +5,8 @@
 
 const express = require('express');
 const SRSEngine = require('./srs-engine');
-const srsRoutes = require('./routes/srs-routes');
+const srsRoutes = require('./srs-routes');
+const { MetricsCollector, StructuredLogger, formatPrometheusMetrics } = require('./src/monitoring');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -22,9 +23,53 @@ class OraSRSService {
     this.engine = new SRSEngine();
     this.app = express();
     
+    // 初始化监控和日志
+    this.metricsCollector = new MetricsCollector();
+    this.logger = new StructuredLogger({
+      logFile: this.config.logFile,
+      level: 'info'
+    });
+    
     // 中间件
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
+    
+    // 请求日志和指标收集中间件
+    this.app.use((req, res, next) => {
+      const startTime = Date.now();
+      
+      // 记录请求
+      this.logger.info('Request received', {
+        method: req.method,
+        url: req.url,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      // 响应结束时记录指标
+      res.on('finish', () => {
+        const responseTime = Date.now() - startTime;
+        
+        // 记录指标
+        this.metricsCollector.recordRequest(
+          req.method,
+          req.url,
+          res.statusCode,
+          responseTime
+        );
+        
+        // 记录响应
+        this.logger.info('Request completed', {
+          method: req.method,
+          url: req.url,
+          statusCode: res.statusCode,
+          responseTime: responseTime,
+          ip: req.ip
+        });
+      });
+      
+      next();
+    });
     
     // CORS支持
     this.app.use((req, res, next) => {
@@ -40,6 +85,9 @@ class OraSRSService {
     
     // OraSRS API路由
     this.app.use('/orasrs/v1', srsRoutes);
+    
+    // 监控端点
+    this.setupMonitoringEndpoints();
     
     // 健康检查端点
     this.app.get('/health', (req, res) => {
@@ -72,11 +120,64 @@ class OraSRSService {
     
     // 错误处理中间件
     this.app.use((error, req, res, next) => {
+      // 记录错误到指标
+      this.metricsCollector.recordError(error.name || 'UnknownError');
+      
+      // 记录错误日志
+      this.logger.error('Unhandled error occurred', {
+        error: error.message,
+        stack: error.stack,
+        url: req.url,
+        method: req.method,
+        ip: req.ip
+      });
+      
       console.error('OraSRS Service Error:', error);
       res.status(500).json({
         error: 'Internal server error',
         code: 'INTERNAL_ERROR',
         timestamp: new Date().toISOString()
+      });
+    });
+  }
+
+  /**
+   * 设置监控端点
+   */
+  setupMonitoringEndpoints() {
+    // Prometheus指标端点
+    this.app.get('/metrics', (req, res) => {
+      const metrics = this.metricsCollector.getMetricsSnapshot();
+      res.set('Content-Type', 'text/plain');
+      res.send(formatPrometheusMetrics(metrics));
+    });
+    
+    // 服务健康检查端点
+    this.app.get('/health', (req, res) => {
+      const metrics = this.metricsCollector.getMetricsSnapshot();
+      res.status(200).json({
+        status: 'healthy',
+        service: 'OraSRS (Oracle Security Root Service)',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        metrics: {
+          uptime: metrics.uptime,
+          requestsTotal: metrics.requests.total,
+          activeConnections: metrics.activeConnections,
+          responseTimeAvg: metrics.responseTime.avg
+        }
+      });
+    });
+    
+    // 详细状态端点
+    this.app.get('/status', (req, res) => {
+      const metrics = this.metricsCollector.getMetricsSnapshot();
+      res.status(200).json({
+        status: 'running',
+        service: 'OraSRS (Oracle Security Root Service)',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        ...metrics
       });
     });
   }
