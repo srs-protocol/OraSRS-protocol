@@ -76,7 +76,9 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/orasrs:${{ github.sha }}, ${{ secrets.DOCKERHUB_USERNAME }}/orasrs:latest
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/orasrs:${{ github.sha }}
+          ${{ secrets.DOCKERHUB_USERNAME }}/orasrs:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
   
