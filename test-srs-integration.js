@@ -9,7 +9,7 @@ async function testOraSRSIntegration() {
   console.log('🧪 开始测试 OraSRS 与平台集成...\n');
   
   // 使用本地开发服务器地址
-  const baseURL = 'http://localhost:3001'; // 默认节点端口
+  const baseURL = 'http://localhost:3006'; // OraSRS服务端口
   
   try {
     // 测试1: 检查服务健康状态
