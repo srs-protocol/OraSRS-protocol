@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SRS (Security Root Service) 协议</title>
+    <title>OraSRS (Open & Advisory Risk Scoring Service) 协议</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -65,11 +65,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>SRS (Security Root Service) 协议</h1>
+        <h1>OraSRS (Open & Advisory Risk Scoring Service) 协议</h1>
         
         <div class="section">
             <h2>概述</h2>
-            <p>SRS (Security Root Service) 是一个咨询式风险评分服务，旨在为互联网安全决策提供权威参考。与传统的阻断式防火墙不同，SRS 提供风险评估和建议，由客户端自主决定是否执行相应措施。</p>
+            <p>OraSRS (Open & Advisory Risk Scoring Service) 是一个咨询式风险评分服务，旨在为互联网安全决策提供权威参考。与传统的阻断式防火墙不同，OraSRS 提供风险评估和建议，由客户端自主决定是否执行相应措施。</p>
         </div>
         
         <div class="section">
@@ -77,10 +77,10 @@
             
             <div class="principle">
                 <h3>咨询式服务模式</h3>
-                <p><strong>错误设计</strong>: SRS 返回 <code>{ action: "BLOCK" }</code></p>
-                <p><strong>正确设计</strong>: SRS 返回 <code>{ risk_score: 0.92, evidence: ["ddos_bot", "scan_24h"] }</code></p>
+                <p><strong>错误设计</strong>: OraSRS 返回 <code>{ action: "BLOCK" }</code></p>
+                <p><strong>正确设计</strong>: OraSRS 返回 <code>{ risk_score: 0.92, evidence: ["ddos_bot", "scan_24h"] }</code></p>
                 <p><strong>客户端强制执行</strong> → <strong>客户端自主决策是否拦截</strong></p>
-                <p>类比：SRS 是信用评分机构（如 FICO），不是法院。客户端（如银行）自己决定是否采取行动。</p>
+                <p>类比：OraSRS 是信用评分机构（如 FICO），不是法院。客户端（如银行）自己决定是否采取行动。</p>
             </div>
             
             <div class="principle">
@@ -94,7 +94,7 @@
             
             <div class="principle">
                 <h3>公共服务豁免原则</h3>
-                <p>在 SRS 策略中硬编码关键公共服务白名单，永不拦截：</p>
+                <p>在 OraSRS 策略中硬编码关键公共服务白名单，永不拦截：</p>
                 <ul>
                     <li><strong>政府</strong>：.gov, .mil, 国家税务/社保 IP 段</li>
                     <li><strong>医疗</strong>：医院官网、急救系统</li>
@@ -106,12 +106,12 @@
         
         <div class="section">
             <h2>API 端点</h2>
-            <div class="api-endpoint">GET /srs/v1/query?ip={ip}&domain={domain}</div>
-            <div class="api-endpoint">POST /srs/v1/bulk-query</div>
-            <div class="api-endpoint">GET /srs/v1/lookup/{indicator}</div>
-            <div class="api-endpoint">POST /srs/v1/appeal</div>
-            <div class="api-endpoint">GET /srs/v1/explain?ip={ip}</div>
-            <div class="api-endpoint">DELETE /srs/v1/data?ip_hash={hash}</div>
+            <div class="api-endpoint">GET /orasrs/v1/query?ip={ip}&domain={domain}</div>
+            <div class="api-endpoint">POST /orasrs/v1/bulk-query</div>
+            <div class="api-endpoint">GET /orasrs/v1/lookup/{indicator}</div>
+            <div class="api-endpoint">POST /orasrs/v1/appeal</div>
+            <div class="api-endpoint">GET /orasrs/v1/explain?ip={ip}</div>
+            <div class="api-endpoint">DELETE /orasrs/v1/data?ip_hash={hash}</div>
         </div>
         
         <div class="section">
@@ -153,6 +153,17 @@
                 <li><strong>隐私优先</strong>：差分隐私保护，本地数据处理</li>
                 <li><strong>开源可验证</strong>：完全开源，全球审计</li>
                 <li><strong>标准兼容</strong>：支持STIX/TAXII、RPZ等开放标准</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>新增功能</h2>
+            <ul>
+                <li><strong>联邦学习</strong>：支持多节点威胁情报安全聚合，保护各节点数据隐私</li>
+                <li><strong>API认证与速率限制</strong>：提供API密钥管理和速率限制机制，防止滥用</li>
+                <li><strong>全面监控</strong>：集成Prometheus指标收集和Grafana可视化</li>
+                <li><strong>容器化部署</strong>：支持Docker和Docker Compose一键部署</li>
+                <li><strong>CI/CD流水线</strong>：完整的持续集成和持续部署自动化</li>
             </ul>
         </div>
         
