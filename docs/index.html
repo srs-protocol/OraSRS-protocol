@@ -14,7 +14,7 @@
             color: #333;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
@@ -61,15 +61,96 @@
             border-radius: 5px;
             border-left: 4px solid #f39c12;
         }
+        .demo-intro {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .demo-button {
+            display: inline-block;
+            background-color: #f1c40f;
+            color: #2c3e50;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        .demo-button:hover {
+            background-color: #f39c12;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .api-info {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>OraSRS (Open & Advisory Risk Scoring Service) 协议</h1>
         
+        <div class="demo-intro">
+            <h2>OraSRS API 实时演示</h2>
+            <p>Base URL: https://cdn1.1427123.xyz/api/v1/orasrs | 超时时间: 30000ms</p>
+            <a href="demo.html" class="demo-button">查看在线演示</a>
+        </div>
+        
         <div class="section">
             <h2>概述</h2>
             <p>OraSRS (Open & Advisory Risk Scoring Service) 是一个咨询式风险评分服务，旨在为互联网安全决策提供权威参考。与传统的阻断式防火墙不同，OraSRS 提供风险评估和建议，由客户端自主决定是否执行相应措施。</p>
+        </div>
+        
+        <div class="api-info">
+            <h3>API 功能演示</h3>
+            <div class="feature-card">
+                <h4>1️⃣ 健康检查</h4>
+                <p>[OraSRS] 发送请求: GET /health</p>
+                <p>[OraSRS] 收到响应: 200 /health</p>
+                <p>✅ 状态: healthy</p>
+            </div>
+            <div class="feature-card">
+                <h4>2️⃣ IP风险查询</h4>
+                <p>[OraSRS] 发送请求: GET /query</p>
+                <p>[OraSRS] 收到响应: 200 /query</p>
+                <p>[OraSRS] 数据已缓存: /query?ip=8.8.8.8</p>
+                <p>✅ 风险评分: 0.1 | ✅ 风险等级: low</p>
+            </div>
+            <div class="feature-card">
+                <h4>3️⃣ 安全决策示例</h4>
+                <p>✅ 决策: allow</p>
+                <p>✅ 说明: Critical service (public_services) is always allowed per OraSRS policy</p>
+            </div>
+            <div class="feature-card">
+                <h4>4️⃣ 批量查询</h4>
+                <p>[OraSRS] 发送请求: POST /bulk-query</p>
+                <p>[OraSRS] 收到响应: 200 /bulk-query</p>
+                <p>✅ 结果数量: 2</p>
+            </div>
+            <div class="feature-card">
+                <h4>5️⃣ 快速查询</h4>
+                <p>[OraSRS] 发送请求: GET /lookup/1.1.1.1</p>
+                <p>[OraSRS] 收到响应: 200 /lookup/1.1.1.1</p>
+                <p>✅ 指标: 1.1.1.1 | ✅ 风险评分: 0.1</p>
+            </div>
+            <div class="feature-card">
+                <h4>6️⃣ 威胁情报</h4>
+                <p>[OraSRS] 发送请求: GET /threat-intel</p>
+                <p>[OraSRS] 收到响应: 200 /threat-intel</p>
+                <p>✅ 情报数量: 2</p>
+            </div>
+            <div class="feature-card">
+                <h4>7️⃣ 缓存统计</h4>
+                <p>✅ 缓存大小: 1</p>
+            </div>
         </div>
         
         <div class="section">
@@ -165,94 +246,6 @@
                 <li><strong>容器化部署</strong>：支持Docker和Docker Compose一键部署</li>
                 <li><strong>CI/CD流水线</strong>：完整的持续集成和持续部署自动化</li>
             </ul>
-        </div>
-        
-        <div class="section">
-            <h2>在线演示</h2>
-            <div id="demo">
-                <input id="ip" placeholder="输入IP或域名">
-                <button onclick="check()">查询风险</button>
-                <div id="result"></div>
-            </div>
-            <script>
-                async function check() {
-                    const ip = document.getElementById('ip').value;
-                    if(!ip) {
-                        document.getElementById('result').innerHTML = '请输入IP或域名';
-                        return;
-                    }
-
-                    try {
-                        // 使用模拟数据，因为实际API端点可能不存在
-                        const mockData = {
-                            assessment: {
-                                risk_score: Math.random().toFixed(2),
-                                recommendation: ['allow', 'allow_with_captcha', 'require_mfa', 'challenge', 'block'][Math.floor(Math.random() * 5)],
-                                critical_service_override: Math.random() > 0.9
-                            }
-                        };
-                        
-                        // 如果需要调用真实API，取消下面的注释并修改API端点
-                        /*
-                        const res = await fetch(`https://api.example.com/orasrs/v1/query?ip=${ip}`);
-                        const data = await res.json();
-                        */
-                        
-                        const data = mockData;
-                        
-                        document.getElementById('result').innerHTML = 
-                            `风险评分: ${data.assessment.risk_score}<br>
-                             建议: ${data.assessment.recommendation}<br>
-                             是否关键服务: ${data.assessment.critical_service_override}`;
-                    } catch (error) {
-                        document.getElementById('result').innerHTML = `错误: ${error.message}`;
-                    }
-                }
-                
-                // 添加回车键支持
-                document.getElementById('ip').addEventListener('keyup', function(event) {
-                    if (event.key === 'Enter') {
-                        check();
-                    }
-                });
-            </script>
-            <style>
-                #demo {
-                    margin: 20px 0;
-                    padding: 20px;
-                    background-color: #f8f9fa;
-                    border-radius: 5px;
-                    text-align: center;
-                }
-                #ip {
-                    padding: 10px;
-                    width: 250px;
-                    margin: 10px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    font-size: 16px;
-                }
-                button {
-                    padding: 10px 20px;
-                    background-color: #3498db;
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 16px;
-                }
-                button:hover {
-                    background-color: #2980b9;
-                }
-                #result {
-                    margin-top: 15px;
-                    padding: 15px;
-                    background-color: #e8f4f8;
-                    border-radius: 4px;
-                    text-align: left;
-                    min-height: 60px;
-                }
-            </style>
         </div>
     </div>
 </body>
