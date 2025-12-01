@@ -63,12 +63,12 @@ jobs:
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v2
     
-    - name: Login to DockerHub
+    - name: Login to GHCR
       uses: docker/login-action@v2
       with:
-        username:  ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-        registry: index.docker.io
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
@@ -77,8 +77,8 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/orasrs:${{ github.sha }}
-          ${{ secrets.DOCKERHUB_USERNAME }}/orasrs:latest
+          ghcr.io/${{ github.repository_owner }}/orasrs:latest
+          ghcr.io/${{ github.repository_owner }}/orasrs:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
   
