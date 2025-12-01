@@ -1,0 +1,42 @@
+{
+  "name": "srs-protocol",
+  "version": "1.0.0",
+  "description": "SRS (Security Root Service) - 咨询式风险评分服务",
+  "main": "srs-service.js",
+  "scripts": {
+    "start": "node start-srs-service.js",
+    "test": "node test-srs-engine.js",
+    "test-integration": "node test-srs-integration.js",
+    "dev": "nodemon start-srs-service.js",
+    "lint": "eslint .",
+    "srs-engine": "node srs-engine.js"
+  },
+  "keywords": [
+    "security",
+    "risk-assessment",
+    "threat-intelligence",
+    "cybersecurity",
+    "advisory-service"
+  ],
+  "author": "SRS Protocol Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "axios": "^1.6.0",
+    "eslint": "^8.52.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/srs-protocol/srs-protocol.git"
+  },
+  "bugs": {
+    "url": "https://github.com/srs-protocol/srs-protocol/issues"
+  },
+  "homepage": "https://github.com/srs-protocol/srs-protocol#readme"
+}

@@ -2,7 +2,7 @@
  * SRS (Security Root Service) Engine - 简化测试
  */
 
-const SRSEngine = require('./srs-engine-test');
+const SRSEngine = require('./srs-engine');
 
 async function simpleTest() {
   console.log('🧪 开始简化测试 SRS 引擎功能...\n');
