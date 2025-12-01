@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OraSRS 风险查询演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        .description {
+            text-align: center;
+            color: #555;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .demo-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eaeaea;
+        }
+        input {
+            padding: 14px;
+            width: 300px;
+            margin: 0 10px 10px 0;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #2980b9;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+            min-height: 100px;
+            font-size: 1.1em;
+        }
+        .info-box {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #3498db;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            font-size: 0.9em;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 15px;
+            }
+            input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OraSRS 风险查询演示</h1>
+        <p class="description">OraSRS (Open & Advisory Risk Scoring Service) - 开放式咨询风险评分服务</p>
+        
+        <div class="demo-section">
+            <h2>实时风险评估</h2>
+            <input id="ip" placeholder="输入IP地址或域名 (例如: 1.2.3.4 或 example.com)">
+            <button onclick="check()">查询风险</button>
+            <div id="result">请输入IP或域名以查询风险评估</div>
+        </div>
+        
+        <div class="info-box">
+            <h3>关于OraSRS</h3>
+            <p>OraSRS是一个咨询式风险评分服务，提供风险评估和建议，由客户端自主决定是否执行相应措施。它不直接阻断流量，而是提供数据驱动的决策支持。</p>
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 OraSRS Protocol | Open & Advisory Risk Scoring Service</p>
+        </div>
+    </div>
+    
+    <script>
+        async function check() {
+            const ip = document.getElementById('ip').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!ip) {
+                resultDiv.innerHTML = '请输入IP地址或域名';
+                resultDiv.style.color = '#e74c3c';
+                return;
+            }
+            
+            // 显示加载状态
+            resultDiv.innerHTML = '正在查询风险评估...';
+            resultDiv.style.color = '#7f8c8d';
+            
+            try {
+                // 由于实际API可能不存在，这里使用模拟数据
+                // 在实际部署时，可以替换为真实的OraSRS API端点
+                await new Promise(resolve => setTimeout(resolve, 800)); // 模拟网络延迟
+                
+                // 生成模拟风险评估结果
+                const riskScore = Math.random();
+                let riskLevel;
+                let recommendation;
+                
+                if (riskScore < 0.3) {
+                    riskLevel = "低风险";
+                    recommendation = "allow";
+                } else if (riskScore < 0.6) {
+                    riskLevel = "中等风险";
+                    recommendation = riskScore > 0.45 ? "challenge" : "allow_with_captcha";
+                } else if (riskScore < 0.8) {
+                    riskLevel = "高风险";
+                    recommendation = "require_mfa";
+                } else {
+                    riskLevel = "极高风险";
+                    recommendation = "block";
+                }
+                
+                // 模拟是否为关键服务
+                const isCriticalService = Math.random() > 0.95; // 5%概率为关键服务
+                
+                // 格式化结果显示
+                resultDiv.innerHTML = `
+                    <div style="text-align: left;">
+                        <h3>风险评估结果</h3>
+                        <p><strong>查询目标:</strong> ${ip}</p>
+                        <p><strong>风险评分:</strong> ${riskScore.toFixed(2)} (${riskLevel})</p>
+                        <p><strong>建议操作:</strong> ${recommendation}</p>
+                        <p><strong>关键服务豁免:</strong> ${isCriticalService ? '是' : '否'}</p>
+                        <p><strong>评估时间:</strong> ${new Date().toLocaleString()}</p>
+                    </div>
+                `;
+                
+                // 根据风险等级设置颜色
+                if (riskScore < 0.3) {
+                    resultDiv.style.borderLeftColor = '#27ae60';
+                } else if (riskScore < 0.6) {
+                    resultDiv.style.borderLeftColor = '#f39c12';
+                } else {
+                    resultDiv.style.borderLeftColor = '#e74c3c';
+                }
+                
+                resultDiv.style.color = '#2c3e50';
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+                resultDiv.style.color = '#e74c3c';
+                resultDiv.style.borderLeftColor = '#e74c3c';
+            }
+        }
+        
+        // 添加回车键支持
+        document.getElementById('ip').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                check();
+            }
+        });
+    </script>
+</body>
+</html>

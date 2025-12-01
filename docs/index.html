@@ -168,8 +168,91 @@
         </div>
         
         <div class="section">
-            <h2>如何使用</h2>
-            <p>使用GitHub Pages。</p>
+            <h2>在线演示</h2>
+            <div id="demo">
+                <input id="ip" placeholder="输入IP或域名">
+                <button onclick="check()">查询风险</button>
+                <div id="result"></div>
+            </div>
+            <script>
+                async function check() {
+                    const ip = document.getElementById('ip').value;
+                    if(!ip) {
+                        document.getElementById('result').innerHTML = '请输入IP或域名';
+                        return;
+                    }
+
+                    try {
+                        // 使用模拟数据，因为实际API端点可能不存在
+                        const mockData = {
+                            assessment: {
+                                risk_score: Math.random().toFixed(2),
+                                recommendation: ['allow', 'allow_with_captcha', 'require_mfa', 'challenge', 'block'][Math.floor(Math.random() * 5)],
+                                critical_service_override: Math.random() > 0.9
+                            }
+                        };
+                        
+                        // 如果需要调用真实API，取消下面的注释并修改API端点
+                        /*
+                        const res = await fetch(`https://api.example.com/orasrs/v1/query?ip=${ip}`);
+                        const data = await res.json();
+                        */
+                        
+                        const data = mockData;
+                        
+                        document.getElementById('result').innerHTML = 
+                            `风险评分: ${data.assessment.risk_score}<br>
+                             建议: ${data.assessment.recommendation}<br>
+                             是否关键服务: ${data.assessment.critical_service_override}`;
+                    } catch (error) {
+                        document.getElementById('result').innerHTML = `错误: ${error.message}`;
+                    }
+                }
+                
+                // 添加回车键支持
+                document.getElementById('ip').addEventListener('keyup', function(event) {
+                    if (event.key === 'Enter') {
+                        check();
+                    }
+                });
+            </script>
+            <style>
+                #demo {
+                    margin: 20px 0;
+                    padding: 20px;
+                    background-color: #f8f9fa;
+                    border-radius: 5px;
+                    text-align: center;
+                }
+                #ip {
+                    padding: 10px;
+                    width: 250px;
+                    margin: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 16px;
+                }
+                button {
+                    padding: 10px 20px;
+                    background-color: #3498db;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 16px;
+                }
+                button:hover {
+                    background-color: #2980b9;
+                }
+                #result {
+                    margin-top: 15px;
+                    padding: 15px;
+                    background-color: #e8f4f8;
+                    border-radius: 4px;
+                    text-align: left;
+                    min-height: 60px;
+                }
+            </style>
         </div>
     </div>
 </body>
