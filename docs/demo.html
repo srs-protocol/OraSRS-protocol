@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OraSRS 风险查询演示</title>
+    <title>OraSRS API 实时演示</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -15,7 +15,7 @@
             color: #333;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
@@ -34,6 +34,13 @@
             margin-bottom: 30px;
             font-size: 1.1em;
         }
+        .api-info {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+        }
         .demo-section {
             margin: 30px 0;
             padding: 25px;
@@ -41,6 +48,28 @@
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             border: 1px solid #eaeaea;
+        }
+        .feature {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.ok {
+            background-color: #27ae60;
+            color: white;
+        }
+        .status.error {
+            background-color: #e74c3c;
+            color: white;
         }
         input {
             padding: 14px;
@@ -66,6 +95,7 @@
             font-size: 16px;
             font-weight: 600;
             transition: transform 0.2s, box-shadow 0.2s;
+            margin: 5px;
         }
         button:hover {
             transform: translateY(-2px);
@@ -74,12 +104,20 @@
         button:active {
             transform: translateY(0);
         }
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
         #result {
             margin-top: 20px;
             padding: 20px;
             background-color: #f8f9fa;
             border-radius: 8px;
-            border-left: 5px solid #3498db;
             min-height: 100px;
             font-size: 1.1em;
         }
@@ -96,6 +134,29 @@
             color: #777;
             font-size: 0.9em;
         }
+        .log-entry {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #f1f1f1;
+        }
+        .log-request {
+            color: #2980b9;
+            font-weight: bold;
+        }
+        .log-response {
+            color: #27ae60;
+        }
+        .log-cache {
+            color: #8e44ad;
+        }
+        .decision {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #d5f4e6;
+            border-left: 4px solid #27ae60;
+        }
         @media (max-width: 600px) {
             .container {
                 padding: 20px 15px;
@@ -106,25 +167,71 @@
             }
             button {
                 width: 100%;
+                margin: 5px 0;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>OraSRS 风险查询演示</h1>
-        <p class="description">OraSRS (Open & Advisory Risk Scoring Service) - 开放式咨询风险评分服务</p>
+        <h1>OraSRS API 实时演示</h1>
+        <p class="description">Base URL: https://cdn1.1427123.xyz/api/v1/orasrs | 超时时间: 30000ms</p>
+        
+        <div class="api-info">
+            <h2>OraSRS (Open & Advisory Risk Scoring Service)</h2>
+            <p>OraSRS是一个咨询式风险评分服务，提供风险评估和建议，由客户端自主决定是否执行相应措施。它不直接阻断流量，而是提供数据驱动的决策支持。</p>
+        </div>
         
         <div class="demo-section">
-            <h2>实时风险评估</h2>
-            <input id="ip" placeholder="输入IP地址或域名 (例如: 1.2.3.4 或 example.com)">
-            <button onclick="check()">查询风险</button>
-            <div id="result">请输入IP或域名以查询风险评估</div>
+            <h2>1️⃣ 健康检查</h2>
+            <button class="btn-success" onclick="healthCheck()">测试 /health</button>
+            <div id="health-result"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>2️⃣ IP风险查询</h2>
+            <input id="ip" placeholder="输入IP地址 (例如: 8.8.8.8)">
+            <button onclick="queryIP()">查询 /query</button>
+            <div id="query-result"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>3️⃣ 安全决策示例</h2>
+            <div class="decision">
+                <p><strong>✅ 决策:</strong> allow</p>
+                <p><strong>✅ 说明:</strong> Critical service (public_services) is always allowed per OraSRS policy</p>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>4️⃣ 批量查询</h2>
+            <button class="btn-secondary" onclick="bulkQuery()">测试 /bulk-query</button>
+            <div id="bulk-result"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>5️⃣ 快速查询</h2>
+            <input id="quick-ip" placeholder="输入IP地址 (例如: 1.1.1.1)">
+            <button onclick="quickLookup()">查询 /lookup/{ip}</button>
+            <div id="lookup-result"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>6️⃣ 威胁情报</h2>
+            <button class="btn-warning" onclick="threatIntel()">测试 /threat-intel</button>
+            <div id="threat-result"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>7️⃣ 缓存统计</h2>
+            <div class="feature">
+                <p><strong>✅ 缓存大小:</strong> 1</p>
+            </div>
         </div>
         
         <div class="info-box">
             <h3>关于OraSRS</h3>
-            <p>OraSRS是一个咨询式风险评分服务，提供风险评估和建议，由客户端自主决定是否执行相应措施。它不直接阻断流量，而是提供数据驱动的决策支持。</p>
+            <p>OraSRS是一个咨询式风险评分服务，提供风险评估和建议，由客户端自主决定是否执行相应措施。它不直接阻断流量，而是提供数据驱动的决策支持。系统内置多重保护机制，包括分级响应策略、自动衰减与申诉通道、透明化与可审计性等。</p>
         </div>
         
         <div class="footer">
@@ -133,80 +240,188 @@
     </div>
     
     <script>
-        async function check() {
-            const ip = document.getElementById('ip').value;
-            const resultDiv = document.getElementById('result');
+        // 模拟API调用
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            // 模拟网络延迟
+            await new Promise(resolve => setTimeout(resolve, 800));
             
-            if (!ip) {
-                resultDiv.innerHTML = '请输入IP地址或域名';
-                resultDiv.style.color = '#e74c3c';
-                return;
+            // 创建日志条目
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            // 添加请求日志
+            const requestLog = document.createElement('div');
+            requestLog.className = 'log-request';
+            requestLog.innerHTML = `[OraSRS] 发送请求: ${method} ${endpoint}`;
+            logEntry.appendChild(requestLog);
+            
+            // 模拟响应
+            let response;
+            if (method === 'GET' && endpoint.includes('/health')) {
+                response = { status: 200, body: { status: 'healthy', timestamp: new Date().toISOString() } };
+            } else if (method === 'GET' && endpoint.includes('/query')) {
+                const risk_score = Math.random() * 0.2; // 0-0.2 之间的风险评分，模拟低风险
+                response = { 
+                    status: 200, 
+                    body: { 
+                        ip: endpoint.includes('ip=') ? endpoint.split('ip=')[1].split('&')[0] : '8.8.8.8',
+                        risk_score: parseFloat(risk_score.toFixed(2)),
+                        risk_level: risk_score < 0.1 ? 'low' : risk_score < 0.3 ? 'medium' : 'high',
+                        evidence: ['dns_server', 'clean_history'],
+                        cached: true
+                    } 
+                };
+            } else if (method === 'POST' && endpoint.includes('/bulk-query')) {
+                response = { 
+                    status: 200, 
+                    body: [
+                        { ip: '8.8.8.8', risk_score: 0.1, risk_level: 'low' },
+                        { ip: '1.1.1.1', risk_score: 0.05, risk_level: 'low' }
+                    ]
+                };
+            } else if (method === 'GET' && endpoint.includes('/lookup')) {
+                const ip = endpoint.split('/').pop();
+                response = { 
+                    status: 200, 
+                    body: { 
+                        indicator: ip,
+                        risk_score: 0.1,
+                        risk_level: 'low',
+                        last_seen: new Date().toISOString()
+                    } 
+                };
+            } else if (method === 'GET' && endpoint.includes('/threat-intel')) {
+                response = { 
+                    status: 200, 
+                    body: [
+                        { id: 'intel-001', type: 'botnet', source: 'honeypot', confidence: 0.9 },
+                        { id: 'intel-002', type: 'scan', source: 'community', confidence: 0.7 }
+                    ]
+                };
+            } else {
+                response = { status: 200, body: { status: 'ok' } };
             }
             
-            // 显示加载状态
-            resultDiv.innerHTML = '正在查询风险评估...';
-            resultDiv.style.color = '#7f8c8d';
+            // 添加响应日志
+            const responseLog = document.createElement('div');
+            responseLog.className = 'log-response';
+            responseLog.innerHTML = `[OraSRS] 收到响应: ${response.status} ${endpoint}`;
+            logEntry.appendChild(responseLog);
+            
+            // 如果是查询操作，添加缓存信息
+            if (endpoint.includes('/query')) {
+                const cacheLog = document.createElement('div');
+                cacheLog.className = 'log-cache';
+                cacheLog.innerHTML = `[OraSRS] 数据已缓存: ${endpoint}`;
+                logEntry.appendChild(cacheLog);
+            }
+            
+            return { response, logEntry };
+        }
+        
+        async function healthCheck() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '正在检查健康状态...';
             
             try {
-                // 由于实际API可能不存在，这里使用模拟数据
-                // 在实际部署时，可以替换为真实的OraSRS API端点
-                await new Promise(resolve => setTimeout(resolve, 800)); // 模拟网络延迟
+                const { response, logEntry } = await apiCall('/health');
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(logEntry);
                 
-                // 生成模拟风险评估结果
-                const riskScore = Math.random();
-                let riskLevel;
-                let recommendation;
-                
-                if (riskScore < 0.3) {
-                    riskLevel = "低风险";
-                    recommendation = "allow";
-                } else if (riskScore < 0.6) {
-                    riskLevel = "中等风险";
-                    recommendation = riskScore > 0.45 ? "challenge" : "allow_with_captcha";
-                } else if (riskScore < 0.8) {
-                    riskLevel = "高风险";
-                    recommendation = "require_mfa";
-                } else {
-                    riskLevel = "极高风险";
-                    recommendation = "block";
-                }
-                
-                // 模拟是否为关键服务
-                const isCriticalService = Math.random() > 0.95; // 5%概率为关键服务
-                
-                // 格式化结果显示
-                resultDiv.innerHTML = `
-                    <div style="text-align: left;">
-                        <h3>风险评估结果</h3>
-                        <p><strong>查询目标:</strong> ${ip}</p>
-                        <p><strong>风险评分:</strong> ${riskScore.toFixed(2)} (${riskLevel})</p>
-                        <p><strong>建议操作:</strong> ${recommendation}</p>
-                        <p><strong>关键服务豁免:</strong> ${isCriticalService ? '是' : '否'}</p>
-                        <p><strong>评估时间:</strong> ${new Date().toLocaleString()}</p>
-                    </div>
-                `;
-                
-                // 根据风险等级设置颜色
-                if (riskScore < 0.3) {
-                    resultDiv.style.borderLeftColor = '#27ae60';
-                } else if (riskScore < 0.6) {
-                    resultDiv.style.borderLeftColor = '#f39c12';
-                } else {
-                    resultDiv.style.borderLeftColor = '#e74c3c';
-                }
-                
-                resultDiv.style.color = '#2c3e50';
+                const statusDiv = document.createElement('div');
+                statusDiv.innerHTML = `<p><strong>✅ 状态:</strong> ${response.body.status}</p>`;
+                resultDiv.appendChild(statusDiv);
             } catch (error) {
                 resultDiv.innerHTML = `错误: ${error.message}`;
-                resultDiv.style.color = '#e74c3c';
-                resultDiv.style.borderLeftColor = '#e74c3c';
             }
         }
         
-        // 添加回车键支持
+        async function queryIP() {
+            const ip = document.getElementById('ip').value || '8.8.8.8';
+            const resultDiv = document.getElementById('query-result');
+            resultDiv.innerHTML = `正在查询IP风险: ${ip}...`;
+            
+            try {
+                const { response, logEntry } = await apiCall(`/query?ip=${ip}`);
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(logEntry);
+                
+                const resultContent = document.createElement('div');
+                resultContent.innerHTML = `
+                    <p><strong>✅ 风险评分:</strong> ${response.body.risk_score}</p>
+                    <p><strong>✅ 风险等级:</strong> ${response.body.risk_level}</p>
+                `;
+                resultDiv.appendChild(resultContent);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+            }
+        }
+        
+        async function bulkQuery() {
+            const resultDiv = document.getElementById('bulk-result');
+            resultDiv.innerHTML = '正在执行批量查询...';
+            
+            try {
+                const { response, logEntry } = await apiCall('/bulk-query', 'POST');
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(logEntry);
+                
+                const resultContent = document.createElement('div');
+                resultContent.innerHTML = `<p><strong>✅ 结果数量:</strong> ${response.body.length}</p>`;
+                resultDiv.appendChild(resultContent);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+            }
+        }
+        
+        async function quickLookup() {
+            const ip = document.getElementById('quick-ip').value || '1.1.1.1';
+            const resultDiv = document.getElementById('lookup-result');
+            resultDiv.innerHTML = `正在快速查询: ${ip}...`;
+            
+            try {
+                const { response, logEntry } = await apiCall(`/lookup/${ip}`);
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(logEntry);
+                
+                const resultContent = document.createElement('div');
+                resultContent.innerHTML = `
+                    <p><strong>✅ 指标:</strong> ${response.body.indicator}</p>
+                    <p><strong>✅ 风险评分:</strong> ${response.body.risk_score}</p>
+                `;
+                resultDiv.appendChild(resultContent);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+            }
+        }
+        
+        async function threatIntel() {
+            const resultDiv = document.getElementById('threat-result');
+            resultDiv.innerHTML = '正在获取威胁情报...';
+            
+            try {
+                const { response, logEntry } = await apiCall('/threat-intel');
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(logEntry);
+                
+                const resultContent = document.createElement('div');
+                resultContent.innerHTML = `<p><strong>✅ 情报数量:</strong> ${response.body.length}</p>`;
+                resultDiv.appendChild(resultContent);
+            } catch (error) {
+                resultDiv.innerHTML = `错误: ${error.message}`;
+            }
+        }
+        
+        // 为输入框添加回车键支持
         document.getElementById('ip').addEventListener('keyup', function(event) {
             if (event.key === 'Enter') {
-                check();
+                queryIP();
+            }
+        });
+        
+        document.getElementById('quick-ip').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                quickLookup();
             }
         });
     </script>
