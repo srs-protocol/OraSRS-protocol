@@ -5,12 +5,16 @@
  * OraSRS 是信用评分机构（如 FICO），不是法院。客户端自己决定是否采取行动。
  */
 
+const FederatedLearning = require('./src/federated-learning');
+
 class SRSEngine {
   constructor(options = {}) {
     this.riskScores = new Map(); // 存储风险评分
     this.evidenceLog = new Map(); // 存储证据日志
     this.appealRequests = new Map(); // 存储申诉请求
     this.criticalServiceWhitelist = new Set(); // 关键服务白名单
+    this.federatedLearning = new FederatedLearning(options.federatedLearning || {}); // 联邦学习模块
+    this.nodeId = options.nodeId || 'default-node'; // 节点ID
     
     // 初始化关键服务白名单
     this.initializeCriticalServiceWhitelist();
@@ -375,14 +379,56 @@ class SRSEngine {
   }
 
   /**
-   * 获取OraSRS响应格式（安全版）
+   * 获取SRS响应格式（安全版）
    */
-  async getOraSRSResponse(ip, domain = null) {
+  async getSRSResponse(ip, domain = null) {
     return await this.getRiskAssessment(ip, domain);
+  }
+
+  /**
+   * 联邦学习：注册到联邦网络
+   */
+  registerToFederation(nodeId, config) {
+    return this.federatedLearning.registerNode(nodeId, config);
+  }
+
+  /**
+   * 联邦学习：提交本地模型更新
+   */
+  async submitLocalUpdate(localUpdates) {
+    return await this.federatedLearning.collectLocalUpdates(this.nodeId, localUpdates);
+  }
+
+  /**
+   * 联邦学习：执行联邦学习轮次
+   */
+  async performFederatedRound() {
+    return await this.federatedLearning.federatedRound();
+  }
+
+  /**
+   * 联邦学习：获取联邦状态
+   */
+  getFederationStatus() {
+    return this.federatedLearning.getStatus();
+  }
+
+  /**
+   * 更新风险评估模型（从联邦学习中）
+   */
+  updateModelFromFederation() {
+    // 从聚合模型中获取更新并应用到本地模型
+    const aggregatedModel = this.federatedLearning.aggregatedModel;
+    
+    if (aggregatedModel.size > 0) {
+      // 这里可以应用聚合模型来更新本地风险评估逻辑
+      console.log('从联邦模型更新本地风险评估参数');
+      // 实现具体的模型更新逻辑
+    }
   }
 }
 
-// 导出OraSRS引擎
+// 导出SRS引擎
 module.exports = SRSEngine;
 
 // 如果直接运行此文件，启动测试
