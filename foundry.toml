@@ -1,0 +1,24 @@
+[profile.default]
+src = "contracts"
+out = "out"
+test = "test"
+script = "script"
+libs = ["lib"]
+remappings = [
+    'forge-std/=lib/forge-std/src/',
+]
+optimizer = true
+optimizer_runs = 200
+
+[profile.default.fuzz]
+runs = 5
+
+[profile.default.invariant]
+runs = 5
+
+# 使用 via-ir 编译器以处理复杂合约
+via_ir = true
+
+[etherscan]
+# 如果需要验证，可以在这里添加 etherscan API key
+# mainnet = { key = "${ETHERSCAN_API_KEY}" }
