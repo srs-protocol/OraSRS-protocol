@@ -1,0 +1,48 @@
+{
+  "compiler": {
+    "version": "0.8.0",
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "*": [
+            "abi",
+            "evm.bytecode.object",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.sourceMap"
+          ]
+        }
+      }
+    }
+  },
+  "slither": {
+    "filter_paths": "node_modules|test|script",
+    "detectors_to_exclude": "solc-version,unused-state,similar-names",
+    "fail_on": "high",
+    "exclude_dependencies": true
+  },
+  "security_tests": {
+    "reentrancy": true,
+    "access_control": true,
+    "integer_overflow": true,
+    "front_running": false,
+    "time_manipulation": true,
+    "signature_replay": true,
+    "denial_of_service": true,
+    "blockchain_specific": true
+  },
+  "test_coverage": {
+    "minimum_coverage": 90,
+    "exclude_contracts": [
+      "Migrations.sol"
+    ],
+    "exclude_files": [
+      "test/*",
+      "node_modules/*"
+    ]
+  }
+}

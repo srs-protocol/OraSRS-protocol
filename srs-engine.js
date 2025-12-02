@@ -6,6 +6,11 @@
  */
 
 const FederatedLearning = require('./src/federated-learning');
+const ConsensusMechanism = require('./src/consensus-mechanism');
+const GovernanceCommittee = require('./src/governance-committee');
+const SecurityCompliance = require('./src/security-compliance');
+const EdgeCacheLayer = require('./src/edge-cache-layer');
+const ArchitectureCoordinator = require('./src/architecture-coordinator');
 
 class SRSEngine {
   constructor(options = {}) {
@@ -15,6 +20,21 @@ class SRSEngine {
     this.criticalServiceWhitelist = new Set(); // 关键服务白名单
     this.federatedLearning = new FederatedLearning(options.federatedLearning || {}); // 联邦学习模块
     this.nodeId = options.nodeId || 'default-node'; // 节点ID
+    
+    // 新增：共识与质押机制
+    this.consensusMechanism = new ConsensusMechanism(options.consensus || {});
+    
+    // 新增：治理委员会
+    this.governanceCommittee = new GovernanceCommittee(options.governance || {});
+    
+    // 新增：安全合规模块
+    this.securityCompliance = new SecurityCompliance(options.security || {});
+    
+    // 新增：边缘缓存层
+    this.edgeCacheLayer = new EdgeCacheLayer(options.edgeCache || {});
+    
+    // 新增：架构协调器
+    this.architectureCoordinator = new ArchitectureCoordinator(this);
     
     // 初始化关键服务白名单
     this.initializeCriticalServiceWhitelist();
@@ -425,6 +445,188 @@ class SRSEngine {
       console.log('从联邦模型更新本地风险评估参数');
       // 实现具体的模型更新逻辑
     }
+  }
+
+  /**
+   * 节点质押
+   */
+  stake(nodeId, amount, identityInfo) {
+    return this.consensusMechanism.stake(nodeId, amount, identityInfo);
+  }
+
+  /**
+   * 获取节点状态
+   */
+  getNodeStatus(nodeId) {
+    return this.consensusMechanism.getNodeStatus(nodeId);
+  }
+
+  /**
+   * 获取共识节点列表
+   */
+  getConsensusNodes() {
+    return this.consensusMechanism.getConsensusNodes();
+  }
+
+  /**
+   * 更新节点声誉
+   */
+  updateNodeReputation(nodeId, performanceData) {
+    return this.consensusMechanism.updateNodeReputation(nodeId, performanceData);
+  }
+
+  /**
+   * 执行BFT共识
+   */
+  performBFTConsensus(data, callback) {
+    return this.consensusMechanism.performBFTConsensus(data, callback);
+  }
+
+  /**
+   * 添加治理委员会成员
+   */
+  addGovernanceMember(memberId, memberInfo) {
+    return this.governanceCommittee.addMember(memberId, memberInfo);
+  }
+
+  /**
+   * 创建治理提案
+   */
+  createGovernanceProposal(proposalId, title, description, proposer, category) {
+    return this.governanceCommittee.createProposal(proposalId, title, description, proposer, category);
+  }
+
+  /**
+   * 开始提案投票
+   */
+  startProposalVoting(proposalId) {
+    return this.governanceCommittee.startVoting(proposalId);
+  }
+
+  /**
+   * 委员会成员投票
+   */
+  committeeVote(memberId, proposalId, voteChoice) {
+    return this.governanceCommittee.vote(memberId, proposalId, voteChoice);
+  }
+
+  /**
+   * 紧急熔断
+   */
+  emergencyHalt(reason) {
+    return this.governanceCommittee.emergencyHalt(reason);
+  }
+
+  /**
+   * 数据脱敏处理
+   */
+  sanitizeData(data) {
+    return this.securityCompliance.sanitizeData(data);
+  }
+
+  /**
+   * 使用SM4加密数据
+   */
+  encryptWithSM4(data, key) {
+    return this.securityCompliance.encryptWithSM4(data, key);
+  }
+
+  /**
+   * 生成合规报告
+   */
+  generateComplianceReport() {
+    return this.securityCompliance.generateComplianceReport();
+  }
+
+  /**
+   * 检查数据是否在中国境内
+   */
+  isDataInChina() {
+    return this.securityCompliance.isDataInChina();
+  }
+
+  /**
+   * 边缘缓存节点质押
+   */
+  stakeEdgeNode(nodeId, amount, nodeInfo) {
+    return this.edgeCacheLayer.stake(nodeId, amount, nodeInfo);
+  }
+
+  /**
+   * 从边缘缓存获取数据
+   */
+  getFromEdgeCache(key) {
+    return this.edgeCacheLayer.getCache(key);
+  }
+
+  /**
+   * 设置边缘缓存
+   */
+  setEdgeCache(key, data, cachedBy) {
+    return this.edgeCacheLayer.setCache(key, data, cachedBy);
+  }
+
+  /**
+   * 提交缓存挑战
+   */
+  submitCacheChallenge(challengeId, cacheKey, challengerId, reason) {
+    return this.edgeCacheLayer.submitChallenge(challengeId, cacheKey, challengerId, reason);
+  }
+
+  /**
+   * 添加挑战支持
+   */
+  addChallengeSupport(challengeId, challengerId) {
+    return this.edgeCacheLayer.addChallengeSupport(challengeId, challengerId);
+  }
+
+  /**
+   * 获取边缘缓存节点统计
+   */
+  getEdgeNodeStats(nodeId) {
+    return this.edgeCacheLayer.getNodeStats(nodeId);
+  }
+
+  /**
+   * 运行边缘缓存维护任务
+   */
+  runEdgeCacheMaintenance() {
+    return this.edgeCacheLayer.runMaintenance();
+  }
+
+  /**
+   * 初始化三层架构
+   */
+  async initializeArchitecture() {
+    return this.architectureCoordinator.initialize();
+  }
+
+  /**
+   * 处理查询请求（通过三层架构）
+   */
+  async processQueryThroughArchitecture(ip, domain = null) {
+    return this.architectureCoordinator.processQuery(ip, domain);
+  }
+
+  /**
+   * 获取架构状态
+   */
+  getArchitectureStatus() {
+    return this.architectureCoordinator.getArchitectureStatus();
+  }
+
+  /**
+   * 执行跨层审计
+   */
+  async performCrossLayerAudit() {
+    return this.architectureCoordinator.crossLayerAudit();
+  }
+
+  /**
+   * 系统健康检查
+   */
+  architectureHealthCheck() {
+    return this.architectureCoordinator.healthCheck();
   }
 }
 
