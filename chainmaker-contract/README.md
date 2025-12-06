@@ -1,11 +1,11 @@
-# OraSRS v2.0 Threat Intelligence Contract / OraSRS v2.0 威胁情报合约
+# SecurityRiskAssessment v2.0 Threat Intelligence Contract / SecurityRiskAssessment v2.0 威胁情报合约
 
 ## Overview / 概述
 
-This is the OraSRS v2.0 Threat Intelligence contract designed for deployment on blockchain networks. The contract implements a decentralized threat detection and intelligence sharing system that goes beyond traditional firewalls/WAF (传统防火墙/WAF的超越方案).
+This is the SecurityRiskAssessment v2.0 Threat Intelligence contract designed for deployment on blockchain networks. The contract implements a decentralized threat detection and intelligence sharing system that goes beyond traditional firewalls/WAF (传统防火墙/WAF的超越方案).
 
-This protocol implements the OraSRS v2.0 Threat Intelligence system that features:
-该协议实现的OraSRS v2.0威胁情报系统具有以下特点：
+This protocol implements the SecurityRiskAssessment v2.0 Threat Intelligence system that features:
+该协议实现的SecurityRiskAssessment v2.0威胁情报系统具有以下特点：
 
 - **Active threat perception and adaptive response (主动威胁感知和自适应响应)**: Instead of passive rule matching, nodes actively detect and respond to threats
 - **Decentralized threat evidence storage (去中心化威胁证据存储)**: All threat evidence is permanently stored on the blockchain

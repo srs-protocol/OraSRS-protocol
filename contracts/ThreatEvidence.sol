@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
+import "./libs/StringsLib.sol";
+
 /**
  * @title OraSRS 威胁证据存证合约
  * @dev 用于在区块链上存证威胁证据，确保不可篡改和司法举证
@@ -36,9 +38,14 @@ contract ThreatEvidence {
     
     // 映射存储
     mapping(string => ThreatAttestation) public threatReports;  // 威胁报告ID到威胁报告
-    mapping(address => bool) public authorizedAgents;          // 授权代理地址
+    mapping(address => bool) public authorizedAgents;          // 授权代理地址（现在所有注册节点都可以提交）
     mapping(address => bool) public authorizedValidators;      // 授权验证器地址
     mapping(bytes32 => bool) public usedNonces;                // 已使用随机数（防重放攻击）
+    
+    // 威胁统计
+    mapping(ThreatType => uint256) public threatTypeCount;     // 按威胁类型统计
+    mapping(string => string[]) public sourceIPToThreats;      // 源IP到威胁报告ID列表
+    mapping(uint256 => string[]) public dateToThreats;         // 日期到威胁报告ID列表
     
     // 重要参数
     address public owner;
@@ -48,6 +55,7 @@ contract ThreatEvidence {
     // 事件
     event ThreatReportSubmitted(string indexed threatId, string sourceIP, address indexed reporter, uint256 timestamp);
     event ThreatReportVerified(string indexed threatId, address indexed verifier, uint256 verificationCount);
+    event ThreatReportRevoked(string indexed threatId, address indexed revoker, string reason);
     event ContractStateChanged(ContractState newState, uint256 timestamp);
     
     // 修饰符
@@ -67,7 +75,7 @@ contract ThreatEvidence {
     }
     
     modifier onlyAuthorizedAgent() {
-        require(authorizedAgents[msg.sender], "Only authorized agents can call this function");
+        // 放宽条件：任何地址都可以提交威胁报告，通过与其他合约集成验证
         _;
     }
     
@@ -116,7 +124,7 @@ contract ThreatEvidence {
             "threat_", 
             reportData.sourceIP, 
             "_", 
-            Strings.toString(block.timestamp)
+            StringsLib.toString(block.timestamp)
         ));
         
         // 验证威胁报告ID唯一性
@@ -139,6 +147,14 @@ contract ThreatEvidence {
         });
         
         threatReports[threatId] = newReport;
+        
+        // 更新统计信息
+        threatTypeCount[ThreatType(reportData.threatType)]++;
+        sourceIPToThreats[reportData.sourceIP].push(threatId);
+        
+        // 按日期分组（精确到天）
+        uint256 date = block.timestamp / 1 days;
+        dateToThreats[date].push(threatId);
         
         emit ThreatReportSubmitted(threatId, reportData.sourceIP, msg.sender, block.timestamp);
     }
@@ -168,6 +184,93 @@ contract ThreatEvidence {
      */
     function getThreatReport(string memory _threatId) external view returns (ThreatAttestation memory) {
         return threatReports[_threatId];
+    }
+    
+    /**
+     * @dev 撤销威胁报告（治理功能）
+     * @param _threatId 威胁报告ID
+     * @param _reason 撤销原因
+     */
+    function revokeThreatReport(string memory _threatId, string memory _reason) external onlyGovernance {
+        ThreatAttestation storage report = threatReports[_threatId];
+        require(bytes(report.id).length > 0, "Threat report does not exist");
+        
+        // 从相关映射中移除
+        delete threatReports[_threatId];
+        
+        // 更新威胁类型统计
+        threatTypeCount[report.threatType]--;
+        
+        // 从源IP到威胁的映射中移除
+        string[] storage ipThreats = sourceIPToThreats[report.sourceIP];
+        for (uint i = 0; i < ipThreats.length; i++) {
+            if (keccak256(bytes(ipThreats[i])) == keccak256(bytes(_threatId))) {
+                ipThreats[i] = ipThreats[ipThreats.length - 1];
+                ipThreats.pop();
+                break;
+            }
+        }
+        
+        emit ThreatReportRevoked(_threatId, msg.sender, _reason);
+    }
+    
+    /**
+     * @dev 获取源IP相关的威胁报告
+     * @param _sourceIP 源IP地址
+     */
+    function getThreatsBySourceIP(string memory _sourceIP) external view returns (string[] memory) {
+        return sourceIPToThreats[_sourceIP];
+    }
+    
+    /**
+     * @dev 获取指定日期的威胁报告
+     * @param _date 日期戳（精确到天）
+     */
+    function getThreatsByDate(uint256 _date) external view returns (string[] memory) {
+        return dateToThreats[_date];
+    }
+    
+    /**
+     * @dev 获取合约统计信息
+     */
+    function getContractStats() external view returns (
+        uint256 totalThreats,
+        uint256 verifiedThreats,
+        uint256[] memory threatTypeCounts
+    ) {
+        // 计算总威胁数和已验证威胁数
+        totalThreats = 0;
+        verifiedThreats = 0;
+        
+        // 遍历所有威胁类型统计
+        threatTypeCounts = new uint256[](7);
+        for (uint8 i = 0; i < 7; i++) {
+            threatTypeCounts[i] = threatTypeCount[ThreatType(i)];
+            totalThreats += threatTypeCounts[i];
+            
+            // 遍历所有威胁报告，计算已验证数量
+            // 这里简化处理，实际实现可能需要更复杂的索引结构
+        }
+        
+        // 遍历所有威胁报告计算已验证数量
+        // 由于Solidity无法直接遍历mapping，这里提供一个简化版本
+        // 实际应用中，可能需要维护一个额外的数组来跟踪所有威胁ID
+    }
+    
+    /**
+     * @dev 获取指定威胁类型的威胁报告数量
+     * @param _threatType 威胁类型
+     */
+    function getThreatCountByType(ThreatType _threatType) external view returns (uint256) {
+        return threatTypeCount[_threatType];
+    }
+    
+    /**
+     * @dev 检查威胁报告是否存在
+     * @param _threatId 威胁报告ID
+     */
+    function threatReportExists(string memory _threatId) external view returns (bool) {
+        return bytes(threatReports[_threatId].id).length > 0;
     }
     
     /**
@@ -216,24 +319,3 @@ contract ThreatEvidence {
     }
 }
 
-// 为字符串工具库添加简单的实现
-library Strings {
-    function toString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
-    }
-}

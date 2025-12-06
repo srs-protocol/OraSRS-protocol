@@ -1,12 +1,12 @@
-# OraSRS v2.0 Threat Intelligence Protocol
-# OraSRS v2.0 威胁情报协议
+# SecurityRiskAssessment v2.0 Threat Intelligence Protocol
+# SecurityRiskAssessment v2.0 威胁情报协议
 
 ## Protocol Overview
 ## 协议概述
 
-The OraSRS v2.0 Threat Intelligence Protocol represents a significant advancement in decentralized threat detection and intelligence sharing. This protocol moves beyond traditional firewall/WAF systems to create a distributed network of threat sensors that can detect, verify, and share threat intelligence in real-time across a blockchain network.
+The SecurityRiskAssessment v2.0 Threat Intelligence Protocol represents a significant advancement in decentralized threat detection and intelligence sharing. This protocol moves beyond traditional firewall/WAF systems to create a distributed network of threat sensors that can detect, verify, and share threat intelligence in real-time across a blockchain network.
 
-OraSRS v2.0威胁情报协议代表了去中心化威胁检测和情报共享的重大进步。该协议超越了传统的防火墙/WAF系统，创建了一个威胁传感器的分布式网络，能够在区块链网络上实时检测、验证和共享威胁情报。
+SecurityRiskAssessment v2.0威胁情报协议代表了去中心化威胁检测和情报共享的重大进步。该协议超越了传统的防火墙/WAF系统，创建了一个威胁传感器的分布式网络，能够在区块链网络上实时检测、验证和共享威胁情报。
 
 ## Key Innovations
 ## 主要创新
@@ -87,9 +87,9 @@ const (
 ### Blockchain Threat Evidence Contract (链上威胁证据合约)
 ### 区块链威胁证据存证合约
 
-OraSRS v2.0 includes a blockchain-based threat evidence storage system that ensures immutability and judicial admissibility of threat data.
+SecurityRiskAssessment v2.0 includes a blockchain-based threat evidence storage system that ensures immutability and judicial admissibility of threat data.
 
-OraSRS v2.0包含基于区块链的威胁证据存储系统，确保威胁数据的不可变性和司法可采性。
+SecurityRiskAssessment v2.0包含基于区块链的威胁证据存储系统，确保威胁数据的不可变性和司法可采性。
 
 #### ThreatEvidence Contract Specifications (威胁证据合约规范)
 - **Contract Name**: ThreatEvidence.sol
@@ -199,13 +199,17 @@ const (
   - SM3: 哈希算法
   - SM4: 分组密码
 
-- **International Standards (国际标准)**:
-  - NIST-approved algorithms
-  - Ed25519: Digital signatures
-  - BLAKE3: Hash algorithm
-  - NIST批准的算法
-  - Ed25519: 数字签名
-  - BLAKE3: 哈希算法
+- **Post-Quantum Cryptography (抗量子密码学)**:
+  - Lattice-based algorithms: CRYSTALS-Kyber for encryption
+  - Hash-based signatures: Lamport/SPHINCS+ for digital signatures
+  - Code-based algorithms: McEliece for asymmetric encryption
+  - 基于格的算法: CRYSTALS-Kyber 用于加密
+  - 基于哈希的签名: Lamport/SPHINCS+ 用于数字签名
+  - 基于编码的算法: McEliece 用于非对称加密
+
+- **Hybrid Schemes (混合方案)**:
+  - Combined traditional and post-quantum algorithms for enhanced security
+  - 传统算法与抗量子算法结合，提供增强安全性
 
 ## Threat Detection and Response
 ## 威胁检测和响应
@@ -280,10 +284,10 @@ const (
 ## Benefits Over Traditional Systems
 ## 相比传统系统的优势
 
-### Traditional Firewall/WAF vs OraSRS v2.0
-### 传统防火墙/WAF vs OraSRS v2.0
+### Traditional Firewall/WAF vs SecurityRiskAssessment v2.0
+### 传统防火墙/WAF vs SecurityRiskAssessment v2.0
 
-| Feature | Traditional Systems | OraSRS v2.0 |
+| Feature | Traditional Systems | SecurityRiskAssessment v2.0 |
 |---------|-------------------|-------------|
 | **Threat Detection** | 被动规则匹配 | ✅ 主动威胁感知 + 自适应响应 |
 | **Log Centralization** | 中心化日志 | ✅ 去中心化威胁证据存证 |
@@ -291,7 +295,7 @@ const (
 | **Attack Verification** | 无法证明攻击真实性 | ✅ 不可篡改的攻击链上存证 |
 | **Compliance Auditing** | 合规审计困难 | ✅ 自动满足多种合规标准 |
 
-| 特性 | 传统系统 | OraSRS v2.0 |
+| 特性 | 传统系统 | SecurityRiskAssessment v2.0 |
 |------|----------|-------------|
 | **Threat Detection** | Passive rule matching | ✅ Active threat perception + adaptive response |
 | **Log Centralization** | Centralized logs | ✅ Decentralized threat evidence storage |
