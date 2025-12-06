@@ -1,12 +1,12 @@
-# OraSRS 长安链部署技术方案
+# SecurityRiskAssessment 长安链部署技术方案
 
 ## 1. 概述
 
 ### 1.1 项目背景
-OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，旨在为互联网安全决策提供权威参考。本方案描述如何将 OraSRS 协议部署到长安链（ChainMaker）上，利用其国产化、高性能、支持国密算法的特性。
+SecurityRiskAssessment (Oracle Security Root Service) 是一个咨询式风险评分服务，旨在为互联网安全决策提供权威参考。本方案描述如何将 SecurityRiskAssessment 协议部署到长安链（ChainMaker）上，利用其国产化、高性能、支持国密算法的特性。
 
 ### 1.2 部署目标
-- 将 OraSRS 质押合约部署到长安链网络
+- 将 SecurityRiskAssessment 质押合约部署到长安链网络
 - 实现国密算法（SM2/SM3/SM4）支持
 - 确保高性能和可扩展性
 - 满足合规要求
@@ -37,7 +37,7 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，旨
 ### 3.1 网络架构
 ```
                     +-------------------+
-                    |   OraSRS 客户端   |
+                    |   SecurityRiskAssessment 客户端   |
                     +-------------------+
                             |
                             | REST API / SDK
@@ -118,7 +118,7 @@ blockchain:
     maxBlockSize: 16MB
 ```
 
-### 4.3 部署 OraSRS 合约
+### 4.3 部署 SecurityRiskAssessment 合约
 
 #### 4.3.1 合约编译（Go 版本）
 ```bash
@@ -130,16 +130,16 @@ blockchain:
 ```bash
 # 部署合约
 ./bin/chainmaker --config client/config_mainnet.yml contract install \
-  --contract-name orasrs-staking \
+  --contract-name SRA-staking \
   --contract-version 1.0.0 \
-  --contract-file orasrs_staking.wasm \
+  --contract-file SRA_staking.wasm \
   --parameters '{"governance_address":"1234567890abcdef"}'
 ```
 
-## 5. OraSRS 长安链合约设计
+## 5. SecurityRiskAssessment 长安链合约设计
 
 ### 5.1 合约结构
-- **OrasrsStakingContract**: 主质押合约
+- **SecurityRiskAssessmentContract**: 主质押合约
 - **ReputationContract**: 声誉系统合约
 - **ChallengeContract**: 挑战系统合约
 

@@ -1,43 +1,26 @@
 /**
- * OraSRS 共识与质押机制模块
- * 实现增强型共识与质押机制（根层 + 分区层）
+ * Consensus Mechanism Module for OraSRS
+ * 实现节点质押、共识验证和BFT共识机制
  */
-
-const crypto = require('crypto');
 
 class ConsensusMechanism {
   constructor(options = {}) {
-    // 共识参数配置
-    this.minStakeAmount = options.minStakeAmount || 10000; // 最小质押门槛: ≥ 10,000 ORA
-    this.maxConsensusNodes = options.maxConsensusNodes || 21; // 最大共识节点数（根层）: 21
-    this.stakeLockPeriod = options.stakeLockPeriod || 7 * 24 * 60 * 60 * 1000; // 质押锁定期: 7天
-    this.slashPenaltyRate = options.slashPenaltyRate || 1.0; // 作恶行为罚没比例: 100%
-    this.offlinePenaltyRate = options.offlinePenaltyRate || 0.05; // 离线罚没比例: 5%/天
+    this.options = {
+      minStakeAmount: options.minStakeAmount || 100, // 最小质押金额
+      maxStakeAmount: options.maxStakeAmount || 10000, // 最大质押金额
+      consensusNodesRequired: options.consensusNodesRequired || 3, // 共识节点数量
+      reputationThreshold: options.reputationThreshold || 70, // 声誉阈值
+      verificationTimeout: options.verificationTimeout || 30000, // 验证超时时间
+      ...options
+    };
     
-    // 节点存储
-    this.nodes = new Map(); // 存储节点信息
-    this.consensusNodes = new Set(); // 存储共识节点ID
-    this.reputationRegistry = new Map(); // 声誉注册表
+    this.nodes = new Map();
+    this.stakes = new Map();
+    this.reputation = new Map();
+    this.challenges = new Map();
+    this.verificationQueue = [];
     
-    // 初始化关键服务白名单
-    this.initializeCriticalServiceWhitelist();
-  }
-
-  /**
-   * 初始化关键服务白名单
-   */
-  initializeCriticalServiceWhitelist() {
-    this.criticalServiceWhitelist = new Set([
-      '.gov',
-      '.mil',
-      '.edu',
-      'who.int',
-      'swift.com',
-      'federalreserve.gov',
-      '192.168.1.1',
-      '8.8.8.8',
-      '1.1.1.1'
-    ]);
+    console.log('Consensus Mechanism module initialized');
   }
 
   /**
@@ -45,269 +28,89 @@ class ConsensusMechanism {
    */
   stake(nodeId, amount, identityInfo) {
     // 验证质押金额
-    if (amount < this.minStakeAmount) {
-      throw new Error(`质押金额不足，最小质押门槛为 ${this.minStakeAmount} ORA`);
+    if (amount < this.options.minStakeAmount) {
+      throw new Error(`Stake amount ${amount} below minimum ${this.options.minStakeAmount}`);
     }
-
-    // 验证身份信息（企业实名认证 + 区块链备案）
-    if (!this.validateIdentity(identityInfo)) {
-      throw new Error('身份验证失败，节点需完成企业实名认证和区块链备案');
+    
+    if (amount > this.options.maxStakeAmount) {
+      throw new Error(`Stake amount ${amount} exceeds maximum ${this.options.maxStakeAmount}`);
     }
-
+    
+    // 验证身份信息
+    if (!this.validateIdentityInfo(identityInfo)) {
+      throw new Error('Invalid identity information for staking');
+    }
+    
     // 检查节点是否已存在
     if (this.nodes.has(nodeId)) {
-      // 如果已存在，增加质押金额
-      const node = this.nodes.get(nodeId);
-      node.stakeAmount += amount;
-      node.stakeStart = new Date();
-      
-      // 如果节点声誉足够高，可以参与共识
-      if (node.reputation >= 80 && this.consensusNodes.size < this.maxConsensusNodes) {
-        this.consensusNodes.add(nodeId);
+      const existingNode = this.nodes.get(nodeId);
+      if (existingNode.status === 'staked') {
+        // 增加质押金额
+        this.stakes.set(nodeId, this.stakes.get(nodeId) + amount);
+        existingNode.totalStake = this.stakes.get(nodeId);
+      } else {
+        // 更新节点信息
+        this.stakes.set(nodeId, amount);
+        existingNode.status = 'staked';
+        existingNode.totalStake = amount;
       }
     } else {
       // 创建新节点
       const newNode = {
         id: nodeId,
-        stakeAmount: amount,
-        stakeStart: new Date(),
-        identityInfo: identityInfo,
-        status: 'active', // active, slashed, offline
-        reputation: 100, // 初始声誉分数
-        uptime: 0.99, // 初始在线率
-        correctValidations: 0, // 正确验证次数
-        totalValidations: 0, // 总验证次数
-        lastSeen: new Date(),
-        challengeResponseTime: 0, // 平均挑战响应时间
-        threatIntelCount: 0, // 提交威胁情报数量
-        joinDate: new Date()
+        ...identityInfo,
+        status: 'staked',
+        totalStake: amount,
+        joinDate: new Date().toISOString(),
+        lastActivity: new Date().toISOString(),
+        reputation: 50, // 新节点初始声誉
+        verificationCount: 0,
+        challenges: 0,
+        challengeSuccesses: 0
       };
       
       this.nodes.set(nodeId, newNode);
-      
-      // 初始化声誉
-      this.reputationRegistry.set(nodeId, 100);
-      
-      // 如果满足条件，添加到共识节点
-      if (this.consensusNodes.size < this.maxConsensusNodes) {
-        this.consensusNodes.add(nodeId);
-      }
+      this.stakes.set(nodeId, amount);
+      this.reputation.set(nodeId, 50);
     }
-
-    console.log(`节点 ${nodeId} 质押 ${amount} ORA 成功`);
-    return { success: true, nodeId, stakeAmount: this.nodes.get(nodeId).stakeAmount };
+    
+    // 记录质押事件
+    this.logConsensusEvent('stake', {
+      nodeId,
+      amount,
+      identityInfo
+    });
+    
+    return {
+      success: true,
+      message: `Node ${nodeId} staked successfully with amount ${amount}`,
+      node: this.nodes.get(nodeId)
+    };
   }
 
   /**
-   * 验证节点身份
+   * 验证身份信息
    */
-  validateIdentity(identityInfo) {
-    // 检查是否包含必要的身份信息
-    if (!identityInfo) {
+  validateIdentityInfo(identityInfo) {
+    if (!identityInfo || typeof identityInfo !== 'object') {
       return false;
     }
     
-    // 检查企业营业执照
-    if (!identityInfo.businessLicense) {
-      return false;
+    // 必需字段检查
+    const requiredFields = ['organization', 'contact', 'location', 'nodeType'];
+    for (const field of requiredFields) {
+      if (!identityInfo[field]) {
+        return false;
+      }
     }
     
-    // 检查区块链服务备案号
-    if (!identityInfo.blockchainFilingNumber) {
+    // 验证节点类型
+    const validNodeTypes = ['edge', 'consensus', 'intelligence'];
+    if (!validNodeTypes.includes(identityInfo.nodeType)) {
       return false;
     }
-    
-    // 检查是否通过OraSRS节点能力测试
-    if (!identityInfo.passedNodeTest) {
-      return false;
-    }
-    
-    // 这里可以进一步验证营业执照和备案号的有效性
-    // 在实际实现中，需要对接国家网信办备案系统API
     
     return true;
-  }
-
-  /**
-   * 计算声誉分数
-   */
-  calculateReputation(nodeId) {
-    const node = this.nodes.get(nodeId);
-    if (!node) {
-      return 0;
-    }
-
-    const base = 100;
-    
-    // 在线率（权重 30%）
-    const uptimeScore = Math.min(1.0, node.uptime / 0.95) * 30;
-    
-    // 验证正确率（权重 40%）
-    const accuracyScore = node.totalValidations > 0 
-      ? (node.correctValidations / node.totalValidations) * 40 
-      : 0;
-    
-    // 挑战响应速度（权重 20%）
-    const latencyScore = Math.max(0, 20 - (node.challengeResponseTime / 10));
-    
-    // 社区贡献（权重 10%）
-    const contributionScore = node.threatIntelCount * 0.1;
-    
-    const reputation = base + uptimeScore + accuracyScore + latencyScore + contributionScore;
-    
-    // 更新声誉注册表
-    this.reputationRegistry.set(nodeId, reputation);
-    
-    // 更新节点声誉
-    node.reputation = reputation;
-    
-    return reputation;
-  }
-
-  /**
-   * 更新节点声誉
-   */
-  updateNodeReputation(nodeId, performanceData) {
-    const node = this.nodes.get(nodeId);
-    if (!node) {
-      throw new Error(`节点 ${nodeId} 不存在`);
-    }
-
-    // 更新性能数据
-    if (performanceData.uptime !== undefined) {
-      node.uptime = performanceData.uptime;
-    }
-    
-    if (performanceData.correct !== undefined) {
-      node.correctValidations += performanceData.correct ? 1 : 0;
-      node.totalValidations += 1;
-    }
-    
-    if (performanceData.challengeResponseTime !== undefined) {
-      // 更新平均挑战响应时间
-      node.challengeResponseTime = 
-        (node.challengeResponseTime + performanceData.challengeResponseTime) / 2;
-    }
-    
-    if (performanceData.submittedThreatIntel) {
-      node.threatIntelCount += 1;
-    }
-
-    // 计算新的声誉分数
-    const newReputation = this.calculateReputation(nodeId);
-
-    // 根据声誉分数调整节点状态
-    this.applyReputationRules(nodeId, newReputation);
-
-    return newReputation;
-  }
-
-  /**
-   * 应用声誉规则
-   */
-  applyReputationRules(nodeId, reputation) {
-    const node = this.nodes.get(nodeId);
-    if (!node) return;
-
-    if (reputation < 80) {
-      // 禁止参与共识，仅可作边缘缓存节点
-      this.consensusNodes.delete(nodeId);
-      console.log(`节点 ${nodeId} 因声誉分数 < 80，已从共识节点中移除`);
-    } else if (reputation > 120) {
-      // 降低质押门槛 20%，提高收益分成（这里只记录状态）
-      node.rewardsBonus = 0.2; // 20% 收益奖励
-      console.log(`节点 ${nodeId} 因声誉分数 > 120，获得 20% 收益奖励`);
-    }
-
-    if (reputation < 60) {
-      // 记录低声誉状态
-      if (!node.lowReputationDays) {
-        node.lowReputationDays = 1;
-      } else {
-        node.lowReputationDays += 1;
-      }
-
-      // 连续7天声誉 < 60，触发节点剔除流程
-      if (node.lowReputationDays >= 7) {
-        this.initiateNodeRemoval(nodeId);
-      }
-    } else {
-      // 重置连续低声誉天数
-      node.lowReputationDays = 0;
-    }
-  }
-
-  /**
-   * 启动节点移除流程
-   */
-  initiateNodeRemoval(nodeId) {
-    const node = this.nodes.get(nodeId);
-    if (!node) return;
-
-    console.log(`节点 ${nodeId} 连续7天声誉 < 60，启动剔除流程`);
-    
-    // 从共识节点中移除
-    this.consensusNodes.delete(nodeId);
-    
-    // 标记为待移除状态
-    node.status = 'pending_removal';
-  }
-
-  /**
-   * 处理节点下线
-   */
-  handleNodeOffline(nodeId) {
-    const node = this.nodes.get(nodeId);
-    if (!node) return;
-
-    const now = new Date();
-    const daysOffline = (now - node.lastSeen) / (24 * 60 * 60 * 1000);
-
-    if (daysOffline > 1) { // 离线超过24小时
-      // 计算罚没金额
-      const penaltyDays = Math.floor(daysOffline);
-      const penaltyAmount = node.stakeAmount * this.offlinePenaltyRate * penaltyDays;
-      
-      // 扣除质押金
-      node.stakeAmount = Math.max(0, node.stakeAmount - penaltyAmount);
-      
-      console.log(`节点 ${nodeId} 离线 ${penaltyDays} 天，罚没 ${penaltyAmount} ORA`);
-      
-      // 如果质押金归零，移除节点
-      if (node.stakeAmount <= 0) {
-        this.removeNode(nodeId);
-      }
-    }
-
-    node.status = 'offline';
-  }
-
-  /**
-   * 处理节点作恶行为
-   */
-  handleMaliciousBehavior(nodeId) {
-    const node = this.nodes.get(nodeId);
-    if (!node) return;
-
-    // 100% 罚没质押金
-    const penaltyAmount = node.stakeAmount * this.slashPenaltyRate;
-    node.stakeAmount = 0;
-    
-    console.log(`节点 ${nodeId} 作恶，罚没全部质押金 ${penaltyAmount} ORA`);
-    
-    // 移除节点
-    this.removeNode(nodeId);
-  }
-
-  /**
-   * 移除节点
-   */
-  removeNode(nodeId) {
-    this.nodes.delete(nodeId);
-    this.consensusNodes.delete(nodeId);
-    this.reputationRegistry.delete(nodeId);
-    
-    console.log(`节点 ${nodeId} 已被移除`);
   }
 
   /**
@@ -316,198 +119,664 @@ class ConsensusMechanism {
   getNodeStatus(nodeId) {
     const node = this.nodes.get(nodeId);
     if (!node) {
-      return null;
+      return { exists: false, message: `Node ${nodeId} does not exist` };
     }
-
-    return {
-      id: node.id,
-      stakeAmount: node.stakeAmount,
-      status: node.status,
-      reputation: node.reputation,
-      uptime: node.uptime,
-      correctValidations: node.correctValidations,
-      totalValidations: node.totalValidations,
-      threatIntelCount: node.threatIntelCount,
-      isConsensusNode: this.consensusNodes.has(nodeId)
+    
+    const status = {
+      exists: true,
+      node: {
+        id: node.id,
+        status: node.status,
+        totalStake: this.stakes.get(nodeId) || 0,
+        reputation: this.reputation.get(nodeId) || node.reputation,
+        verificationCount: node.verificationCount,
+        challenges: node.challenges,
+        challengeSuccesses: node.challengeSuccesses,
+        joinDate: node.joinDate,
+        lastActivity: node.lastActivity
+      }
     };
+    
+    return status;
   }
 
   /**
    * 获取共识节点列表
    */
   getConsensusNodes() {
-    const nodes = [];
-    for (const nodeId of this.consensusNodes) {
-      const node = this.getNodeStatus(nodeId);
-      if (node) {
-        nodes.push(node);
+    // 返回质押状态为活跃且声誉达到阈值的节点
+    return Array.from(this.nodes.values())
+      .filter(node => node.status === 'staked' && 
+                   (this.reputation.get(node.id) || node.reputation) >= this.options.reputationThreshold)
+      .sort((a, b) => (this.reputation.get(b.id) || b.reputation) - (this.reputation.get(a.id) || a.reputation))
+      .slice(0, this.options.consensusNodesRequired * 2); // 返回多一些以供选择
+  }
+
+  /**
+   * 更新节点声誉
+   */
+  updateNodeReputation(nodeId, performanceData) {
+    if (!this.nodes.has(nodeId)) {
+      throw new Error(`Node ${nodeId} does not exist`);
+    }
+    
+    const node = this.nodes.get(nodeId);
+    let currentReputation = this.reputation.get(nodeId) || node.reputation;
+    
+    // 基于性能数据更新声誉
+    let reputationChange = 0;
+    
+    // 验证准确性
+    if (performanceData.verificationAccuracy !== undefined) {
+      // 准确性高于90%奖励声誉，低于70%扣除声誉
+      if (performanceData.verificationAccuracy > 0.9) {
+        reputationChange += 5;
+      } else if (performanceData.verificationAccuracy > 0.8) {
+        reputationChange += 3;
+      } else if (performanceData.verificationAccuracy < 0.7) {
+        reputationChange -= 5;
+      } else if (performanceData.verificationAccuracy < 0.8) {
+        reputationChange -= 2;
       }
     }
-    return nodes;
-  }
-
-  /**
-   * 获取所有节点状态
-   */
-  getAllNodesStatus() {
-    const nodes = [];
-    for (const [nodeId, node] of this.nodes) {
-      nodes.push(this.getNodeStatus(nodeId));
+    
+    // 响应时间
+    if (performanceData.responseTimeMs !== undefined) {
+      // 响应时间少于500ms奖励声誉，超过2000ms扣除声誉
+      if (performanceData.responseTimeMs < 500) {
+        reputationChange += 2;
+      } else if (performanceData.responseTimeMs > 2000) {
+        reputationChange -= 3;
+      }
     }
-    return nodes;
+    
+    // 在线时间
+    if (performanceData.uptimePercentage !== undefined) {
+      // 在线率高于95%奖励声誉，低于80%扣除声誉
+      if (performanceData.uptimePercentage > 95) {
+        reputationChange += 3;
+      } else if (performanceData.uptimePercentage < 80) {
+        reputationChange -= 4;
+      }
+    }
+    
+    // 合规性
+    if (performanceData.complianceScore !== undefined) {
+      if (performanceData.complianceScore > 0.9) {
+        reputationChange += 4;
+      } else if (performanceData.complianceScore < 0.7) {
+        reputationChange -= 6;
+      }
+    }
+    
+    // 更新声誉（限制在0-100之间）
+    const newReputation = Math.max(0, Math.min(100, currentReputation + reputationChange));
+    this.reputation.set(nodeId, newReputation);
+    
+    // 更新节点记录
+    node.lastActivity = new Date().toISOString();
+    if (performanceData.verificationCount) {
+      node.verificationCount += performanceData.verificationCount;
+    }
+    
+    // 记录声誉更新事件
+    this.logConsensusEvent('reputation_update', {
+      nodeId,
+      oldReputation: currentReputation,
+      newReputation,
+      reputationChange,
+      performanceData
+    });
+    
+    return {
+      success: true,
+      message: `Reputation updated for node ${nodeId}`,
+      nodeId,
+      oldReputation: currentReputation,
+      newReputation,
+      reputationChange
+    };
   }
 
   /**
-   * 执行BFT共识投票
+   * 执行BFT共识
    */
   performBFTConsensus(data, callback) {
-    // 获取当前共识节点
+    // 获取活跃的共识节点
     const consensusNodes = this.getConsensusNodes();
     
-    // 检查共识节点数量是否满足BFT要求 (n > 3f, f为恶意节点数量)
-    // 对于21个节点，最多允许 floor((21-1)/3) = 6 个恶意节点
-    if (consensusNodes.length < 4) {
-      throw new Error('共识节点数量不足，无法执行BFT共识');
+    if (consensusNodes.length < this.options.consensusNodesRequired) {
+      throw new Error(`Insufficient consensus nodes. Required: ${this.options.consensusNodesRequired}, Available: ${consensusNodes.length}`);
     }
-
-    // 模拟共识过程（在实际实现中，这里应该是Tendermint或其他BFT算法）
-    const totalNodes = consensusNodes.length;
-    const requiredVotes = Math.floor((totalNodes * 2) / 3) + 1; // 2/3 + 1 多数
-
-    // 模拟投票过程
-    let yesVotes = 0;
-    let noVotes = 0;
-
-    for (const node of consensusNodes) {
-      // 模拟节点投票（实际中这应该基于节点对数据的验证）
-      // 考虑节点声誉，声誉高的节点投票权重可能更高
-      const vote = this.getNodeVote(node, data);
-      if (vote) {
-        yesVotes++;
-      } else {
-        noVotes++;
-      }
-    }
-
-    const result = {
-      data: data,
-      totalVotes: totalNodes,
-      yesVotes: yesVotes,
-      noVotes: noVotes,
-      consensusAchieved: yesVotes >= requiredVotes,
-      requiredVotes: requiredVotes
+    
+    // 选择指定数量的节点进行共识
+    const selectedNodes = consensusNodes.slice(0, this.options.consensusNodesRequired);
+    
+    // 创建共识任务
+    const consensusTask = {
+      id: `consensus_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      data,
+      nodes: selectedNodes.map(node => node.id),
+      status: 'in_progress',
+      votes: new Map(),
+      startedAt: new Date().toISOString(),
+      results: null
     };
-
-    if (callback && typeof callback === 'function') {
-      callback(result);
-    }
-
-    return result;
+    
+    // 启动共识过程
+    this.executeConsensusProcess(consensusTask, callback);
+    
+    return {
+      taskId: consensusTask.id,
+      message: `BFT consensus initiated with ${selectedNodes.length} nodes`,
+      nodes: selectedNodes.map(node => ({ id: node.id, reputation: node.reputation }))
+    };
   }
 
   /**
-   * 获取节点投票（模拟）
+   * 执行共识过程
    */
-  getNodeVote(node, data) {
-    // 基于节点声誉和历史表现的投票决策
-    // 在实际实现中，这里应该包含对数据的实际验证
-    if (node.reputation < 80) {
-      // 声誉低的节点投票权降低或不参与投票
-      return Math.random() > 0.5; // 模拟投票
-    }
-    
-    // 随机模拟投票（实际中基于数据验证结果）
-    return Math.random() > 0.3; // 倾向于投票同意
-  }
-
-  /**
-   * 缓存挑战机制
-   */
-  async processCacheChallenge(cacheNodeId, dataHash) {
-    // 检查是否有至少3个独立节点质疑缓存数据
-    const质疑nodes = this.getNodesThatChallenged(cacheNodeId, dataHash);
-    
-    if (质疑nodes.length >= 3) {
-      // 向根层提交验证请求
-      const verificationResult = await this.verifyDataAtRootLevel(cacheNodeId, dataHash);
+  async executeConsensusProcess(consensusTask, callback) {
+    try {
+      // 模拟向各节点发送共识请求
+      const verificationPromises = consensusTask.nodes.map(nodeId => {
+        return this.requestNodeVerification(nodeId, consensusTask);
+      });
       
-      if (!verificationResult.valid) {
-        // 挑战成功 - 罚没缓存节点保证金
-        const node = this.nodes.get(cacheNodeId);
-        if (node) {
-          const penalty = node.stakeAmount * 0.5; // 罚没50%保证金
-          node.stakeAmount -= penalty;
-          
-          console.log(`缓存挑战成功，节点 ${cacheNodeId} 被罚没 ${penalty} ORA`);
+      // 等待所有节点的验证结果
+      const verificationResults = await Promise.allSettled(verificationPromises);
+      
+      // 收集结果
+      verificationResults.forEach((result, index) => {
+        const nodeId = consensusTask.nodes[index];
+        if (result.status === 'fulfilled') {
+          consensusTask.votes.set(nodeId, result.value);
+        } else {
+          console.error(`Node ${nodeId} failed to provide verification:`, result.reason);
+          consensusTask.votes.set(nodeId, { error: result.reason.message });
         }
-        
-        // 奖励挑战者
-        const reward = penalty * 0.8; // 挑战者获得80%罚没金额
-        for (const challengerId of 质疑nodes.slice(0, 3)) { // 最多前三名挑战者
-          const challenger = this.nodes.get(challengerId);
-          if (challenger) {
-            challenger.stakeAmount += reward / 3; // 平分奖励
-          }
-        }
-        
-        console.log(`挑战者获得奖励，总计 ${reward} ORA`);
+      });
+      
+      // 计算共识结果
+      const consensusResult = this.calculateConsensusResult(consensusTask);
+      consensusTask.results = consensusResult;
+      consensusTask.status = 'completed';
+      
+      // 更新参与节点的声誉
+      this.updateParticipatingNodesReputation(consensusTask);
+      
+      // 执行回调
+      if (callback && typeof callback === 'function') {
+        callback(null, consensusResult);
       }
       
+      // 记录共识事件
+      this.logConsensusEvent('consensus_completed', {
+        taskId: consensusTask.id,
+        result: consensusResult,
+        nodes: consensusTask.nodes
+      });
+      
+    } catch (error) {
+      consensusTask.status = 'failed';
+      consensusTask.error = error.message;
+      
+      if (callback && typeof callback === 'function') {
+        callback(error, null);
+      }
+      
+      // 记录错误事件
+      this.logConsensusEvent('consensus_failed', {
+        taskId: consensusTask.id,
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * 请求节点验证
+   */
+  requestNodeVerification(nodeId, consensusTask) {
+    return new Promise((resolve, reject) => {
+      // 模拟节点验证过程
+      const node = this.nodes.get(nodeId);
+      if (!node) {
+        reject(new Error(`Node ${nodeId} not found`));
+        return;
+      }
+      
+      // 模拟验证延迟
+      const delay = Math.random() * 1000 + 100; // 100-1100ms延迟
+      
+      setTimeout(() => {
+        try {
+          // 模拟验证过程 - 基于节点声誉和随机因素
+          const nodeReputation = this.reputation.get(nodeId) || node.reputation;
+          const successRate = nodeReputation / 100;
+          
+          if (Math.random() < successRate) {
+            // 验证成功
+            resolve({
+              nodeId,
+              status: 'verified',
+              result: this.generateVerificationResult(consensusTask, node),
+              timestamp: new Date().toISOString(),
+              responseTime: delay
+            });
+          } else {
+            // 验证失败
+            reject(new Error(`Node ${nodeId} verification failed`));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      }, delay);
+    });
+  }
+
+  /**
+   * 生成验证结果
+   */
+  generateVerificationResult(consensusTask, node) {
+    // 基于任务数据和节点特性生成验证结果
+    return {
+      verified: true,
+      confidence: Math.random() * 0.3 + 0.7, // 70-100%置信度
+      details: {
+        matchedPatterns: Math.floor(Math.random() * 5) + 1,
+        signatureVerified: true,
+        dataIntegrity: true
+      }
+    };
+  }
+
+  /**
+   * 计算共识结果
+   */
+  calculateConsensusResult(consensusTask) {
+    const votes = Array.from(consensusTask.votes.values())
+      .filter(vote => vote.status === 'verified');
+    
+    if (votes.length === 0) {
       return {
-        challengeSuccessful: !verificationResult.valid,
-        verificationResult: verificationResult,
-        penaltyAmount: verificationResult.valid ? 0 : penalty,
-        rewardAmount: verificationResult.valid ? 0 : reward
+        consensus: false,
+        reason: 'No valid votes received',
+        totalVotes: consensusTask.votes.size,
+        validVotes: 0
       };
     }
     
-    return { challengeSuccessful: false, message: '质疑节点数不足' };
-  }
-
-  /**
-   * 获取质疑特定数据的节点列表（模拟）
-   */
-  getNodesThatChallenged(cacheNodeId, dataHash) {
-    // 这里应该有实际的逻辑来跟踪哪些节点质疑了特定的缓存数据
-    // 模拟返回3个随机节点
-    const allNodeIds = Array.from(this.nodes.keys());
-    if (allNodeIds.length < 3) return allNodeIds;
+    // 检查是否达成共识（超过2/3的验证节点同意）
+    const requiredVotes = Math.ceil(consensusTask.nodes.length * 2 / 3);
+    const successfulVerifications = votes.length;
     
-    // 随机选择3个节点作为质疑者
-    return allNodeIds
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
-  }
-
-  /**
-   * 在根层验证数据（模拟）
-   */
-  async verifyDataAtRootLevel(nodeId, dataHash) {
-    // 实际实现中，这里需要复杂的验证过程
-    // 返回验证结果
+    const consensusAchieved = successfulVerifications >= requiredVotes;
+    
+    // 计算平均置信度
+    const avgConfidence = votes.reduce((sum, vote) => sum + vote.result.confidence, 0) / votes.length;
+    
     return {
-      valid: Math.random() > 0.3, // 模拟70%的验证通过率
-      node: nodeId,
-      dataHash: dataHash,
-      timestamp: new Date()
+      consensus: consensusAchieved,
+      result: consensusAchieved ? 'confirmed' : 'inconclusive',
+      requiredVotes,
+      successfulVerifications,
+      totalEligibleVotes: consensusTask.nodes.length,
+      avgConfidence,
+      votes: votes.map(vote => ({
+        nodeId: vote.nodeId,
+        result: vote.result,
+        confidence: vote.result.confidence
+      }))
     };
   }
 
   /**
-   * 检查是否为关键公共服务
+   * 更新参与节点的声誉
    */
-  isCriticalPublicService(target) {
-    if (this.criticalServiceWhitelist.has(target)) {
-      return true;
-    }
-
-    for (const whitelistItem of this.criticalServiceWhitelist) {
-      if (whitelistItem.startsWith('.') && target.endsWith(whitelistItem)) {
-        return true;
+  updateParticipatingNodesReputation(consensusTask) {
+    for (const [nodeId, vote] of consensusTask.votes.entries()) {
+      if (vote.status === 'verified') {
+        // 成功参与共识的节点增加声誉
+        this.updateNodeReputation(nodeId, {
+          verificationAccuracy: vote.result.confidence,
+          responseTimeMs: vote.responseTime,
+          verificationCount: 1
+        });
+      } else if (vote.error) {
+        // 验证失败的节点减少声誉
+        this.updateNodeReputation(nodeId, {
+          verificationAccuracy: 0,
+          verificationCount: 1
+        });
       }
     }
+  }
 
-    return false;
+  /**
+   * 提交节点挑战
+   */
+  submitChallenge(challengeId, nodeId, challengerId, challengeData) {
+    if (!this.nodes.has(nodeId)) {
+      throw new Error(`Node ${nodeId} does not exist`);
+    }
+    
+    if (!this.nodes.has(challengerId)) {
+      throw new Error(`Challenger ${challengerId} does not exist`);
+    }
+    
+    // 创建挑战记录
+    const challenge = {
+      id: challengeId,
+      nodeId,
+      challengerId,
+      challengeData,
+      status: 'pending',
+      submittedAt: new Date().toISOString(),
+      resolvedAt: null,
+      resolution: null,
+      votes: {
+        challengeSuccess: 0,
+        challengeFailed: 0
+      },
+      evidence: challengeData.evidence || []
+    };
+    
+    this.challenges.set(challengeId, challenge);
+    
+    // 更新被挑战节点的挑战计数
+    const node = this.nodes.get(nodeId);
+    node.challenges++;
+    
+    // 记录挑战事件
+    this.logConsensusEvent('challenge_submitted', {
+      challengeId,
+      nodeId,
+      challengerId,
+      challengeData
+    });
+    
+    return {
+      success: true,
+      message: `Challenge ${challengeId} submitted against node ${nodeId}`,
+      challenge
+    };
+  }
+
+  /**
+   * 解决挑战
+   */
+  resolveChallenge(challengeId, resolutionData) {
+    const challenge = this.challenges.get(challengeId);
+    if (!challenge) {
+      throw new Error(`Challenge ${challengeId} does not exist`);
+    }
+    
+    if (challenge.status !== 'pending') {
+      throw new Error(`Challenge ${challengeId} is not in pending status`);
+    }
+    
+    // 确定挑战结果
+    const challengeSuccessful = resolutionData.success || false;
+    
+    // 更新挑战记录
+    challenge.status = 'resolved';
+    challenge.resolvedAt = new Date().toISOString();
+    challenge.resolution = resolutionData;
+    
+    // 更新被挑战节点的声誉和记录
+    if (challengeSuccessful) {
+      // 挑战成功，降低被挑战节点声誉
+      this.updateNodeReputation(challenge.nodeId, {
+        verificationAccuracy: 0.1, // 严重降低声誉
+        verificationCount: 1
+      });
+      
+      // 挑战者声誉增加
+      this.updateNodeReputation(challenge.challengerId, {
+        verificationAccuracy: 0.9,
+        verificationCount: 1
+      });
+      
+      // 更新节点挑战成功计数
+      const node = this.nodes.get(challenge.nodeId);
+      node.challengeSuccesses++;
+    } else {
+      // 挑战失败，挑战者声誉降低
+      this.updateNodeReputation(challenge.challengerId, {
+        verificationAccuracy: 0.3,
+        verificationCount: 1
+      });
+    }
+    
+    // 记录解决挑战事件
+    this.logConsensusEvent('challenge_resolved', {
+      challengeId,
+      nodeId: challenge.nodeId,
+      challengerId: challenge.challengerId,
+      resolution: resolutionData,
+      successful: challengeSuccessful
+    });
+    
+    return {
+      success: true,
+      message: `Challenge ${challengeId} resolved`,
+      challenge,
+      challengeSuccessful
+    };
+  }
+
+  /**
+   * 获取节点统计数据
+   */
+  getNodeStats(nodeId) {
+    const node = this.nodes.get(nodeId);
+    if (!node) {
+      return null;
+    }
+    
+    return {
+      nodeId,
+      status: node.status,
+      totalStake: this.stakes.get(nodeId) || 0,
+      reputation: this.reputation.get(nodeId) || node.reputation,
+      verificationCount: node.verificationCount,
+      challenges: node.challenges,
+      challengeSuccesses: node.challengeSuccesses,
+      successRate: node.verificationCount > 0 ? 
+        (node.challengeSuccesses / node.verificationCount * 100).toFixed(2) + '%' : '0%',
+      joinDate: node.joinDate,
+      lastActivity: node.lastActivity
+    };
+  }
+
+  /**
+   * 获取共识网络统计
+   */
+  getNetworkStats() {
+    const allNodes = Array.from(this.nodes.values());
+    const stakedNodes = allNodes.filter(node => node.status === 'staked');
+    const activeNodes = stakedNodes.filter(node => 
+      (this.reputation.get(node.id) || node.reputation) >= this.options.reputationThreshold
+    );
+    
+    const totalStake = Array.from(this.stakes.values()).reduce((sum, stake) => sum + stake, 0);
+    const avgReputation = allNodes.length > 0 ? 
+      allNodes.reduce((sum, node) => sum + (this.reputation.get(node.id) || node.reputation), 0) / allNodes.length : 0;
+    
+    return {
+      totalNodes: allNodes.length,
+      stakedNodes: stakedNodes.length,
+      activeNodes: activeNodes.length,
+      totalStake,
+      averageReputation: avgReputation.toFixed(2),
+      challenges: this.challenges.size,
+      pendingChallenges: Array.from(this.challenges.values()).filter(c => c.status === 'pending').length,
+      requiredConsensusNodes: this.options.consensusNodesRequired
+    };
+  }
+
+  /**
+   * 记录共识事件
+   */
+  logConsensusEvent(eventType, details) {
+    const event = {
+      id: `consensus_event_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      eventType,
+      details,
+      timestamp: new Date().toISOString()
+    };
+    
+    // 在实际实现中，这里会将事件记录到共识日志
+    console.log(`[CONSENSUS] ${JSON.stringify(event)}`);
+    
+    return event;
+  }
+
+  /**
+   * 获取共识报告
+   */
+  getConsensusReport() {
+    const networkStats = this.getNetworkStats();
+    
+    const report = {
+      timestamp: new Date().toISOString(),
+      network: networkStats,
+      consensusMechanism: {
+        type: 'BFT (Byzantine Fault Tolerant)',
+        requiredNodes: this.options.consensusNodesRequired,
+        reputationThreshold: this.options.reputationThreshold,
+        minStake: this.options.minStakeAmount,
+        maxStake: this.options.maxStakeAmount
+      },
+      topPerformingNodes: this.getTopPerformingNodes(5),
+      recentChallenges: this.getRecentChallenges(10),
+      securityMetrics: this.getSecurityMetrics()
+    };
+    
+    return report;
+  }
+
+  /**
+   * 获取表现最佳的节点
+   */
+  getTopPerformingNodes(limit = 5) {
+    return Array.from(this.nodes.values())
+      .filter(node => node.status === 'staked')
+      .sort((a, b) => (this.reputation.get(b.id) || b.reputation) - (this.reputation.get(a.id) || a.reputation))
+      .slice(0, limit)
+      .map(node => ({
+        id: node.id,
+        reputation: this.reputation.get(node.id) || node.reputation,
+        verificationCount: node.verificationCount,
+        challenges: node.challenges,
+        challengeSuccesses: node.challengeSuccesses
+      }));
+  }
+
+  /**
+   * 获取近期挑战
+   */
+  getRecentChallenges(limit = 10) {
+    return Array.from(this.challenges.values())
+      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+      .slice(0, limit)
+      .map(challenge => ({
+        id: challenge.id,
+        nodeId: challenge.nodeId,
+        challengerId: challenge.challengerId,
+        status: challenge.status,
+        submittedAt: challenge.submittedAt,
+        resolvedAt: challenge.resolvedAt
+      }));
+  }
+
+  /**
+   * 获取安全指标
+   */
+  getSecurityMetrics() {
+    const allNodes = Array.from(this.nodes.values());
+    const verifiedNodes = allNodes.filter(node => 
+      (this.reputation.get(node.id) || node.reputation) >= this.options.reputationThreshold
+    );
+    
+    return {
+      networkSecurityScore: this.calculateNetworkSecurityScore(),
+      nodeVerificationRate: allNodes.length > 0 ? 
+        (verifiedNodes.length / allNodes.length * 100).toFixed(2) + '%' : '0%',
+      averageNodeReputation: this.getAverageNodeReputation(),
+      totalChallengesResolved: Array.from(this.challenges.values()).filter(c => c.status === 'resolved').length,
+      challengeSuccessRate: this.challenges.size > 0 ? 
+        (Array.from(this.challenges.values()).filter(c => 
+          c.status === 'resolved' && c.resolution?.success
+        ).length / this.challenges.size * 100).toFixed(2) + '%' : '0%'
+    };
+  }
+
+  /**
+   * 计算网络安全评分
+   */
+  calculateNetworkSecurityScore() {
+    const allNodes = Array.from(this.nodes.values());
+    if (allNodes.length === 0) return 0;
+    
+    const totalReputation = allNodes.reduce((sum, node) => 
+      sum + (this.reputation.get(node.id) || node.reputation), 0);
+    
+    return (totalReputation / allNodes.length).toFixed(2);
+  }
+
+  /**
+   * 获取平均节点声誉
+   */
+  getAverageNodeReputation() {
+    const allNodes = Array.from(this.nodes.values());
+    if (allNodes.length === 0) return 0;
+    
+    const totalReputation = allNodes.reduce((sum, node) => 
+      sum + (this.reputation.get(node.id) || node.reputation), 0);
+    
+    return (totalReputation / allNodes.length).toFixed(2);
+  }
+
+  /**
+   * 验证共识配置
+   */
+  validateConsensusConfig() {
+    const config = {
+      minStakeAmount: this.options.minStakeAmount,
+      maxStakeAmount: this.options.maxStakeAmount,
+      consensusNodesRequired: this.options.consensusNodesRequired,
+      reputationThreshold: this.options.reputationThreshold,
+      verificationTimeout: this.options.verificationTimeout
+    };
+    
+    const isValid = config.minStakeAmount > 0 &&
+                   config.maxStakeAmount > config.minStakeAmount &&
+                   config.consensusNodesRequired >= 3 &&
+                   config.reputationThreshold >= 0 &&
+                   config.reputationThreshold <= 100 &&
+                   config.verificationTimeout > 0;
+    
+    return {
+      isValid,
+      config,
+      validationErrors: isValid ? [] : this.getValidationErrors(config)
+    };
+  }
+
+  /**
+   * 获取验证错误
+   */
+  getValidationErrors(config) {
+    const errors = [];
+    
+    if (config.minStakeAmount <= 0) errors.push('minStakeAmount must be positive');
+    if (config.maxStakeAmount <= config.minStakeAmount) errors.push('maxStakeAmount must be greater than minStakeAmount');
+    if (config.consensusNodesRequired < 3) errors.push('consensusNodesRequired must be at least 3 for BFT');
+    if (config.reputationThreshold < 0 || config.reputationThreshold > 100) errors.push('reputationThreshold must be between 0 and 100');
+    if (config.verificationTimeout <= 0) errors.push('verificationTimeout must be positive');
+    
+    return errors;
   }
 }
 

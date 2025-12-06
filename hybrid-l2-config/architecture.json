@@ -1,0 +1,76 @@
+{
+  "architecture": {
+    "name": "OraSRS Hybrid L2 Architecture",
+    "version": "2.0.0",
+    "description": "Domestic Private L2 + Overseas Ethereum L2 Hybrid Architecture"
+  },
+  "domestic_l2": {
+    "type": "OP Stack Compatible L2",
+    "name": "OraSRS Domestic Chain",
+    "rpc_url": "http://domestic-orasrs-l2:8545",
+    "chain_id": 42069,
+    "consensus": "DPoS",
+    "crypto": "SM2/SM3/SM4",
+    "compliance": "China Cybersecurity Law Level 2.0",
+    "data_localization": true,
+    "contracts": [
+      {"name": "OraSRSGovernance", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vj"},
+      {"name": "ThreatEvidence", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vk"},
+      {"name": "ThreatIntelligenceCoordination", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vl"},
+      {"name": "EnhancedThreatVerification", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vm"},
+      {"name": "PrivacyProtectedVerification", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vn"},
+      {"name": "VerifiableAuditTrail", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vo"}
+    ]
+  },
+  "overseas_l2": {
+    "type": "Optimism Superchain L2",
+    "name": "OraSRS Overseas Chain",
+    "rpc_url": "https://overseas-orasrs-l2.optimism.io",
+    "chain_id": 11155420,
+    "consensus": "Optimistic Rollup",
+    "crypto": "Secp256k1/Keccak256",
+    "compliance": "GDPR, CCPA",
+    "data_localization": false,
+    "contracts": [
+      {"name": "CrossChainBridge", "address": "0x4200000000000000000000000000000000000010"},
+      {"name": "ThreatIntelSync", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vp"},
+      {"name": "GovernanceMirror", "address": "0x16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vq"}
+    ]
+  },
+  "cross_chain": {
+    "protocol": "LayerZero",
+    "sync_rules": {
+      "global_threats": "bidirectional",
+      "regional_threats": "domestic_only",
+      "sensitive_threats": "compliance_governed"
+    },
+    "bridge_security": "Multi-signature with time-lock"
+  },
+  "agents": {
+    "domestic_mode": {
+      "connect_to": "domestic_l2",
+      "compliance": "China",
+      "crypto": "SM2/SM3/SM4"
+    },
+    "overseas_mode": {
+      "connect_to": "overseas_l2", 
+      "compliance": "GDPR/CCPA",
+      "crypto": "Secp256k1/Keccak256"
+    },
+    "hybrid_mode": {
+      "routing_logic": "intelligent_threat_classification",
+      "fallback": "domestic_l2"
+    }
+  },
+  "enterprise_integrations": {
+    "splunk": {
+      "domestic": "domestic_splunk_instance",
+      "overseas": "overseas_splunk_instance", 
+      "unified_dashboard": true
+    },
+    "xsoar": {
+      "cross_chain_automation": true,
+      "compliance_aware_response": true
+    }
+  }
+}

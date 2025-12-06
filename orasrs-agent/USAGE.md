@@ -1,8 +1,8 @@
-# OraSRS Agent 使用指南
+# SecurityRiskAssessment Agent 使用指南
 
 ## 概述
 
-OraSRS Agent 是 OraSRS v2.0 协调防御框架的边缘层组件，是一个超轻量级的威胁检测和响应代理，资源占用 < 5MB，部署在终端设备和网络边缘。
+SecurityRiskAssessment Agent 是 SecurityRiskAssessment v2.0 协调防御框架的边缘层组件，是一个超轻量级的威胁检测和响应代理，资源占用 < 5MB，部署在终端设备和网络边缘。
 
 ## 安装
 
@@ -10,30 +10,30 @@ OraSRS Agent 是 OraSRS v2.0 协调防御框架的边缘层组件，是一个超
 
 ```bash
 # 克隆仓库
-git clone https://github.com/srs-protocol/orasrs-agent.git
-cd orasrs-agent
+git clone https://github.com/srs-protocol/SRA-agent.git
+cd SRA-agent
 
 # 构建发布版本
 cargo build --release
 
 # 运行代理
-./target/release/orasrs-agent
+./target/release/SRA-agent
 ```
 
 ### 使用预构建二进制文件
 
 ```bash
 # 下载预构建的二进制文件
-curl -L https://orasrs.global/downloads/agent-v2.0.0-linux-amd64.tar.gz -o agent.tar.gz
+curl -L https://SRA.global/downloads/agent-v2.0.0-linux-amd64.tar.gz -o agent.tar.gz
 tar -xzf agent.tar.gz
-./orasrs-agent
+./SRA-agent
 ```
 
 ## 配置
 
 ### 默认配置
 
-OraSRS Agent 使用以下默认配置：
+SecurityRiskAssessment Agent 使用以下默认配置：
 
 ```toml
 [agent]
@@ -98,34 +98,34 @@ geo_fence = true
 
 ```bash
 # 快速安装
-curl -sSf https://orasrs.global/install.sh | sh
+curl -sSf https://SRA.global/install.sh | sh
 
 # 后台运行
-orasrs-agent &
+SRA-agent &
 ```
 
 ### 企业内网部署 (Kubernetes)
 
 ```yaml
-# orasrs-agent-daemonset.yaml
+# SRA-agent-daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: orasrs-agent
+  name: SRA-agent
   namespace: security
 spec:
   selector:
     matchLabels:
-      app: orasrs-agent
+      app: SRA-agent
   template:
     metadata:
       labels:
-        app: orasrs-agent
+        app: SRA-agent
     spec:
       hostNetwork: true  # 需要网络监控权限
       containers:
       - name: agent
-        image: orasrs/agent:2.0.0
+        image: SRA/agent:2.0.0
         imagePullPolicy: Always
         resources:
           limits:
@@ -144,17 +144,17 @@ spec:
       volumes:
       - name: data
         hostPath:
-          path: /var/lib/orasrs-agent
+          path: /var/lib/SRA-agent
           type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: orasrs-agent-service
+  name: SRA-agent-service
   namespace: security
 spec:
   selector:
-    app: orasrs-agent
+    app: SRA-agent
   ports:
   - port: 8080
     targetPort: 8080
@@ -166,26 +166,26 @@ spec:
 对于资源受限的IoT设备，可使用C语言的微型实现：
 
 ```c
-// orasrs-agent-micro.c (概念示例)
-#include "orasrs_micro.h"
+// SRA-agent-micro.c (概念示例)
+#include "SRA_micro.h"
 
 int main() {
     // 初始化微型代理
-    orasrs_config_t config = {
+    SRA_config_t config = {
         .memory_limit = 1024 * 1024,  // 1MB
         .privacy_level = PRIVACY_LEVEL_2,
         .compliance_mode = COMPLIANCE_GLOBAL
     };
     
-    orasrs_agent_init(&config);
+    SRA_agent_init(&config);
     
     // 启动基本威胁监控
-    orasrs_start_monitoring();
+    SRA_start_monitoring();
     
     while(1) {
         // 检查威胁
-        if (orasrs_check_threats()) {
-            orasrs_report_threat();
+        if (SRA_check_threats()) {
+            SRA_report_threat();
         }
         
         sleep(30);  // 每30秒检查一次
@@ -334,20 +334,20 @@ curl -X POST http://localhost:8080/api/v2/threats/verify \
 
 ```bash
 # 查看实时日志
-tail -f /var/log/orasrs-agent.log
+tail -f /var/log/SRA-agent.log
 
 # 查看错误日志
-grep ERROR /var/log/orasrs-agent.log
+grep ERROR /var/log/SRA-agent.log
 
 # 查看性能指标
-grep "memory_usage\|cpu_usage" /var/log/orasrs-agent.log
+grep "memory_usage\|cpu_usage" /var/log/SRA-agent.log
 ```
 
 ## 升级指南
 
 ### 从v1.x升级到v2.0
 
-OraSRS Agent v2.0是完全重写的版本，不再使用质押机制，而是采用基于行为的声誉系统。升级时需要：
+SecurityRiskAssessment Agent v2.0是完全重写的版本，不再使用质押机制，而是采用基于行为的声誉系统。升级时需要：
 
 1. 停止旧版本代理
 2. 清理旧配置（可选）
@@ -356,8 +356,8 @@ OraSRS Agent v2.0是完全重写的版本，不再使用质押机制，而是采
 
 ## 支持
 
-- **文档**: https://orasrs.global/docs
-- **社区**: https://orasrs.global/community
-- **问题追踪**: https://github.com/srs-protocol/orasrs-agent/issues
-- **安全报告**: security@orasrs.global
+- **文档**: https://SRA.global/docs
+- **社区**: https://SRA.global/community
+- **问题追踪**: https://github.com/srs-protocol/SRA-agent/issues
+- **安全报告**: security@SRA.global
 ```

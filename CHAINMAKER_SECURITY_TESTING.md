@@ -3,7 +3,7 @@
 ## 1. 概述
 
 ### 1.1 测试目标
-本指南介绍如何对部署在长安链（ChainMaker）上的 OraSRS Go 语言智能合约进行全面的安全性测试。
+本指南介绍如何对部署在长安链（ChainMaker）上的 SecurityRiskAssessment Go 语言智能合约进行全面的安全性测试。
 
 ### 1.2 测试原则
 - 静态分析与动态测试相结合
@@ -147,7 +147,7 @@ gosec -fmt=sarif -out=security-sarif-report.sarif ./...
 
 #### 4.1.1 基础单元测试
 ```go
-// test/orasrs_contract_security_test.go
+// test/SRA_contract_security_test.go
 package main
 
 import (
@@ -168,7 +168,7 @@ func TestContractInitialization(t *testing.T) {
     })
     
     // 初始化合约
-    contract := &OrasrsStakingContract{}
+    contract := &SecurityRiskAssessmentContract{}
     err := contract.InitContract()
     if err != nil {
         t.Fatalf("Failed to initialize contract: %v", err)
@@ -186,7 +186,7 @@ func TestContractInitialization(t *testing.T) {
 
 func TestStakeValidation(t *testing.T) {
     ctx := mock.NewMockContext()
-    contract := &OrasrsStakingContract{}
+    contract := &SecurityRiskAssessmentContract{}
     
     // 为合约初始化
     ctx.SetArgs(map[string][]byte{
@@ -215,7 +215,7 @@ func TestStakeValidation(t *testing.T) {
 ```go
 func TestBoundaryConditions(t *testing.T) {
     ctx := mock.NewMockContext()
-    contract := &OrasrsStakingContract{}
+    contract := &SecurityRiskAssessmentContract{}
     
     // 测试最大值情况
     ctx.SetArgs(map[string][]byte{
@@ -272,7 +272,7 @@ func TestReentrancyProtection(t *testing.T) {
 ```go
 func TestAccessControl(t *testing.T) {
     ctx := mock.NewMockContext()
-    contract := &OrasrsStakingContract{}
+    contract := &SecurityRiskAssessmentContract{}
     
     // 初始化合约
     ctx.SetArgs(map[string][]byte{
@@ -599,4 +599,4 @@ jobs:
 
 ---
 
-**注意**: 本指南提供了全面的安全测试框架，实际测试时需要根据具体的 ChainMaker 环境和 OraSRS 合约实现进行调整。
+**注意**: 本指南提供了全面的安全测试框架，实际测试时需要根据具体的 ChainMaker 环境和 SecurityRiskAssessment 合约实现进行调整。

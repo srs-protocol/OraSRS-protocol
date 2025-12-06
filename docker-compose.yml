@@ -1,63 +1,94 @@
 version: '3.8'
 
 services:
-  orasrs:
-    build: .
-    container_name: orasrs-server
+  # OraSRS区块链节点1
+  orasrs-node-1:
+    image: chainmakerofficial/chainmaker:2.3.0
+    container_name: orasrs-node-1
     ports:
-      - "3006:3006"
-    environment:
-      - NODE_ENV=production
-      - ORASRS_PORT=3006
-      - ORASRS_HOST=0.0.0.0
-      - ADMIN_API_KEY=${ADMIN_API_KEY:-default_admin_key}
+      - "12301:12301"
+      - "8081:8080"
+      - "9091:9090"
+      - "9092:9091"
     volumes:
-      - ./logs:/app/logs
-      - ./config:/app/config:ro
+      - ./data/node1:/opt/chainmaker/data
+      - ./pki/node1:/opt/chainmaker/pki
+      - ./contracts:/opt/chainmaker/contracts
+      - ./chainmaker-contract/config/orasrs_network_config.yml:/opt/chainmaker/config/config.yml
+    environment:
+      - NODE_ID=node-001
+      - LISTEN_PORT=12301
+    networks:
+      - orasrs-net
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3006/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
-  # Prometheus监控服务
+  # OraSRS区块链节点2
+  orasrs-node-2:
+    image: chainmakerofficial/chainmaker:2.3.0
+    container_name: orasrs-node-2
+    ports:
+      - "12302:12301"
+      - "8082:8080"
+      - "9093:9090"
+      - "9094:9091"
+    volumes:
+      - ./data/node2:/opt/chainmaker/data
+      - ./pki/node2:/opt/chainmaker/pki
+      - ./contracts:/opt/chainmaker/contracts
+      - ./chainmaker-contract/config/orasrs_network_config.yml:/opt/chainmaker/config/config.yml
+    environment:
+      - NODE_ID=node-002
+      - LISTEN_PORT=12301
+    networks:
+      - orasrs-net
+    restart: unless-stopped
+
+  # OraSRS区块链节点3
+  orasrs-node-3:
+    image: chainmakerofficial/chainmaker:2.3.0
+    container_name: orasrs-node-3
+    ports:
+      - "12303:12301"
+      - "8083:8080"
+      - "9095:9090"
+      - "9096:9091"
+    volumes:
+      - ./data/node3:/opt/chainmaker/data
+      - ./pki/node3:/opt/chainmaker/pki
+      - ./contracts:/opt/chainmaker/contracts
+      - ./chainmaker-contract/config/orasrs_network_config.yml:/opt/chainmaker/config/config.yml
+    environment:
+      - NODE_ID=node-003
+      - LISTEN_PORT=12301
+    networks:
+      - orasrs-net
+    restart: unless-stopped
+
+  # 监控服务
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: orasrs-prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
+    networks:
+      - orasrs-net
     restart: unless-stopped
-    depends_on:
-      - orasrs
 
-  # Grafana可视化服务
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: orasrs-grafana
     ports:
       - "3000:3000"
     volumes:
-      - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    networks:
+      - orasrs-net
     restart: unless-stopped
-    depends_on:
-      - prometheus
 
-volumes:
-  prometheus_data:
-  grafana_data:
+networks:
+  orasrs-net:
+    driver: bridge

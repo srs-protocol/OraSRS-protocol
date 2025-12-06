@@ -1,0 +1,15 @@
+[profile.default]
+src = "isolated_contracts"
+test = "test"
+script = "script"
+out = "out"
+libs = ["lib"]
+remappings = [
+    'forge-std/=lib/forge-std/src/'
+]
+
+# 包含所有 remappings
+remappings = [
+    'forge-std/=lib/forge-std/src/',
+    '@openzeppelin/=lib/openzeppelin-contracts/',
+]

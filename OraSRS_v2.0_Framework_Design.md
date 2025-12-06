@@ -1,5 +1,5 @@
-# OraSRS v2.0 — 全球轻量级主动防御协调框架
-# OraSRS v2.0 — Global Lightweight Proactive Defense Coordination Framework
+# SecurityRiskAssessment v2.0 — 全球轻量级主动防御协调框架
+# SecurityRiskAssessment v2.0 — Global Lightweight Proactive Defense Coordination Framework
 
 ## 使命 / Mission
 让每一次网络攻击在扩散前被群体免疫系统识别、阻断、存证。
@@ -108,8 +108,8 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 
 | 下游系统 / Downstream System | 输出方式 / Output Method | 示例 / Example |
 |-----------------------------|-------------------------|----------------|
-| 防火墙 / Firewall | https://orasrs.global/blocklist.txt | `iptables -A INPUT -m set --match-set orasrs src -j DROP` |
-| SIEM | Syslog (CEF 格式) | `cs2Label=orasrs_tx_id cs2=0xabc123...` |
+| 防火墙 / Firewall | https://SRA.global/blocklist.txt | `iptables -A INPUT -m set --match-set SRA src -j DROP` |
+| SIEM | Syslog (CEF 格式) | `cs2Label=SRA_tx_id cs2=0xabc123...` |
 | SOAR | REST API Webhook | `POST /soar/trigger { "threat_level": "CRITICAL", "tx_id": "..." }` |
 | 云 WAF / Cloud WAF | AWS IP Set / Azure Firewall Rule | 自动更新恶意 IP 列表 / Automatically update malicious IP lists |
 
@@ -147,7 +147,7 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 
 | 场景 / Scenario | 方案 / Solution |
 |----------------|----------------|
-| 个人/开发者 / Individual/Developer | `curl -sSf https://orasrs.global/install.sh` |
+| 个人/开发者 / Individual/Developer | `curl -sSf https://SRA.global/install.sh` |
 | 企业内网 / Enterprise Intranet | Helm Chart 部署 K8s DaemonSet + 私有长安链 / Helm Chart deploy K8s DaemonSet + Private ChainMaker |
 | IoT 设备 / IoT Devices | C 语言微型 Agent（<1MB），通过网关聚合上报 / C language micro Agent (<1MB), aggregate reporting through gateway |
 | 云原生 / Cloud Native | AWS Lambda / Azure Function 作为边缘节点 / AWS Lambda / Azure Function as edge nodes |
@@ -161,14 +161,14 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 |------------|-------------------|
 | 2025 Q2 | 开源 Agent 核心 + 长安链/Polygon 双链支持 / Open source Agent core + ChainMaker/Polygon dual-chain support |
 | 2025 Q3 | 发布 Splunk/XSOAR 插件 + GDPR 合规模板 / Release Splunk/XSOAR plugins + GDPR compliance templates |
-| 2025 Q4 | 启动 OraSRS DAO，社区治理声誉算法 / Launch OraSRS DAO, community governance reputation algorithm |
+| 2025 Q4 | 启动 SecurityRiskAssessment DAO，社区治理声誉算法 / Launch SecurityRiskAssessment DAO, community governance reputation algorithm |
 | 2026 Q1 | 集成 CISA AIS + VirusTotal 官方合作 / Integrate CISA AIS + VirusTotal official partnership |
 | 2026 Q2 | 支持 FIDO2 安全启动，硬件级完整性验证 / Support FIDO2 secure boot, hardware-level integrity verification |
 
 ---
 
-## 七、为什么 OraSRS v2.0 是"第一防线"？
-## VII. Why OraSRS v2.0 is the "First Line of Defense"?
+## 七、为什么 SecurityRiskAssessment v2.0 是"第一防线"？
+## VII. Why SecurityRiskAssessment v2.0 is the "First Line of Defense"?
 
 - **前置 / Pre-positioned**: 部署在终端/边缘，早于传统防火墙 / Deployed at terminal/edge, earlier than traditional firewalls
 - **轻量 / Lightweight**: 资源消耗 < EDR 的 10%，适合 IoT/移动设备 / Resource consumption < 10% of EDR, suitable for IoT/mobile devices
@@ -176,8 +176,8 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 - **可信 / Trustworthy**: 所有威胁有链上存证，可司法举证 / All threats have on-chain evidence, judicially admissible
 - **合规 / Compliant**: 开箱即用满足全球主要法规 / Out-of-box compliance with global regulations
 
-> OraSRS v2.0 不是另一个安全产品，而是现有安全生态的"免疫增强剂"。  
-> OraSRS v2.0 is not another security product, but an "immune enhancer" for the existing security ecosystem.
+> SecurityRiskAssessment v2.0 不是另一个安全产品，而是现有安全生态的"免疫增强剂"。  
+> SecurityRiskAssessment v2.0 is not another security product, but an "immune enhancer" for the existing security ecosystem.
 
 ---
 
@@ -288,7 +288,7 @@ type ThreatBroadcast struct {
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   OraSRS v2.0   │◄──►│  Existing Stack  │◄──►│  Business Apps  │
+│   SecurityRiskAssessment v2.0   │◄──►│  Existing Stack  │◄──►│  Business Apps  │
 │   (First Line)  │    │   (Second Line)  │    │                 │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                       │                        │
@@ -324,4 +324,4 @@ ComplianceAPI:
   response: Audit trail + Evidence
 ```
 
-OraSRS v2.0 代表了网络安全范式的转变：从被动防御到主动免疫，从中心化控制到分布式协作，从合规负担到合规赋能。通过这一框架，我们正在构建真正全球可用、本地合规、抗毁可信的网络防御基础设施。
+SecurityRiskAssessment v2.0 代表了网络安全范式的转变：从被动防御到主动免疫，从中心化控制到分布式协作，从合规负担到合规赋能。通过这一框架，我们正在构建真正全球可用、本地合规、抗毁可信的网络防御基础设施。

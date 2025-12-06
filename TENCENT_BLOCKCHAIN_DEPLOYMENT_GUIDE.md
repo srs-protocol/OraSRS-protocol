@@ -21,10 +21,10 @@
 
 ```bash
 # 进入合约目录
-cd OraSRS-protocol/chainmaker-contract
+cd SecurityRiskAssessment-protocol/chainmaker-contract
 
 # 清理旧文件
-rm -rf main orasrs.7z
+rm -rf main SRA.7z
 
 # 创建目录
 mkdir main
@@ -45,10 +45,10 @@ file main/main
 
 ```bash
 # 使用7-Zip压缩整个main目录
-7z a orasrs.7z main/
+7z a SRA.7z main/
 
 # 验证内容
-7z l orasrs.7z
+7z l SRA.7z
 # 必须显示:
 #    Date      Time    Attr         Size   Name
 # ------------------- ----- ------------  ----
@@ -66,11 +66,11 @@ file main/main
 package main
 
 import (
-    "orasrs-chainmaker-contract/orasrscontract" // 使用模块路径而不是相对路径
+    "SRA-chainmaker-contract/sracontract" // 使用模块路径而不是相对路径
 )
 
 func main() {
-    orasrscontract.Main()
+    sracontract.Main()
 }
 ```
 
@@ -84,7 +84,7 @@ func main() {
 
 ## 合约功能说明
 
-OraSRS合约提供以下功能：
+SecurityRiskAssessment合约提供以下功能：
 
 - **节点质押管理**: `StakeWithGmSign` - 支持国密签名的节点质押
 - **多层级节点架构**: 支持根层、分区层、边缘层节点

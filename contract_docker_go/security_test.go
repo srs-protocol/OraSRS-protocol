@@ -22,7 +22,7 @@ func TestContractInitialization(t *testing.T) {
 	})
 	
 	// 初始化合约
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	err := contractInstance.InitContract()
 	if err != nil {
 		t.Fatalf("Failed to initialize contract: %v", err)
@@ -43,7 +43,7 @@ func TestContractInitialization(t *testing.T) {
 // TestStakeWithGmSignValidInput 测试有效的质押输入
 func TestStakeWithGmSignValidInput(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -103,7 +103,7 @@ func TestStakeWithGmSignValidInput(t *testing.T) {
 // TestStakeWithInsufficientAmount 测试质押金额不足
 func TestStakeWithInsufficientAmount(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -139,7 +139,7 @@ func TestStakeWithInsufficientAmount(t *testing.T) {
 // TestStakeWithExistingNodeId 测试使用已存在的节点ID
 func TestStakeWithExistingNodeId(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -195,7 +195,7 @@ func TestStakeWithExistingNodeId(t *testing.T) {
 // TestAccessControlForGovernanceFunctions 测试治理功能的访问控制
 func TestAccessControlForGovernanceFunctions(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -282,7 +282,7 @@ func TestParameterValidation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := mock.NewMockContext()
-			contractInstance := &OrasrsStakingContract{}
+			contractInstance := &SecurityRiskAssessmentContract{}
 			
 			// 初始化合约
 			ctx.SetArgs(map[string][]byte{
@@ -315,7 +315,7 @@ func TestParameterValidation(t *testing.T) {
 // TestNodeInfoQuery 测试节点信息查询
 func TestNodeInfoQuery(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -377,7 +377,7 @@ func TestNodeInfoQuery(t *testing.T) {
 // TestContractStats 测试合约统计功能
 func TestContractStats(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -453,7 +453,7 @@ func TestContractStats(t *testing.T) {
 // TestReputationUpdateAccessControl 测试声誉更新的访问控制
 func TestReputationUpdateAccessControl(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -501,7 +501,7 @@ func TestReputationUpdateAccessControl(t *testing.T) {
 // TestSlashNodeAccessControl 测试节点罚没的访问控制
 func TestSlashNodeAccessControl(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -529,7 +529,7 @@ func TestSlashNodeAccessControl(t *testing.T) {
 // TestIntegerOverflowProtection 测试整数溢出保护
 func TestIntegerOverflowProtection(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{
@@ -569,7 +569,7 @@ func TestIntegerOverflowProtection(t *testing.T) {
 // TestNonceReplayProtection 测试防重放攻击
 func TestNonceReplayProtection(t *testing.T) {
 	ctx := mock.NewMockContext()
-	contractInstance := &OrasrsStakingContract{}
+	contractInstance := &SecurityRiskAssessmentContract{}
 	
 	// 初始化合约
 	ctx.SetArgs(map[string][]byte{

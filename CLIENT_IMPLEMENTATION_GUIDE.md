@@ -1,9 +1,9 @@
-# OraSRS 协议客户端方案（更新版）
+# SecurityRiskAssessment 协议客户端方案（更新版）
 
 ## 1. 概述
 
 ### 1.1 项目进度总结
-随着 OraSRS 协议的不断发展，我们已经实现了以下核心组件：
+随着 SecurityRiskAssessment 协议的不断发展，我们已经实现了以下核心组件：
 - **三层共识架构**：全局根网络层 + 分区共识层 + 边缘缓存层
 - **质押与声誉系统**：支持国密算法的质押机制
 - **治理系统**：技术委员会治理模式
@@ -11,13 +11,13 @@
 - **长安链部署**：完整的 ChainMaker 部署方案
 
 ### 1.2 客户端方案目标
-本方案定义了 OraSRS 协议客户端的实现规范，确保客户端能够安全、高效地与 OraSRS 网络交互。
+本方案定义了 SecurityRiskAssessment 协议客户端的实现规范，确保客户端能够安全、高效地与 SecurityRiskAssessment 网络交互。
 
 ## 2. 客户端架构
 
 ### 2.1 核心组件
 ```
-OraSRS Client
+SecurityRiskAssessment Client
 ├── Query Interface (查询接口)
 ├── Response Processor (响应处理器)
 ├── Local Policy Engine (本地策略引擎)
@@ -84,7 +84,7 @@ X-ORASRS-Signature: <SM2 signature>
     },
     "architectural_layer": "edge|partition|root",
     "cache_ttl": 300,
-    "appeal_url": "https://api.orasrs.net/appeal?ip=1.2.3.4",
+    "appeal_url": "https://api.SRA.net/appeal?ip=1.2.3.4",
     "expires_at": "2025-12-02T11:00:00Z"
   },
   "disclaimer": "This is advisory only. Final decision rests with the client."
@@ -114,10 +114,10 @@ POST /api/v1/bulk-query
 const axios = require('axios');
 const crypto = require('crypto');
 
-class OraSRSClient {
+class SecurityRiskAssessmentClient {
   constructor(options = {}) {
     this.apiKey = options.apiKey;
-    this.endpoint = options.endpoint || 'https://api.orasrs.net';
+    this.endpoint = options.endpoint || 'https://api.SRA.net';
     this.timeout = options.timeout || 5000;
     this.cache = new Map();
     this.localPolicyEngine = new LocalPolicyEngine(options.localPolicy);
@@ -164,7 +164,7 @@ class OraSRSClient {
       });
 
       // 验证响应签名
-      if (!this.verifyResponseSignature(response.data, response.headers['x-orasrs-response-signature'])) {
+      if (!this.verifyResponseSignature(response.data, response.headers['x-SRA-response-signature'])) {
         throw new Error('Invalid response signature');
       }
 
@@ -177,7 +177,7 @@ class OraSRSClient {
 
       return response.data;
     } catch (error) {
-      console.error('OraSRS query failed:', error.message);
+      console.error('SecurityRiskAssessment query failed:', error.message);
       // 返回本地策略决策
       return this.localPolicyEngine.makeDecision(ip, domain, error);
     }
@@ -205,7 +205,7 @@ class OraSRSClient {
 
       return response.data;
     } catch (error) {
-      console.error('OraSRS bulk query failed:', error.message);
+      console.error('SecurityRiskAssessment bulk query failed:', error.message);
       return { error: error.message, decisions: [] };
     }
   }
@@ -233,7 +233,7 @@ class OraSRSClient {
 
       return response.data;
     } catch (error) {
-      console.error('OraSRS appeal failed:', error.message);
+      console.error('SecurityRiskAssessment appeal failed:', error.message);
       return { success: false, error: error.message };
     }
   }
@@ -259,7 +259,7 @@ class OraSRSClient {
     return true; // 模拟验证
   }
 
-  // 本地决策（当 OraSRS 不可用时）
+  // 本地决策（当 SecurityRiskAssessment 不可用时）
   makeLocalDecision(ip, domain) {
     return this.localPolicyEngine.makeDecision(ip, domain);
   }
@@ -287,12 +287,12 @@ class LocalPolicyEngine {
         local_fallback: true,
         error: error ? error.message : null
       },
-      disclaimer: 'Local policy decision due to OraSRS unavailability'
+      disclaimer: 'Local policy decision due to SecurityRiskAssessment unavailability'
     };
   }
 }
 
-module.exports = OraSRSClient;
+module.exports = SecurityRiskAssessmentClient;
 ```
 
 ### 4.2 Python 客户端实现
@@ -313,8 +313,8 @@ class QueryRequest:
     location: str = "unknown"
     evidence: Optional[Dict[str, Any]] = None
 
-class OraSRSClient:
-    def __init__(self, api_key: str, endpoint: str = "https://api.orasrs.net", timeout: int = 5):
+class SecurityRiskAssessmentClient:
+    def __init__(self, api_key: str, endpoint: str = "https://api.SRA.net", timeout: int = 5):
         self.api_key = api_key
         self.endpoint = endpoint.rstrip('/')
         self.timeout = timeout
@@ -368,7 +368,7 @@ class OraSRSClient:
             return result
 
         except requests.RequestException as e:
-            print(f"OraSRS query failed: {e}")
+            print(f"SecurityRiskAssessment query failed: {e}")
             return self._local_fallback(request.ip, request.domain, str(e))
 
     def bulk_query(self, queries: list, max_wait_time: int = 1000) -> Dict[str, Any]:
@@ -437,7 +437,7 @@ class OraSRSClient:
                 "local_fallback": True,
                 "error": error
             },
-            "disclaimer": "Local policy decision due to OraSRS unavailability"
+            "disclaimer": "Local policy decision due to SecurityRiskAssessment unavailability"
         }
 ```
 
@@ -446,7 +446,7 @@ class OraSRSClient:
 ### 5.1 支持长安链质押的客户端
 
 ```javascript
-class ChainMakerOraSRSClient extends OraSRSClient {
+class ChainMakerSecurityRiskAssessmentClient extends SecurityRiskAssessmentClient {
   constructor(options = {}) {
     super(options);
     this.chainmakerConfig = options.chainmakerConfig;
@@ -554,9 +554,9 @@ class ChainMakerOraSRSClient extends OraSRSClient {
 
 ```json
 {
-  "orasrs": {
+  "SRA": {
     "api_key": "your_api_key_here",
-    "endpoint": "https://api.orasrs.net",
+    "endpoint": "https://api.SRA.net",
     "timeout": 5000,
     "retry_attempts": 3,
     "retry_delay": 1000
@@ -581,7 +581,7 @@ class ChainMakerOraSRSClient extends OraSRSClient {
     "enabled": true,
     "node_id": "client-node-1",
     "stake_amount": 10000,
-    "contract_address": "orasrs-staking-contract-address"
+    "contract_address": "SRA-staking-contract-address"
   },
   "monitoring": {
     "enabled": true,
@@ -685,13 +685,13 @@ class ClientMetrics {
 ```javascript
 // client.test.js
 const assert = require('assert');
-const OraSRSClient = require('./client');
+const SecurityRiskAssessmentClient = require('./client');
 
-describe('OraSRS Client', () => {
+describe('SecurityRiskAssessment Client', () => {
   let client;
 
   beforeEach(() => {
-    client = new OraSRSClient({
+    client = new SecurityRiskAssessmentClient({
       apiKey: 'test-key',
       endpoint: 'http://localhost:3000'
     });
@@ -713,4 +713,4 @@ describe('OraSRS Client', () => {
 
 **版本**: 1.1  
 **最后更新**: 2025年12月2日  
-**协议版本**: OraSRS v1.1 (支持三层共识架构)
+**协议版本**: SecurityRiskAssessment v1.1 (支持三层共识架构)

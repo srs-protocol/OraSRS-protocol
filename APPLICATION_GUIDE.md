@@ -1,14 +1,14 @@
-# OraSRS 增强版应用指南
+# SecurityRiskAssessment 增强版应用指南
 
-本指南说明如何使用 OraSRS 协议的增强功能，包括共识机制、质押、声誉系统等。
+本指南说明如何使用 SecurityRiskAssessment 协议的增强功能，包括共识机制、质押、声誉系统等。
 
-## 1. 初始化 OraSRS v2.0 引擎
+## 1. 初始化 SecurityRiskAssessment v2.0 引擎
 
 ```javascript
-const OrasrsEngine = require('./orasrs-engine');
+const OrasrsEngine = require('./SRA-engine');
 
-// 初始化 OraSRS v2.0 协调防御引擎
-const orasrsEngine = new OrasrsEngine({
+// 初始化 SecurityRiskAssessment v2.0 协调防御引擎
+const SRAEngine = new OrasrsEngine({
   edgeAgent: {
     maxMemory: 5 * 1024 * 1024,  // 最大内存: 5MB
     privacyLevel: 'gdpr',        // 隐私级别: gdpr/ccpa/china/global
@@ -54,7 +54,7 @@ const agentConfig = {
 };
 
 try {
-  const result = orasrsEngine.deployEdgeAgent(
+  const result = SRAEngine.deployEdgeAgent(
     'agent-001',                // Agent ID
     agentConfig                 // Agent配置
   );
@@ -69,7 +69,7 @@ try {
 ```javascript
 // 更新Agent配置
 try {
-  const result = orasrsEngine.updateAgentConfig(
+  const result = SRAEngine.updateAgentConfig(
     'agent-001',                // Agent ID
     { 
       privacyLevel: 16,          // 调整IP匿名化级别
@@ -97,7 +97,7 @@ const performanceData = {
   falsePositiveRate: 0.02          // 误报率
 };
 
-const newReputation = orasrsEngine.updateAgentReputation('agent-001', performanceData);
+const newReputation = SRAEngine.updateAgentReputation('agent-001', performanceData);
 console.log(`Agent声誉更新为: ${newReputation}`);
 ```
 
@@ -105,11 +105,11 @@ console.log(`Agent声誉更新为: ${newReputation}`);
 
 ```javascript
 // 获取Agent状态
-const agentStatus = orasrsEngine.getAgentStatus('agent-001');
+const agentStatus = SRAEngine.getAgentStatus('agent-001');
 console.log('Agent状态:', agentStatus);
 
 // 获取全局声誉统计
-const reputationStats = orasrsEngine.getReputationStats();
+const reputationStats = SRAEngine.getReputationStats();
 console.log('声誉统计:', reputationStats);
 ```
 
@@ -161,8 +161,8 @@ console.log('紧急熔断结果:', haltResult);
 ### 5.1 初始化三层架构
 
 ```javascript
-// 初始化OraSRS v2.0三层架构
-await orasrsEngine.initializeThreeTierArchitecture();
+// 初始化SecurityRiskAssessment v2.0三层架构
+await SRAEngine.initializeThreeTierArchitecture();
 ```
 
 ### 5.2 边缘层操作
@@ -182,7 +182,7 @@ const edgeConfig = {
 };
 
 // 部署边缘Agent
-await orasrsEngine.deployEdgeAgent(edgeConfig);
+await SRAEngine.deployEdgeAgent(edgeConfig);
 ```
 
 ### 5.3 共识层操作
@@ -201,7 +201,7 @@ const threatEvidence = {
 };
 
 // 根据区域自动选择合适的链
-const submissionResult = await orasrsEngine.submitToConsensusLayer(
+const submissionResult = await SRAEngine.submitToConsensusLayer(
   threatEvidence,
   'auto'  // 自动选择区域链
 );
@@ -213,10 +213,10 @@ console.log('威胁证据提交结果:', submissionResult);
 
 ```javascript
 // 获取全局威胁情报
-const globalThreatIntel = await orasrsEngine.getIntelligenceFabricData();
+const globalThreatIntel = await SRAEngine.getIntelligenceFabricData();
 
 // P2P威胁验证
-const verificationResult = await orasrsEngine.p2pThreatVerification(
+const verificationResult = await SRAEngine.p2pThreatVerification(
   'threat-id-12345',
   threatEvidence
 );
@@ -224,7 +224,7 @@ const verificationResult = await orasrsEngine.p2pThreatVerification(
 console.log('P2P验证结果:', verificationResult);
 
 // 驱动下游防御系统
-await orasrsEngine.driveDownstreamDefenseSystems({
+await SRAEngine.driveDownstreamDefenseSystems({
   threatLevel: 'critical',
   targetIP: '192.168.1.10',
   action: 'block'
@@ -235,15 +235,15 @@ await orasrsEngine.driveDownstreamDefenseSystems({
 
 ```javascript
 // 获取三层架构状态
-const architectureStatus = orasrsEngine.getThreeTierStatus();
+const architectureStatus = SRAEngine.getThreeTierStatus();
 console.log('三层架构状态:', architectureStatus);
 
 // 系统健康检查
-const health = orasrsEngine.architectureHealthCheck();
+const health = SRAEngine.architectureHealthCheck();
 console.log('健康检查结果:', health);
 
 // 执行跨层合规审计
-const complianceAudit = await orasrsEngine.performCrossLayerComplianceAudit();
+const complianceAudit = await SRAEngine.performCrossLayerComplianceAudit();
 console.log('跨层合规审计报告:', complianceAudit);
 ```
 
@@ -300,7 +300,7 @@ console.log('联邦学习状态:', fedStatus);
 
 ## 10. 跨链适配器
 
-OraSRS 增强版支持多种区块链网络的适配：
+SecurityRiskAssessment 增强版支持多种区块链网络的适配：
 
 - 政务链：蚂蚁链（FAIR 协议）
 - 工业链：浪潮云洲链
@@ -320,11 +320,11 @@ const adapterRegistry = {
   }
 };
 
-## 11. OraSRS v2.0 威胁情报协议集成
+## 11. SecurityRiskAssessment v2.0 威胁情报协议集成
 
 ### 11.1 威胁情报合约部署
 
-OraSRS v2.0威胁情报合约需要部署在支持智能合约的区块链网络上：
+SecurityRiskAssessment v2.0威胁情报合约需要部署在支持智能合约的区块链网络上：
 
 ```javascript
 // 连接到支持威胁情报的链
@@ -422,11 +422,11 @@ const fullIntegration = async () => {
 };
 ```
 
-## 12. OraSRS v2.0 协调防御系统集成
+## 12. SecurityRiskAssessment v2.0 协调防御系统集成
 
 ### 12.1 部署多链存证系统
 
-OraSRS v2.0多链存证系统需要部署在支持国密算法的区域链上：
+SecurityRiskAssessment v2.0多链存证系统需要部署在支持国密算法的区域链上：
 
 ```javascript
 // 连接到区域链（自动选择）
@@ -562,7 +562,7 @@ const siemLog = generateCefFormatLog({
   sourceIP: '192.168.1.10',
   targetIP: '10.0.0.5',
   threatType: 'DDoS',
-  orasrsTxId: 'tx-hash-12345'
+  SRATxId: 'tx-hash-12345'
 });
 
 console.log('SIEM日志:', siemLog);

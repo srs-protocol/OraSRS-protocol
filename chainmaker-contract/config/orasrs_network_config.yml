@@ -1,0 +1,152 @@
+# OraSRS Protocol Blockchain Network Configuration
+# OraSRS协议区块链网络配置
+
+# 网络标识
+network:
+  name: "orasrs-mainnet"
+  version: "2.0.0"
+  description: "OraSRS Protocol Blockchain Network - A security risk scoring and threat intelligence network"
+  
+# 节点配置
+nodes:
+  - id: "node-001"
+    address: "127.0.0.1:12301"
+    role: "consensus"
+    pki_path: "./pki/node01"
+    is_dpos: true
+    stake_amount: 0  # OraSRS v2.0: 无质押要求
+    
+  - id: "node-002"
+    address: "127.0.0.1:12302"
+    role: "consensus"
+    pki_path: "./pki/node02"
+    is_dpos: true
+    stake_amount: 0  # OraSRS v2.0: 无质押要求
+    
+  - id: "node-003"
+    address: "127.0.0.1:12303"
+    role: "consensus"
+    pki_path: "./pki/node03"
+    is_dpos: true
+    stake_amount: 0  # OraSRS v2.0: 无质押要求
+
+# 共识配置
+consensus:
+  type: "v2.dpos"  # OraSRS v2.0: 使用改进的DPoS共识
+  config:
+    block_time: 3s
+    epoch_block_num: 1000
+    enable_parallel_exec: true
+
+# 智能合约配置
+contract:
+  # OraSRS核心合约
+  core_contracts:
+    - name: "sracontract"
+      version: "2.0.0"
+      path: "./sracontract/sracontract.go"
+      auto_deploy: true
+      init_params:
+        governance_address: "16Uiu2HAmSe3bQVHxy5W6VrM5msPu7c6N4CJx4G4gRdX6V8q9T7Vj"
+        network_type: "security_intelligence"
+  
+  # 威胁情报合约
+  threat_intelligence:
+    - name: "sra-threat-intel"
+      version: "2.0.0"
+      path: "./sracontract/extra_methods.go"
+      auto_deploy: true
+
+# 网络安全配置
+security:
+  crypto_alg: "国密SM2/SM3/SM4"  # 支持国密算法
+  tls_enabled: true
+  auth_enabled: true
+  
+# P2P网络配置
+p2p:
+  listen_port: 12301
+  max_connections: 1000
+  sync_mode: "fast"  # 快速同步模式
+  enable_compression: true
+
+# 存储配置
+storage:
+  type: "leveldb"
+  path: "./data"
+  max_storage_size: "100GB"
+  enable_archive: true
+
+# 日志配置
+logging:
+  level: "info"
+  path: "./logs"
+  enable_console: true
+  enable_file: true
+  max_file_size: "100MB"
+  max_backup_count: 10
+
+# API配置
+api:
+  http:
+    enabled: true
+    listen_addr: "0.0.0.0:8080"
+    cors_enabled: true
+    cors_allowed_origins: ["*"]
+  grpc:
+    enabled: true
+    listen_addr: "0.0.0.0:9090"
+
+# 监控配置
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    listen_addr: "0.0.0.0:9091"
+  metrics:
+    collect_interval: 30s
+    export_format: "prometheus"
+
+# 跨链配置（预留）
+cross_chain:
+  enabled: false  # 默认关闭，用户多时再启用
+  adapters:
+    - name: "ethereum"
+      enabled: false
+    - name: "polygon"
+      enabled: false
+    - name: "chainmaker"
+      enabled: true
+
+# OraSRS v2.0 特定配置
+orasrs_v2:
+  threat_intelligence:
+    enable_real_time_sync: true
+    evidence_retention_days: 365
+    verification_threshold: 3  # 需要3个节点验证
+    auto_update_enabled: true
+  reputation_system:
+    update_interval: 60s
+    min_reputation: 0
+    max_reputation: 1000
+    enable_decay: true
+    decay_rate: 0.01  # 1% 每天
+  compliance:
+    enable_auto_compliance: true
+    supported_regions:
+      - "GLOBAL"
+      - "CN"
+      - "EU"
+      - "US"
+    gdpr_compliant: true
+    ccpa_compliant: true
+    china_compliant: true
+
+# 性能配置
+performance:
+  max_tps: 10000
+  max_connections: 5000
+  enable_cache: true
+  cache_size: "512MB"
+  enable_batch_tx: true
+  batch_size: 100

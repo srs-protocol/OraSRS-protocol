@@ -1,8 +1,8 @@
-# OraSRS 国密算法集成指南
+# SecurityRiskAssessment 国密算法集成指南
 
 ## 概述
 
-OraSRS 协议支持中国国家密码标准（国密算法），以满足国内合规要求并提高数据安全性。本指南介绍了如何在协议中使用 SM2、SM3 和 SM4 算法。
+SecurityRiskAssessment 协议支持中国国家密码标准（国密算法），以满足国内合规要求并提高数据安全性。本指南介绍了如何在协议中使用 SM2、SM3 和 SM4 算法。
 
 ## 支持的国密算法
 
@@ -22,11 +22,11 @@ OraSRS 协议支持中国国家密码标准（国密算法），以满足国内�
 - 密钥长度：128 位
 - 模式：推荐使用 GCM 或 CBC 模式
 
-## 在 OraSRS 中的应用
+## 在 SecurityRiskAssessment 中的应用
 
 ### 1. 质押合约中的国密算法
 
-在 `contracts/orasrs-staking-gm.sol` 中，我们使用国密算法进行：
+在 `contracts/SRA-staking-gm.sol` 中，我们使用国密算法进行：
 
 - **节点身份验证**：使用 SM2 进行数字签名验证
 - **数据完整性**：使用 SM3 进行哈希计算
@@ -127,7 +127,7 @@ contract MyContract {
 
 ## 与标准密码算法的比较
 
-| 特性 | 国密算法 | 标准算法 | OraSRS 选择 |
+| 特性 | 国密算法 | 标准算法 | SecurityRiskAssessment 选择 |
 |------|----------|----------|-------------|
 | 安全性 | 高 | 高 | 高 |
 | 合规性 | 高（国内） | 中 | 国密算法 |
