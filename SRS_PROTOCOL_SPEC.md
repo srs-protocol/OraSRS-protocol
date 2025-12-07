@@ -1,4 +1,4 @@
-# SecurityRiskAssessment (Oracle Security Root Service) 协议规范
+# SecurityRiskAssessment (Oracle Security Root Service) 协议规范 - V2.0
 
 ## 概述 / Overview
 
@@ -28,6 +28,30 @@ SecurityRiskAssessment v2.0 通过威胁情报功能对协议进行重大增强�
    - 不可变的区块链威胁证据存储
    - 多节点交叉验证
    - 基于声誉的验证评分
+
+3. **去重逻辑 (Deduplication Logic)**:
+   - 时间窗口去重机制，防止重复威胁报告
+   - 基于5分钟时间窗口的报告验证
+   - 防止恶意节点重复提交相同威胁情报
+   - Deduplication mechanisms to prevent duplicate threat reports
+   - 5-minute time window for report validation
+   - Prevention of malicious nodes from submitting duplicate threat intelligence
+
+4. **区块链集成 (Blockchain Integration)**:
+   - 所有威胁情报记录在OraSRS协议链上
+   - 通过长安链技术实现多方共识
+   - 支持国密算法(SM2/SM3/SM4)
+   - All threat intelligence recorded on OraSRS protocol chain
+   - Multi-party consensus through ChainMaker technology
+   - Support for Chinese national cryptographic algorithms (SM2/SM3/SM4)
+
+5. **联邦学习 (Federated Learning)**:
+   - 分布式威胁情报共享
+   - 隐私保护的威胁模型训练
+   - 威胁情报聚合和去中心化分析
+   - Distributed threat intelligence sharing
+   - Privacy-preserving threat model training
+   - Threat intelligence aggregation and decentralized analysis
 
 3. **Real-time Global Threat Synchronization (实时全球威胁同步)**:
    - Instant threat intelligence sharing across global nodes

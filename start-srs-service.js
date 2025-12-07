@@ -5,7 +5,7 @@
  * 启动咨询式风险评分服务
  */
 
-const SRSService = require('./srs-service');
+const OraSRSService = require('./srs-service');
 
 // 从环境变量或默认值获取配置
 const config = {

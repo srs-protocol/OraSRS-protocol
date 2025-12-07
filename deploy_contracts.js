@@ -4,7 +4,7 @@ async function deploy() {
     console.log("开始部署OraSRS跨链合约...");
     
     // 使用Hardhat网络或本地节点
-    const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
+    const provider = new ethers.providers.JsonRpcProvider('https://api.orasrs.net');
     
     // 获取默认账户
     const [deployer] = await provider.listAccounts();

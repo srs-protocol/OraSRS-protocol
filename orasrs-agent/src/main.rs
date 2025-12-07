@@ -12,8 +12,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Create hybrid agent configuration for local private chain
     let hybrid_config = HybridAgentConfig {
-        domestic_rpc: "http://localhost:8545".to_string(),  // Our local Hardhat node
-        overseas_rpc: "http://localhost:8545".to_string(),  // Using same for testing
+        domestic_rpc: "https://api.orasrs.net".to_string(),  // OraSRS official API
+  overseas_rpc: "https://api.orasrs.net".to_string(),  // Using same for production
         domestic_contract: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512".parse().unwrap(), // ThreatIntelligenceCoordination contract
         overseas_contract: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512".parse().unwrap(), // Same contract for testing
         layerzero_endpoint: "0x0000000000000000000000000000000000000000".to_string(), // Placeholder

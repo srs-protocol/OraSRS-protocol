@@ -84,7 +84,7 @@ X-ORASRS-Signature: <SM2 signature>
     },
     "architectural_layer": "edge|partition|root",
     "cache_ttl": 300,
-    "appeal_url": "https://api.SRA.net/appeal?ip=1.2.3.4",
+    "appeal_url": "https://api.orasrs.net/appeal?ip=1.2.3.4",
     "expires_at": "2025-12-02T11:00:00Z"
   },
   "disclaimer": "This is advisory only. Final decision rests with the client."
@@ -117,7 +117,7 @@ const crypto = require('crypto');
 class SecurityRiskAssessmentClient {
   constructor(options = {}) {
     this.apiKey = options.apiKey;
-    this.endpoint = options.endpoint || 'https://api.SRA.net';
+    this.endpoint = options.endpoint || 'https://api.orasrs.net';
     this.timeout = options.timeout || 5000;
     this.cache = new Map();
     this.localPolicyEngine = new LocalPolicyEngine(options.localPolicy);
@@ -314,7 +314,7 @@ class QueryRequest:
     evidence: Optional[Dict[str, Any]] = None
 
 class SecurityRiskAssessmentClient:
-    def __init__(self, api_key: str, endpoint: str = "https://api.SRA.net", timeout: int = 5):
+    def __init__(self, api_key: str, endpoint: str = "https://api.orasrs.net", timeout: int = 5):
         self.api_key = api_key
         self.endpoint = endpoint.rstrip('/')
         self.timeout = timeout
@@ -556,7 +556,7 @@ class ChainMakerSecurityRiskAssessmentClient extends SecurityRiskAssessmentClien
 {
   "SRA": {
     "api_key": "your_api_key_here",
-    "endpoint": "https://api.SRA.net",
+    "endpoint": "https://api.orasrs.net",
     "timeout": 5000,
     "retry_attempts": 3,
     "retry_delay": 1000

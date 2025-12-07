@@ -4,19 +4,19 @@
 
 ### 1.1 轻量级订阅模式
 ```rust
-// 监听区块链合约事件的增量更新
-async fn listen_contract_events() {
-    // 使用WebSocket连接到RPC节点
-    let ws_client = WebSocketClient::new("ws://localhost:8546").await.unwrap();
-    
-    // 订阅威胁确认事件
-    let filter = Filter::new()
-        .event("ThreatConfirmed(bytes32,address,uint256)")
-        .from_block(BlockNumber::Latest);
-    
-    // 只处理新增威胁，避免全量下载
-    ws_client.subscribe_logs(&filter).await.unwrap();
-}
+    // 监听区块链合约事件的增量更新
+    async fn listen_contract_events() {
+        // 使用WebSocket连接到RPC节点
+        let ws_client = WebSocketClient::new("wss://api.orasrs.net").await.unwrap();
+        
+        // 订阅威胁确认事件
+        let filter = Filter::new()
+            .event("ThreatConfirmed(bytes32,address,uint256)")
+            .from_block(BlockNumber::Latest);
+        
+        // 只处理新增威胁，避免全量下载
+        ws_client.subscribe_logs(&filter).await.unwrap();
+    }
 ```
 
 ### 1.2 增量数据结构
@@ -108,7 +108,7 @@ const wasm = import('./pkg/orasrs_core_sdk.js');
 
 wasm.then(wasm_bindgen => {
     // 初始化OraSRS SDK
-    wasm_bindgen.orasrs_init("http://localhost:8545", CONTRACT_ADDR);
+    wasm_bindgen.orasrs_init("https://api.orasrs.net", CONTRACT_ADDR);
     
     // 监听页面导航
     window.addEventListener('beforeunload', (e) => {

@@ -6,7 +6,7 @@ async function testContractInteraction() {
   console.log("开始测试OraSRS合约交互...");
   
   // 连接到本地Hardhat节点
-  const provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545');
+  const provider = new ethers.JsonRpcProvider('https://api.orasrs.net');
   
   // 获取部署的合约地址
   const deploymentInfo = JSON.parse(await readFile('./deployment-info.json', 'utf8'));

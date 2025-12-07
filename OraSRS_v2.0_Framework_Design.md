@@ -11,6 +11,18 @@ Let the collective immune system identify, block, and evidence every cyber attac
 
 ---
 
+## 重要更新 (V2.0.1) - 最新特性
+## Key Updates (V2.0.1) - Latest Features
+
+### 🚀 增强功能
+- **去重逻辑 (Deduplication Logic)**: 防止重复威胁报告的时间窗口机制
+- **区块链集成 (Blockchain Integration)**: 所有威胁情报记录在OraSRS协议链上
+- **国密算法 (Chinese Cryptographic Algorithms)**: 支持SM2/SM3/SM4国密算法
+- **长安链部署 (ChainMaker Deployment)**: 完整的ChainMaker区块链部署方案
+- **三层共识架构 (Three-Tier Consensus Architecture)**: 全局根网络层 + 分区共识层 + 边缘缓存层
+
+---
+
 ## 一、整体架构（三层去中心化设计）
 ## I. Overall Architecture (Three-Tier Decentralized Design)
 

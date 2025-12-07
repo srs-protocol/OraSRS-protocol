@@ -1,17 +1,21 @@
-# SecurityRiskAssessment v2.0 API 接口文档
-# SecurityRiskAssessment v2.0 API Interface Documentation
+# SecurityRiskAssessment v2.0 API 接口文档 - V2.0.1
+# SecurityRiskAssessment v2.0 API Interface Documentation - V2.0.1
 
 ## 1. API 基础信息
 ## 1. API Basic Information
 
-- **API 版本**: v2.0
-- **API Version**: v2.0
-- **基础 URL**: `https://api.SRA.example.com/api/v2`
-- **Base URL**: `https://api.SRA.example.com/api/v2`
+- **API 版本**: v2.0.1
+- **API Version**: v2.0.1
+- **基础 URL**: `https://api.orasrs.net`
+- **Base URL**: `https://api.orasrs.net`
 - **内容类型**: `application/json`
 - **Content Type**: `application/json`
 - **认证方式**: API Key + 国密算法签名
 - **Authentication**: API Key + SM Algorithm Signature
+- **区块链集成**: 所有威胁情报记录在OraSRS协议链上
+- **Blockchain Integration**: All threat intelligence recorded on OraSRS protocol chain
+- **去重逻辑**: 防止重复威胁报告的时间窗口机制
+- **Deduplication Logic**: Time window mechanism to prevent duplicate threat reports
 
 ## 2. 认证 (Authentication)
 

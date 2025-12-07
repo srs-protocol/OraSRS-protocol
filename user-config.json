@@ -1,7 +1,7 @@
 {
   "network": {
     "chainId": 8888,
-    "rpcUrl": "http://localhost:8545",
+    "rpcUrl": "https://api.orasrs.net",
     "blockTime": 1,
     "nativeToken": "ORA"
   },

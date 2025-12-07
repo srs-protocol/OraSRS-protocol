@@ -4,10 +4,8 @@ import { readFile } from "fs/promises";
 
 async function simulateAgent() {
   console.log("🚀 启动 OraSRS Agent 模拟器...");
-  console.log("🔗 连接到本地私有链 http://localhost:8545");
-  
-  // 连接到本地Hardhat节点
-  const provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545');
+  console.log("🔗 连接到官方API https://api.orasrs.net");
+  const provider = new ethers.JsonRpcProvider('https://api.orasrs.net');
   
   // 获取部署的合约地址
   const deploymentInfo = JSON.parse(await readFile('./deployment-info.json', 'utf8'));
