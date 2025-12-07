@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "buildDate": "2025-12-07T16:24:32Z",
+  "features": [
+    "incremental_updates",
+    "ttl_expiry",
+    "silent_mode",
+    "cross_platform",
+    "openwrt_support",
+    "nginx_integration"
+  ],
+  "blockchainConfig": {
+    "defaultEndpoint": "https://orasrs-chain.example.com",
+    "contractAddresses": {
+      "threatIntel": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "securityAction": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+    }
+  },
+  "clientConfig": {
+    "defaultUpdateInterval": 300,
+    "memoryLimit": 5242880,
+    "defaultSilentMode": true,
+    "maxThreatsCache": 10000
+  }
+}

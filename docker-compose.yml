@@ -1,94 +1,16 @@
-version: '3.8'
-
 services:
-  # OraSRS区块链节点1
-  orasrs-node-1:
-    image: chainmakerofficial/chainmaker:2.3.0
-    container_name: orasrs-node-1
+  # 这是一个完全属于您的私有区块链节点
+  orasrs-chain:
+    image: ethereum/client-go:stable
+    command: 
+      - --dev               # 开发模式 (自动挖矿，秒级出块)
+      - --dev.period=1      # 1秒一个块
+      - --http              # 开启 HTTP RPC
+      - --http.addr=0.0.0.0
+      - --http.port=8545
+      - --http.api=eth,net,web3,personal,miner
+      - --http.corsdomain=*
+      - --networkid=8888    # 您的专属链 ID
     ports:
-      - "12301:12301"
-      - "8081:8080"
-      - "9091:9090"
-      - "9092:9091"
-    volumes:
-      - ./data/node1:/opt/chainmaker/data
-      - ./pki/node1:/opt/chainmaker/pki
-      - ./contracts:/opt/chainmaker/contracts
-      - ./chainmaker-contract/config/orasrs_network_config.yml:/opt/chainmaker/config/config.yml
-    environment:
-      - NODE_ID=node-001
-      - LISTEN_PORT=12301
-    networks:
-      - orasrs-net
-    restart: unless-stopped
-
-  # OraSRS区块链节点2
-  orasrs-node-2:
-    image: chainmakerofficial/chainmaker:2.3.0
-    container_name: orasrs-node-2
-    ports:
-      - "12302:12301"
-      - "8082:8080"
-      - "9093:9090"
-      - "9094:9091"
-    volumes:
-      - ./data/node2:/opt/chainmaker/data
-      - ./pki/node2:/opt/chainmaker/pki
-      - ./contracts:/opt/chainmaker/contracts
-      - ./chainmaker-contract/config/orasrs_network_config.yml:/opt/chainmaker/config/config.yml
-    environment:
-      - NODE_ID=node-002
-      - LISTEN_PORT=12301
-    networks:
-      - orasrs-net
-    restart: unless-stopped
-
-  # OraSRS区块链节点3
-  orasrs-node-3:
-    image: chainmakerofficial/chainmaker:2.3.0
-    container_name: orasrs-node-3
-    ports:
-      - "12303:12301"
-      - "8083:8080"
-      - "9095:9090"
-      - "9096:9091"
-    volumes:
-      - ./data/node3:/opt/chainmaker/data
-      - ./pki/node3:/opt/chainmaker/pki
-      - ./contracts:/opt/chainmaker/contracts
-      - ./chainmaker-contract/config/orasrs_network_config.yml:/opt/chainmaker/config/config.yml
-    environment:
-      - NODE_ID=node-003
-      - LISTEN_PORT=12301
-    networks:
-      - orasrs-net
-    restart: unless-stopped
-
-  # 监控服务
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: orasrs-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - orasrs-net
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: orasrs-grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-    networks:
-      - orasrs-net
-    restart: unless-stopped
-
-networks:
-  orasrs-net:
-    driver: bridge
+      - "8545:8545"
+    restart: always

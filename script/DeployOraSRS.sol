@@ -16,8 +16,7 @@ contract DeployOraSRS is Script {
         
         // 部署威胁情报协调合约（已移除质押功能，放宽节点注册条件）
         ThreatIntelligenceCoordination threatIntelCoord = new ThreatIntelligenceCoordination(
-            msg.sender,
-            address(threatEvidence)
+            msg.sender
         );
         console.log("ThreatIntelligenceCoordination deployed at:", address(threatIntelCoord));
         

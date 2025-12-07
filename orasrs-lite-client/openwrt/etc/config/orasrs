@@ -1,0 +1,25 @@
+# OraSRS Lite Client for OpenWrt
+# 简化的威胁情报客户端，适用于128MB内存的路由器
+
+# OpenWrt UCI 配置文件示例
+# /etc/config/orasrs
+
+config orasrs 'main'
+    option enabled '1'
+    option silent_mode '1'
+    option update_interval '300'  # 5分钟更新一次
+    option memory_limit '32'      # 32MB内存限制
+    option log_level 'warning'
+    option chain_endpoint 'https://orasrs-chain.example.com'
+
+config firewall_rule
+    option ip '192.168.100.10'
+    option type 'block'
+    option duration '86400'  # 24小时，以秒为单位
+    option reason 'malicious_ip'
+
+config firewall_rule
+    option ip '104.28.29.30'
+    option type 'block'
+    option duration '172800'  # 48小时
+    option reason 'ddos_source'
