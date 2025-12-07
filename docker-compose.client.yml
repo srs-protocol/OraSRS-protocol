@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  orasrs-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: orasrs-client
+    ports:
+      - "3006:3006"
+    environment:
+      - ORASRS_PORT=3006
+      - ORASRS_HOST=0.0.0.0
+      - ORASRS_ENABLE_LOGGING=true
+      - ORASRS_BLOCKCHAIN_ENDPOINT=https://api.orasrs.net
+      - ORASRS_CHAIN_ID=8888
+      - ORASRS_CONTRACT_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    networks:
+      - orasrs-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  orasrs-network:
+    driver: bridge
+
+volumes:
+  logs:
+  config:
