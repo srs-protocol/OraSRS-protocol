@@ -26,10 +26,9 @@ contract OraSRSDeploymentScript is Script {
         // 重新部署治理合约，使用正确的威胁情报协调合约地址 (使用占位符，因为威胁情报协调合约需要先部署)
         // 实际部署时需要循环依赖处理
         
-        // 部署威胁情报协调合约
+        // 部署威胁情报协调合约（现在只需要治理合约地址）
         ThreatIntelligenceCoordination threatIntelligence = new ThreatIntelligenceCoordination(
-            address(governance),
-            address(threatEvidence)
+            address(governance)
         );
         console.log("ThreatIntelligenceCoordination deployed at:", address(threatIntelligence));
         
@@ -39,13 +38,13 @@ contract OraSRSDeploymentScript is Script {
 
         // 重新部署威胁情报协调合约以使用新的治理合约地址
         threatIntelligence = new ThreatIntelligenceCoordination(
-            address(governance),
-            address(threatEvidence)
+            address(governance)
         );
         console.log("ThreatIntelligenceCoordination (updated) deployed at:", address(threatIntelligence));
 
-        // 部署增强威胁验证合约
-        EnhancedThreatVerification enhancedVerification = new EnhancedThreatVerification(address(governance));
+        // 部署增强威胁验证合约（需要治理合约地址和代币地址）
+        // 由于 OraSRSToken 合约尚未部署，这里使用占位符地址，实际部署时需要调整顺序
+        EnhancedThreatVerification enhancedVerification = new EnhancedThreatVerification(address(governance), address(0x0000000000000000000000000000000000000000));
         console.log("EnhancedThreatVerification deployed at:", address(enhancedVerification));
 
         // 部署隐私保护验证合约

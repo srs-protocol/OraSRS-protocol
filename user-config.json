@@ -1,0 +1,21 @@
+{
+  "network": {
+    "chainId": 8888,
+    "rpcUrl": "http://localhost:8545",
+    "blockTime": 1,
+    "nativeToken": "ORA"
+  },
+  "contracts": {
+    "deployTimeout": 30000,
+    "gasLimit": 8000000,
+    "gasPrice": 1
+  },
+  "deployment": {
+    "faucetInitialBalance": "1000000",
+    "defaultStakeAmount": "1000"
+  },
+  "monitoring": {
+    "enable": true,
+    "port": 3000
+  }
+}

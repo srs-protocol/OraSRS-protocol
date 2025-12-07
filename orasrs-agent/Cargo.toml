@@ -36,6 +36,8 @@ reqwest = { version = "0.12", features = ["json"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 ipnetwork = "0.20"
 maxminddb = "0.24"
+ethers = { version = "2.0", features = ["abigen"] }
+anyhow = "1.0"
 
 # Optional SM crypto support
 sm-crypto = { version = "0.7", optional = true }
