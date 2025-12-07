@@ -9,11 +9,15 @@
 use tauri::{Manager, SystemTray, SystemTrayEvent, AppHandle};
 use std::sync::Mutex;
 
+// 引入OraSRS核心SDK
+use orasrs_core_sdk;
+
 // 全局状态管理
 pub struct AppState {
     pub threat_count: Mutex<u32>,
     pub is_monitoring: Mutex<bool>,
     pub last_sync: Mutex<u64>,
+    pub connected_nodes: Mutex<u32>, // 新增：连接的节点数
 }
 
 fn main() {
@@ -40,16 +44,20 @@ fn main() {
             threat_count: Mutex::new(0),
             is_monitoring: Mutex::new(true),
             last_sync: Mutex::new(0),
+            connected_nodes: Mutex::new(0),
         })
         .setup(|app| {
             // 初始化OraSRS核心SDK
             unsafe {
-                // 偌设本地区块链节点地址
-                let rpc_url = std::ffi::CString::new("http://localhost:8545").unwrap();
-                let contract_addr = std::ffi::CString::new("0x1234567890123456789012345678901234567890").unwrap();
+                // OraSRS协议区块链节点地址
+                let rpc_url = std::ffi::CString::new("https://api.orasrs.net").unwrap();
+                let contract_addr = std::ffi::CString::new("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512").unwrap(); // 更新为新的NodeRegistry地址
                 
                 // 初始化SDK
-                // orasrs_core_sdk::orasrs_init(rpc_url.as_ptr(), contract_addr.as_ptr());
+                orasrs_core_sdk::orasrs_init(rpc_url.as_ptr(), contract_addr.as_ptr());
+                
+                // 立即从区块链获取节点列表
+                orasrs_core_sdk::orasrs_update_nodes();
             }
             
             // 隐藏主窗口，通过系统托盘操作
@@ -99,7 +107,9 @@ fn main() {
             get_status,
             check_ip,
             sync_threats_cmd,
-            get_notifications
+            get_notifications,
+            connect_to_p2p_network,
+            get_connected_nodes_count
         ])
         .run(tauri::generate_context!())
         .expect("OraSRS客户端启动失败");
@@ -177,6 +187,26 @@ async fn get_notifications(_state: tauri::State<'_, AppState>) -> Result<Vec<Not
                 .as_secs() - 300, // 5分钟前
         }
     ])
+}
+
+// 尝试连接到P2P网络中的节点
+#[tauri::command]
+async fn connect_to_p2p_network(state: tauri::State<'_, AppState>) -> Result<u32, String> {
+    let connected_nodes = unsafe {
+        orasrs_core_sdk::orasrs_connect_to_all_nodes()
+    };
+    
+    // 更新全局状态
+    let mut state_nodes = state.connected_nodes.lock().unwrap();
+    *state_nodes = connected_nodes;
+    
+    Ok(connected_nodes)
+}
+
+// 获取连接的节点数
+#[tauri::command]
+async fn get_connected_nodes_count(state: tauri::State<'_, AppState>) -> Result<u32, String> {
+    Ok(*state.connected_nodes.lock().unwrap())
 }
 
 // 内部函数：同步威胁列表

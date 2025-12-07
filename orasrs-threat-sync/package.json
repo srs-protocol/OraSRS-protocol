@@ -1,0 +1,22 @@
+{
+  "name": "orasrs-threat-sync",
+  "version": "1.0.0",
+  "description": "OraSRS 威胁情报同步客户端 - 直接从区块链同步威胁情报并执行本地安全措施",
+  "main": "orasrs-client.js",
+  "scripts": {
+    "start": "node orasrs-client.js",
+    "dev": "node orasrs-client.js"
+  },
+  "dependencies": {
+    "ethers": "^6.10.0"
+  },
+  "keywords": [
+    "security",
+    "blockchain",
+    "threat-intelligence",
+    "firewall",
+    "orasrs"
+  ],
+  "author": "OraSRS Protocol",
+  "license": "MIT"
+}

@@ -250,7 +250,7 @@ class SRSEngine {
   }
 
   /**
-   * 收集证据 - 优化版本，支持威胁情报集成
+   * 收集证据 - 优化版本，支持威胁情报集成和去重逻辑
    */
   async gatherEvidence(ip, domain) {
     // 检查威胁情报缓存
@@ -326,20 +326,23 @@ class SRSEngine {
       });
     }
 
+    // 应用去重逻辑
+    const deduplicatedEvidence = this.deduplicateEvidence(evidence);
+
     // 如果没有证据，返回空数组
-    if (evidence.length === 0) {
+    if (deduplicatedEvidence.length === 0) {
       return [];
     }
 
     // 按严重程度排序证据
-    evidence.sort((a, b) => {
+    deduplicatedEvidence.sort((a, b) => {
       const severityOrder = { 'critical': 4, 'high': 3, 'medium': 2, 'low': 1 };
       return severityOrder[b.severity] - severityOrder[a.severity];
     });
 
     // 缓存威胁情报结果
     this.threatIntelligenceCache.set(cacheKey, {
-      evidence,
+      evidence: deduplicatedEvidence,
       expires_at: new Date(Date.now() + 30 * 60 * 1000) // 30分钟后过期
     });
 
@@ -350,7 +353,75 @@ class SRSEngine {
       this.threatIntelligenceCache.delete(firstKey);
     }
 
-    return evidence;
+    return deduplicatedEvidence;
+  }
+
+  /**
+   * 证据去重逻辑
+   */
+  deduplicateEvidence(evidence) {
+    if (!evidence || evidence.length === 0) {
+      return [];
+    }
+
+    // 使用Set来跟踪唯一证据
+    const seen = new Set();
+    const uniqueEvidence = [];
+
+    for (const item of evidence) {
+      // 创建一个唯一标识符，考虑类型、详情和来源
+      const identifier = `${item.type}_${item.detail}_${item.source}`;
+      
+      // 检查是否已经见过这个证据
+      if (!seen.has(identifier)) {
+        seen.add(identifier);
+        uniqueEvidence.push(item);
+      }
+    }
+
+    return uniqueEvidence;
+  }
+
+  /**
+   * 威胁情报去重：检测重复的威胁报告
+   */
+  isThreatReportDuplicate(report) {
+    if (!report || !report.type || !report.source_ip) {
+      return false;
+    }
+
+    // 创建基于时间窗口的唯一标识符
+    const timeWindow = Math.floor(Date.now() / (5 * 60 * 1000)); // 5分钟时间窗口
+    const identifier = `${report.type}_${report.source_ip}_${timeWindow}`;
+
+    // 检查是否在时间窗口内已经存在相同的报告
+    if (this.recentThreatReports && this.recentThreatReports.has(identifier)) {
+      return true;
+    }
+
+    // 如果不存在，记录这个报告
+    if (!this.recentThreatReports) {
+      this.recentThreatReports = new Map();
+    }
+
+    // 设置过期时间（5分钟后自动清理）
+    this.recentThreatReports.set(identifier, Date.now());
+
+    // 定期清理过期的报告记录
+    if (!this.duplicateCleanupTimer) {
+      this.duplicateCleanupTimer = setInterval(() => {
+        const now = Date.now();
+        const fiveMinutesAgo = now - (5 * 60 * 1000);
+        
+        for (const [key, timestamp] of this.recentThreatReports.entries()) {
+          if (timestamp < fiveMinutesAgo) {
+            this.recentThreatReports.delete(key);
+          }
+        }
+      }, 60 * 1000); // 每分钟清理一次
+    }
+
+    return false;
   }
 
   /**

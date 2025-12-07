@@ -29,6 +29,12 @@ module.exports = {
         mnemonic: "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
       }
     },
+    "api.orasrs": {
+      url: "http://localhost:8545",  // 本地OraSRS网络RPC端点
+      accounts: [
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" // 默认Hardhat账户私钥
+      ]
+    },
     sepolia: {
       url: process.env.ETHEREUM_SEPOLIA_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []

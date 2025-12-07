@@ -1,8 +1,16 @@
-# SecurityRiskAssessment (Oracle Security Root Service) 核心协议规范
+# SecurityRiskAssessment (Oracle Security Root Service) 核心协议规范 - V2.0.1
 
 ## 概述 / Overview
 
 SecurityRiskAssessment (Oracle Security Root Service) 是一个咨询式风险评分服务，旨在为互联网安全决策提供权威参考。与传统的阻断式防火墙不同，SecurityRiskAssessment 提供风险评估和建议，由客户端自主决定是否执行相应措施。
+
+## 最新更新 (V2.0.1)
+### 🚀 新增功能
+- **去重逻辑 (Deduplication Logic)**: 防止重复威胁报告的时间窗口机制
+- **区块链集成 (Blockchain Integration)**: 所有威胁情报记录在OraSRS协议链上
+- **国密算法 (Chinese Cryptographic Algorithms)**: 支持SM2/SM3/SM4国密算法
+- **长安链部署 (ChainMaker Deployment)**: 完整的ChainMaker区块链部署方案
+- **三层共识架构 (Three-Tier Consensus Architecture)**: 全局根网络层 + 分区共识层 + 边缘缓存层
 
 ## 设计原则 / Design Principles
 

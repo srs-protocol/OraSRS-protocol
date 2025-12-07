@@ -1,6 +1,14 @@
-# OraSRS 公开许可链用户端
+# OraSRS 公开许可链用户端 - V2.0.1
 
 OraSRS用户端是一个"公开许可链"(Public Permissioned Chain)架构的完整实现，包含节点端严格限制和用户端开放接入的"内紧外松"设计。
+
+## 最新更新 (V2.0.1)
+### 🚀 新增功能
+- **去重逻辑 (Deduplication Logic)**: 防止重复威胁报告的时间窗口机制
+- **区块链集成 (Blockchain Integration)**: 所有威胁情报记录在OraSRS协议链上
+- **国密算法 (Chinese Cryptographic Algorithms)**: 支持SM2/SM3/SM4国密算法
+- **长安链部署 (ChainMaker Deployment)**: 完整的ChainMaker区块链部署方案
+- **三层共识架构 (Three-Tier Consensus Architecture)**: 全局根网络层 + 分区共识层 + 边缘缓存层
 
 ## 架构特性
 

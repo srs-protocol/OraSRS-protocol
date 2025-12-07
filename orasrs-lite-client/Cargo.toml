@@ -26,12 +26,21 @@ log = "0.4"
 env_logger = "0.10"
 
 # 网络相关
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.12", features = ["json"] }
 websocket = "0.26"
 
 # 本地阻断相关
 nix = "0.27"  # 用于Linux系统调用
 windows = { version = "0.48", features = ["Win32_Networking_WinSock", "Win32_Foundation"] } # Windows WFP
+
+# 其他必需的依赖
+ethers = { version = "2.0", features = ["abigen"] }
+anyhow = "1.0"
+tokio-test = "0.4"
+
+# P2P网络连接相关
+tokio-util = "0.7"
+futures = "0.3"
 
 [features]
 default = ["full-node"]

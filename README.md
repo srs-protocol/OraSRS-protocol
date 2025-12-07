@@ -1,17 +1,28 @@
-# SecurityRiskAssessment Protocol (Oracle Security Root Service) / SecurityRiskAssessment 协议 (Oracle Security Root Service)
-> 一种隐私优先、联邦学习驱动、三层共识架构的安全决策协议。
-> A privacy-first, federated learning-driven, three-layer consensus architecture security decision protocol.
+# OraSRS (Oracle Security Root Service) - 最新版本
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![GitHub Discussions](https://img.shields.io/github/discussions/SRS协议/SRA-protocol)](https://github.com/SRS协议/SRA-protocol/discussions)
+OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
 
-## 🔍 什么是 SecurityRiskAssessment？ / What is SecurityRiskAssessment?
-SecurityRiskAssessment 是一种轻量、去中心化的安全决策协议。它允许网络设备在面临未知流量时，通过查询权威服务获取风险评估建议，辅助本地策略执行。
-SecurityRiskAssessment is a lightweight, decentralized security decision protocol. It allows network devices to query authoritative services for risk assessment recommendations when facing unknown traffic, assisting local policy enforcement.
+## 项目概述
 
-> ⚠️ **核心原则 / Core Principle**:  
-> SecurityRiskAssessment 是 **咨询式服务**（Advisory），不直接阻断流量。最终决策权始终保留在客户端。
-> SecurityRiskAssessment is an **Advisory Service** and does not directly block traffic. The final decision always remains with the client.
+OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
+
+- **咨询式服务**：OraSRS 是信用报告机构（如 FICO），而不是法院。客户端自己决定是否采取行动。
+- **透明性**：所有决策依据都对客户端透明。
+- **可审计性**：所有评估过程可以追溯和审计。
+- **合规性**：符合 GDPR、CCPA 和中国网络安全法要求。
+- **区块链集成**：所有威胁情报记录在 OraSRS 协议链上，提供透明和不可篡改的验证机制。
+- **三层架构**：边缘层、共识层、智能层的三层共识架构。
+
+## 核心价值主张
+
+1. **咨询式服务模型**：OraSRS 提供建议而非直接阻断命令
+2. **多层次证据**：基于多源证据的风险评估
+3. **透明可审计**：所有评估过程可追溯
+4. **合规隐私**：严格遵守全球隐私法规
+5. **声誉机制**：基于节点声誉的去中心化治理
+6. **区块链验证**：通过长安链技术实现多方共识和验证
+7. **去重逻辑**：防止重复威胁报告的时间窗口机制
+8. **国密算法**：支持 SM2/SM3/SM4 国密算法
 
 ## ✨ 增强功能 / Enhanced Features
 - **三层去中心化架构 / Three-Tier Decentralized Architecture**: 超轻量边缘代理 + 多链可信存证 + 威胁情报协调网络 / Ultra-lightweight Edge Agent + Multi-chain Trusted Evidence Storage + Threat Intelligence Coordination Network

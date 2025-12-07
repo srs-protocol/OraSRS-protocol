@@ -1,6 +1,14 @@
-# SecurityRiskAssessment 增强版应用指南
+# SecurityRiskAssessment 增强版应用指南 - V2.0.1
 
 本指南说明如何使用 SecurityRiskAssessment 协议的增强功能，包括共识机制、质押、声誉系统等。
+
+## 最新更新 (V2.0.1)
+### 🚀 新增功能
+- **去重逻辑 (Deduplication Logic)**: 防止重复威胁报告的时间窗口机制
+- **区块链集成 (Blockchain Integration)**: 所有威胁情报记录在OraSRS协议链上
+- **国密算法 (Chinese Cryptographic Algorithms)**: 支持SM2/SM3/SM4国密算法
+- **长安链部署 (ChainMaker Deployment)**: 完整的ChainMaker区块链部署方案
+- **三层共识架构 (Three-Tier Consensus Architecture)**: 全局根网络层 + 分区共识层 + 边缘缓存层
 
 ## 1. 初始化 SecurityRiskAssessment v2.0 引擎
 

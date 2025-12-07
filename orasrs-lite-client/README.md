@@ -1,6 +1,7 @@
 # OraSRS 轻量客户端 (Lite Client)
 
 这是一个基于Tauri (Rust + 前端) 框架的桌面应用，用于实现OraSRS威胁情报的本地订阅与阻断功能。
+客户端连接到OraSRS官方区块链网络 (https://api.orasrs.net)。
 
 ## 架构概述
 

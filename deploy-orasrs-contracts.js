@@ -12,7 +12,7 @@ async function deployOraSRSContracts() {
     wallet = deployer;
   } else {
     // 否则直接连接到RPC
-    provider = new ethers.JsonRpcProvider(process.env.CHAINMAKER_RPC_URL || "http://localhost:8080");
+    provider = new ethers.JsonRpcProvider(process.env.CHAINMAKER_RPC_URL || "https://api.orasrs.net");
     if (!process.env.DEPLOYER_PRIVATE_KEY) {
       console.error("请设置DEPLOYER_PRIVATE_KEY环境变量");
       process.exit(1);

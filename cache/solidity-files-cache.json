@@ -504,6 +504,89 @@
       "artifacts": [
         "ThreatIntelligenceCoordination"
       ]
+    },
+    "/home/Great/SRS-Protocol/contracts/NodeRegistry.sol": {
+      "lastModificationDate": 1765127865017,
+      "contentHash": "d45188082d8aa6a623a9900546bb1163",
+      "sourceName": "contracts/NodeRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "metadata": {
+            "bytecodeHash": "none"
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "NodeRegistry"
+      ]
+    },
+    "/home/Great/SRS-Protocol/contracts/core/GasSubsidy.sol": {
+      "lastModificationDate": 1765130401890,
+      "contentHash": "dd95fb73e6cea17a12f2178ae64a8d88",
+      "sourceName": "contracts/core/GasSubsidy.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "metadata": {
+            "bytecodeHash": "none"
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/utils/ReentrancyGuard.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "GasSubsidy"
+      ]
     }
   }
 }
