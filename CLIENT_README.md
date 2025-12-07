@@ -11,6 +11,22 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 - **合规性**：符合 GDPR、CCPA 和中国网络安全法要求
 - **三层架构**：边缘层、共识层、智能层
 
+## 一键安装 (Linux)
+
+使用以下命令一键安装 OraSRS Linux 客户端：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
+```
+
+或
+
+```bash
+wget -O - https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
+```
+
+安装完成后，服务将自动启动并设置为开机自启。
+
 ## 预编译二进制文件
 
 我们提供了预编译的二进制文件，无需安装 Node.js 环境即可运行：
@@ -58,7 +74,32 @@ export ORASRS_BLOCKCHAIN_ENDPOINT=https://api.orasrs.net
 export ORASRS_CHAIN_ID=8888
 
 # OraSRS 合约地址
-export ORASRS_CONTRACT_ADDRESS=0x0B306BF915C4d645ff596e518fAf3F9669b97016
+export ORASRS_CONTRACT_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+```
+
+## Docker 部署
+
+### 使用 Dockerfile
+
+```bash
+# 构建镜像
+docker build -f Dockerfile.client -t orasrs-client .
+
+# 运行容器
+docker run -d --name orasrs-client -p 3006:3006 orasrs-client
+```
+
+### 使用 Docker Compose
+
+```bash
+# 启动服务
+docker-compose -f docker-compose.client.yml up -d
+
+# 查看日志
+docker-compose -f docker-compose.client.yml logs -f
+
+# 停止服务
+docker-compose -f docker-compose.client.yml down
 ```
 
 ## API 端点
@@ -76,6 +117,25 @@ export ORASRS_CONTRACT_ADDRESS=0x0B306BF915C4d645ff596e518fAf3F9669b97016
 
 - **获取全局威胁列表**: `GET /orasrs/v2/threat-list`
 - **威胁情报申诉**: `POST /orasrs/v1/appeal`
+
+## 服务管理 (Linux 一键安装版本)
+
+```bash
+# 启动服务
+sudo systemctl start orasrs-client
+
+# 停止服务
+sudo systemctl stop orasrs-client
+
+# 重启服务
+sudo systemctl restart orasrs-client
+
+# 查看服务状态
+sudo systemctl status orasrs-client
+
+# 查看实时日志
+sudo journalctl -u orasrs-client -f
+```
 
 ## 去重逻辑
 

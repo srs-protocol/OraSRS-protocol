@@ -2,6 +2,14 @@
 
 OraSRS用户端是一个"公开许可链"(Public Permissioned Chain)架构的完整实现，包含节点端严格限制和用户端开放接入的"内紧外松"设计。
 
+## 一键安装 (Linux)
+
+使用以下命令一键安装 OraSRS Linux 客户端：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-client.sh | bash
+```
+
 ## 最新更新 (V2.0.1)
 ### 🚀 新增功能
 - **去重逻辑 (Deduplication Logic)**: 防止重复威胁报告的时间窗口机制

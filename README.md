@@ -24,6 +24,57 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 7. **去重逻辑**：防止重复威胁报告的时间窗口机制
 8. **国密算法**：支持 SM2/SM3/SM4 国密算法
 
+## 一键安装 (Linux)
+
+使用以下命令一键安装 OraSRS Linux 客户端：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
+```
+
+或
+
+```bash
+wget -O - https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
+```
+
+### 安装后管理命令
+
+```bash
+# 启动服务
+sudo systemctl start orasrs-client
+
+# 停止服务
+sudo systemctl stop orasrs-client
+
+# 重启服务
+sudo systemctl restart orasrs-client
+
+# 查看服务状态
+sudo systemctl status orasrs-client
+
+# 查看实时日志
+sudo journalctl -u orasrs-client -f
+
+# 健康检查
+curl http://localhost:3006/health
+
+# 风险查询示例
+curl 'http://localhost:3006/orasrs/v1/query?ip=8.8.8.8'
+
+# 威胁列表
+curl http://localhost:3006/orasrs/v2/threat-list
+```
+
+## 浏览器扩展
+
+我们还提供浏览器扩展插件，可直接从浏览器保护您的网络安全：
+
+- 支持 Chrome 和 Firefox
+- 实时威胁防护
+- 基于 OraSRS 协议链的去中心化威胁情报
+- 隐私保护设计
+
 ## ✨ 增强功能 / Enhanced Features
 - **三层去中心化架构 / Three-Tier Decentralized Architecture**: 超轻量边缘代理 + 多链可信存证 + 威胁情报协调网络 / Ultra-lightweight Edge Agent + Multi-chain Trusted Evidence Storage + Threat Intelligence Coordination Network
 - **无质押声誉系统 / Stake-Free Reputation System**: 基于行为的动态声誉评分，无需经济质押 / Behavior-based dynamic reputation scoring, no economic staking required
