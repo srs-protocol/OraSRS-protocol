@@ -62,6 +62,38 @@ SecurityRiskAssessment is a lightweight, decentralized security decision protoco
 - [源代码 / Source Code](SRA-agent/src/)
 - [配置示例 / Configuration Examples](SRA-agent/config.example.toml)
 
+## 💻 OraSRS 轻量级客户端 / OraSRS Lite Client
+OraSRS轻量级客户端是一个基于Tauri框架（Rust + 前端）构建的桌面应用，专为资源受限环境设计，具有以下特性：
+- **增量更新** - 仅同步最新威胁情报，减少网络流量和存储占用
+- **TTL过期淘汰** - 自动清理过期威胁数据，防止规则库无限膨胀
+- **静默模式** - 默认静默运行，仅在高危威胁时弹窗提醒
+- **跨平台支持** - 支持Windows、macOS和Linux桌面系统
+- **OpenWrt集成** - 提供128MB内存路由器的精简模块
+- **Nginx集成** - 支持在Web服务器层面进行威胁过滤
+
+### 快速启动 / Quick Start
+```bash
+# 克隆仓库
+git clone https://github.com/srs-protocol/orasrs-protocol.git
+cd orasrs-protocol/orasrs-lite-client
+
+# 安装依赖
+npm install
+
+# 启动开发模式
+npm run tauri dev
+
+# 构建发布版本
+npm run tauri build
+```
+
+### 功能特性 / Features
+- **威胁情报订阅** - 实时同步区块链上的威胁情报
+- **自动阻断** - 根据威胁等级自动阻断恶意IP
+- **日志自动标记** - 自动为日志库中的IP标记威胁等级
+- **Nginx集成** - 提供Nginx threat-check模块
+- **OpenWrt支持** - 专为路由器优化的轻量级实现
+
 ## 🧩 客户端库 / Client Libraries
 - [客户端实现指南 / Client Implementation Guide](CLIENT_IMPLEMENTATION_GUIDE.md)
 - Node.js: `npm install @SRA-client`
