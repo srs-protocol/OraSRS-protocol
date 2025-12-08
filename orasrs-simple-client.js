@@ -140,7 +140,11 @@ class SimpleOraSRSService {
 
       try {
         // 从区块链获取威胁数据
-        const threatData = await this.blockchainConnector.getThreatData(ip || domain);
+        let threatData = await this.blockchainConnector.getThreatData(ip || domain);
+        
+        // 将数据翻译成中文
+        threatData = this.translateToChinese(threatData);
+        
         res.json(threatData);
       } catch (error) {
         console.error('Error fetching threat data:', error);
@@ -149,26 +153,26 @@ class SimpleOraSRSService {
           query: { ip: ip || null, domain: domain || null },
           response: {
             risk_score: Math.random() * 0.3, // 较低的随机风险评分
-            confidence: 'low',
-            risk_level: 'low',
+            confidence: '低',
+            risk_level: '低',
             evidence: [
               {
-                type: 'mock_data',
-                detail: 'Mock threat data for service availability',
-                source: 'local_mock',
+                type: '模拟数据',
+                detail: '服务可用性模拟威胁数据',
+                source: '本地模拟',
                 timestamp: new Date().toISOString(),
                 confidence: 0.3
               }
             ],
             recommendations: {
-              default: 'allow',
-              public_services: 'allow',
-              banking: 'allow_with_verification'
+              default: '允许',
+              public_services: '允许',
+              banking: '允许但需验证'
             },
             appeal_url: `https://api.orasrs.net/appeal?ip=${ip || domain}`,
             expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
             timestamp: new Date().toISOString(),
-            disclaimer: 'This is mock data for service availability during blockchain connection issues.',
+            disclaimer: '这是区块链连接问题期间的服务可用性模拟数据。',
             version: '2.0-mock'
           },
           blockchain_status: this.blockchainConnector.getStatus()
@@ -182,7 +186,10 @@ class SimpleOraSRSService {
     this.app.get('/orasrs/v2/threat-list', async (req, res) => {
       try {
         // 从区块链获取全局威胁列表
-        const threatList = await this.blockchainConnector.getGlobalThreatList();
+        let threatList = await this.blockchainConnector.getGlobalThreatList();
+        
+        // 将威胁列表翻译成中文
+        threatList = this.translateThreatListToChinese(threatList);
         
         res.json({
           ...threatList,
@@ -195,40 +202,40 @@ class SimpleOraSRSService {
           threat_list: [
             {
               ip: '1.2.3.4',
-              threat_level: 'medium',
+              threat_level: '中',
               first_seen: '2025-12-01T10:00:00Z',
               last_seen: '2025-12-01T12:00:00Z',
               report_count: 3,
-              primary_threat_type: 'suspicious_activity',
+              primary_threat_type: '可疑活动',
               confidence: 0.65,
               evidence: [
                 {
-                  source: 'ai_analyzer',
+                  source: 'AI分析器',
                   timestamp: '2025-12-01T10:00:00Z',
-                  type: 'behavior'
+                  type: '行为'
                 }
               ]
             },
             {
               ip: '5.6.7.8',
-              threat_level: 'low',
+              threat_level: '低',
               first_seen: '2025-12-01T09:30:00Z',
               last_seen: '2025-12-01T11:45:00Z',
               report_count: 1,
-              primary_threat_type: 'port_scanning',
+              primary_threat_type: '端口扫描',
               confidence: 0.45,
               evidence: [
                 {
-                  source: 'ai_analyzer',
+                  source: 'AI分析器',
                   timestamp: '2025-12-01T09:30:00Z',
-                  type: 'scanning'
+                  type: '扫描'
                 }
               ]
             }
           ],
           last_update: new Date().toISOString(),
           total_threats: 2,
-          highest_threat_level: 'medium',
+          highest_threat_level: '中',
           summary: {
             critical: 0,
             high: 0,
@@ -236,7 +243,7 @@ class SimpleOraSRSService {
             low: 1
           },
           blockchain_verification: {
-            verified_on: 'disconnected',
+            verified_on: '未连接',
             verification_nodes: 0,
             proof_of_consensus: false
           },
@@ -432,6 +439,272 @@ class SimpleOraSRSService {
         });
       }
     });
+  }
+
+  // 将威胁数据翻译成中文
+  translateToChinese(threatData) {
+    if (!threatData || typeof threatData !== 'object') {
+      return threatData;
+    }
+
+    // 深拷贝原始数据
+    const translatedData = JSON.parse(JSON.stringify(threatData));
+
+    // 翻译风险等级
+    if (translatedData.response) {
+      // 翻译风险等级
+      if (translatedData.response.risk_level) {
+        switch (translatedData.response.risk_level.toLowerCase()) {
+          case 'low':
+            translatedData.response.risk_level = '低';
+            break;
+          case 'medium':
+            translatedData.response.risk_level = '中';
+            break;
+          case 'high':
+            translatedData.response.risk_level = '高';
+            break;
+          case 'critical':
+            translatedData.response.risk_level = '严重';
+            break;
+        }
+      }
+
+      // 翻译置信度
+      if (translatedData.response.confidence) {
+        switch (translatedData.response.confidence.toLowerCase()) {
+          case 'low':
+            translatedData.response.confidence = '低';
+            break;
+          case 'medium':
+            translatedData.response.confidence = '中等';
+            break;
+          case 'high':
+            translatedData.response.confidence = '高';
+            break;
+        }
+      }
+
+      // 翻译证据类型
+      if (translatedData.response.evidence && Array.isArray(translatedData.response.evidence)) {
+        translatedData.response.evidence = translatedData.response.evidence.map(evidence => {
+          const translatedEvidence = { ...evidence };
+          if (translatedEvidence.type) {
+            switch (translatedEvidence.type.toLowerCase()) {
+              case 'mock_data':
+                translatedEvidence.type = '模拟数据';
+                break;
+              case 'contract_data':
+                translatedEvidence.type = '合约数据';
+                break;
+              case 'report':
+                translatedEvidence.type = '报告';
+                break;
+              case 'honeypot_hit':
+                translatedEvidence.type = '蜜罐命中';
+                break;
+              case 'log_analysis':
+                translatedEvidence.type = '日志分析';
+                break;
+              default:
+                translatedEvidence.type = translatedEvidence.type;
+            }
+          }
+          if (translatedEvidence.source) {
+            switch (translatedEvidence.source.toLowerCase()) {
+              case 'local_mock':
+                translatedEvidence.source = '本地模拟';
+                break;
+              case 'blockchain_contract':
+                translatedEvidence.source = '区块链合约';
+                break;
+              case 'log_parser':
+                translatedEvidence.source = '日志解析器';
+                break;
+              case 'honeypot':
+                translatedEvidence.source = '蜜罐';
+                break;
+              case 'dpi':
+                translatedEvidence.source = '深度包检测';
+                break;
+              default:
+                translatedEvidence.source = translatedEvidence.source;
+            }
+          }
+          return translatedEvidence;
+        });
+      }
+
+      // 翻译建议
+      if (translatedData.response.recommendations) {
+        const rec = translatedData.response.recommendations;
+        const translations = {
+          'allow': '允许',
+          'monitor': '监控',
+          'allow_with_verification': '允许但需验证',
+          'block': '阻止',
+          'alert': '告警',
+          'investigate': '调查'
+        };
+        
+        Object.keys(rec).forEach(key => {
+          if (translations[rec[key].toLowerCase()]) {
+            rec[key] = translations[rec[key].toLowerCase()];
+          }
+        });
+      }
+
+      // 翻译版本信息
+      if (translatedData.response.version) {
+        switch (translatedData.response.version.toLowerCase()) {
+          case '2.0-mock':
+            translatedData.response.version = '2.0-模拟';
+            break;
+          case '2.0-contract':
+            translatedData.response.version = '2.0-合约';
+            break;
+        }
+      }
+
+      // 更新免责声明
+      if (translatedData.response.disclaimer) {
+        if (translatedData.response.disclaimer.includes('mock data')) {
+          translatedData.response.disclaimer = '这是区块链连接问题期间的服务可用性模拟数据。';
+        } else if (translatedData.response.disclaimer.includes('from OraSRS protocol chain')) {
+          translatedData.response.disclaimer = '此数据来自OraSRS协议链。';
+        }
+      }
+    }
+
+    return translatedData;
+  }
+
+  // 将威胁列表翻译成中文
+  translateThreatListToChinese(threatList) {
+    if (!threatList || typeof threatList !== 'object') {
+      return threatList;
+    }
+
+    // 深拷贝原始数据
+    const translatedList = JSON.parse(JSON.stringify(threatList));
+
+    // 翻译威胁列表中的每一项
+    if (translatedList.threat_list && Array.isArray(translatedList.threat_list)) {
+      translatedList.threat_list = translatedList.threat_list.map(threat => {
+        const translatedThreat = { ...threat };
+        
+        // 翻译威胁等级
+        if (translatedThreat.threat_level) {
+          switch (translatedThreat.threat_level.toLowerCase()) {
+            case 'low':
+              translatedThreat.threat_level = '低';
+              break;
+            case 'medium':
+              translatedThreat.threat_level = '中';
+              break;
+            case 'high':
+              translatedThreat.threat_level = '高';
+              break;
+            case 'critical':
+              translatedThreat.threat_level = '严重';
+              break;
+          }
+        }
+
+        // 翻译主要威胁类型
+        if (translatedThreat.primary_threat_type) {
+          switch (translatedThreat.primary_threat_type.toLowerCase()) {
+            case 'suspicious_activity':
+              translatedThreat.primary_threat_type = '可疑活动';
+              break;
+            case 'port_scanning':
+              translatedThreat.primary_threat_type = '端口扫描';
+              break;
+            case 'brute_force':
+              translatedThreat.primary_threat_type = '暴力破解';
+              break;
+            case 'ddos':
+              translatedThreat.primary_threat_type = 'DDoS攻击';
+              break;
+            case 'malware':
+              translatedThreat.primary_threat_type = '恶意软件';
+              break;
+            case 'sql_injection':
+              translatedThreat.primary_threat_type = 'SQL注入';
+              break;
+            case 'xss':
+              translatedThreat.primary_threat_type = '跨站脚本';
+              break;
+            case 'phishing':
+              translatedThreat.primary_threat_type = '网络钓鱼';
+              break;
+          }
+        }
+
+        // 翻译证据
+        if (translatedThreat.evidence && Array.isArray(translatedThreat.evidence)) {
+          translatedThreat.evidence = translatedThreat.evidence.map(evidence => {
+            const translatedEvidence = { ...evidence };
+            if (translatedEvidence.type) {
+              switch (translatedEvidence.type.toLowerCase()) {
+                case 'behavior':
+                  translatedEvidence.type = '行为';
+                  break;
+                case 'scanning':
+                  translatedEvidence.type = '扫描';
+                  break;
+                case 'attack':
+                  translatedEvidence.type = '攻击';
+                  break;
+              }
+            }
+            if (translatedEvidence.source) {
+              switch (translatedEvidence.source.toLowerCase()) {
+                case 'ai_analyzer':
+                  translatedEvidence.source = 'AI分析器';
+                  break;
+                case 'log_parser':
+                  translatedEvidence.source = '日志解析器';
+                  break;
+                case 'honeypot':
+                  translatedEvidence.source = '蜜罐';
+                  break;
+              }
+            }
+            return translatedEvidence;
+          });
+        }
+
+        return translatedThreat;
+      });
+    }
+
+    // 翻译最高威胁等级
+    if (translatedList.highest_threat_level) {
+      switch (translatedList.highest_threat_level.toLowerCase()) {
+        case 'low':
+          translatedList.highest_threat_level = '低';
+          break;
+        case 'medium':
+          translatedList.highest_threat_level = '中';
+          break;
+        case 'high':
+          translatedList.highest_threat_level = '高';
+          break;
+        case 'critical':
+          translatedList.highest_threat_level = '严重';
+          break;
+      }
+    }
+
+    // 翻译验证状态
+    if (translatedList.blockchain_verification) {
+      if (translatedList.blockchain_verification.verified_on === 'disconnected') {
+        translatedList.blockchain_verification.verified_on = '未连接';
+      }
+    }
+
+    return translatedList;
   }
 
   async start() {
