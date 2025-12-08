@@ -142,7 +142,7 @@ class SimpleOraSRSService {
         // 从区块链获取威胁数据
         let threatData = await this.blockchainConnector.getThreatData(ip || domain);
         
-        // 将数据翻译成中文
+        // 将数据翻译成中文（无论是否来自区块链或模拟数据）
         threatData = this.translateToChinese(threatData);
         
         res.json(threatData);
@@ -182,6 +182,7 @@ class SimpleOraSRSService {
         mockResponse = this.translateToChinese(mockResponse);
         res.json(mockResponse);
       }
+    });
     });
 
     // 威胁情报端点
