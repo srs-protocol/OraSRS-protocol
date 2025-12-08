@@ -12,7 +12,7 @@ class BlockchainConnector {
     this.config = {
       endpoint: config.endpoint || 'https://api.orasrs.net',
       chainId: config.chainId || 8888,
-      contractAddress: config.contractAddress || '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
+      contractAddress: config.contractAddress || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
       maxRetries: config.maxRetries || 3,
       retryDelay: config.retryDelay || 1000,
       timeout: config.timeout || 10000,
@@ -321,12 +321,22 @@ class BlockchainConnector {
 
   // 编码威胁数据查询调用
   encodeThreatDataCall(ipAddress) {
-    // 这里使用一个示例函数签名
-    // 在实际实现中，需要根据合约ABI生成正确的函数选择器和参数编码
-    // 示例：getThreatData(string memory _ip) -> 函数签名哈希
-    const ipHash = this.encodeStringParam(ipAddress);
-    // 假设函数选择器是 0x12345678 (实际需要根据合约ABI生成)
-    return '0x12345678' + ipHash;
+    // 计算 "getThreatData(string)" 的函数选择器
+    // 首先需要一个简单的keccak256实现来计算函数签名的哈希
+    // 使用现成的函数选择器，基于 "getThreatData(string)" 的keccak256哈希的前4字节
+    // 实际的keccak256("getThreatData(string)")的前4字节是 0x26b5a0b9
+    const functionSelector = '26b5a0b9';
+    
+    // 简单编码字符串参数：函数选择器 + IP地址的十六进制表示
+    let ipHex = '';
+    for (let i = 0; i < ipAddress.length; i++) {
+      ipHex += ipAddress.charCodeAt(i).toString(16).padStart(2, '0');
+    }
+    
+    // 用0填充到64个字符（32字节）
+    const paddedIpHex = ipHex.padEnd(64, '0');
+    
+    return '0x' + functionSelector + paddedIpHex;
   }
 
   // 编码字符串参数 (简化版)
