@@ -146,6 +146,15 @@ class BlockchainConnector {
   }
 
   async getThreatData(ipAddress) {
+    // 如果无法连接到区块链，则直接返回模拟数据
+    if (!this.isConnected) {
+      await this.connect(); // 尝试连接一次
+      if (!this.isConnected) {
+        console.log(`⚠️  区块链未连接，返回模拟数据: ${ipAddress}`);
+        return this.getMockThreatData(ipAddress);
+      }
+    }
+    
     try {
       const response = await this.makeRequest({
         method: 'GET',
@@ -156,7 +165,13 @@ class BlockchainConnector {
         }
       });
       
-      return response.data;
+      // 如果请求成功则返回数据，否则返回模拟数据
+      if (response && response.data) {
+        return response.data;
+      } else {
+        console.log(`⚠️  无法从区块链获取数据，返回模拟数据: ${ipAddress}`);
+        return this.getMockThreatData(ipAddress);
+      }
     } catch (error) {
       console.error(`❌ 获取威胁数据失败:`, error.message);
       // 返回模拟数据以确保服务可用
