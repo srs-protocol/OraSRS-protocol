@@ -111,17 +111,6 @@ clone_orasrs() {
         git checkout lite-client
     fi
     
-    # 确保所有必要的文件都存在
-    if [[ ! -f "/opt/orasrs/blockchain-connector.js" ]]; then
-        print_error "区块链连接器文件不存在，安装失败"
-        exit 1
-    fi
-    
-    if [[ ! -f "/opt/orasrs/threat-detection.js" ]]; then
-        print_error "威胁检测模块不存在，安装失败"
-        exit 1
-    fi
-    
     print_success "项目克隆完成"
 }
 
@@ -133,6 +122,55 @@ install_node_dependencies() {
     
     # 安装项目依赖
     npm install
+    
+    # 确保所有必要的文件都存在
+    if [[ ! -f "/opt/orasrs/blockchain-connector.js" ]]; then
+        print_error "区块链连接器文件不存在"
+        exit 1
+    fi
+    
+    if [[ ! -f "/opt/orasrs/threat-detection.js" ]]; then
+        print_error "威胁检测模块不存在"
+        exit 1
+    fi
+    
+    # 如果user-config.json不存在，创建一个默认的
+    if [[ ! -f "/opt/orasrs/user-config.json" ]]; then
+        cat > /opt/orasrs/user-config.json << EOF
+{
+  "server": {
+    "port": 3006,
+    "host": "0.0.0.0",
+    "enableLogging": true,
+    "logFile": "./logs/orasrs-service.log",
+    "rateLimit": {
+      "windowMs": 900000,
+      "max": 100
+    }
+  },
+  "network": {
+    "blockchainEndpoint": "https://api.orasrs.net",
+    "chainId": 8888,
+    "contractAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  },
+  "cache": {
+    "enable": true,
+    "maxSize": 10000,
+    "ttl": 3600000,
+    "evictionPolicy": "LRU"
+  },
+  "security": {
+    "enableRateLimiting": true,
+    "enableCORS": true,
+    "corsOrigin": "*",
+    "enableAPIKey": false,
+    "apiKeys": [],
+    "whitelist": ["127.0.0.1", "localhost", "::1"]
+  }
+}
+EOF
+        print_info "已创建默认的用户配置文件"
+    fi
     
     print_success "Node.js依赖安装完成"
 }
