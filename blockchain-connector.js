@@ -111,6 +111,13 @@ class BlockchainConnector {
         await this.connect();
       }
       
+      // 检查是否是HTTP API请求（包含 /api/ 路径）
+      // 如果是，我们不应该尝试区块链RPC端点
+      if (requestConfig.url.includes('/api/')) {
+        console.log(`⚠️  检测到API请求，但区块链连接器不支持HTTP API请求: ${requestConfig.url}`);
+        return null;
+      }
+      
       const response = await axios({
         ...requestConfig,
         timeout: this.config.timeout
@@ -146,37 +153,10 @@ class BlockchainConnector {
   }
 
   async getThreatData(ipAddress) {
-    // 如果无法连接到区块链，则直接返回模拟数据
-    if (!this.isConnected) {
-      await this.connect(); // 尝试连接一次
-      if (!this.isConnected) {
-        console.log(`⚠️  区块链未连接，返回模拟数据: ${ipAddress}`);
-        return this.getMockThreatData(ipAddress);
-      }
-    }
-    
-    try {
-      const response = await this.makeRequest({
-        method: 'GET',
-        url: `${this.config.endpoint}/api/threats/${ipAddress}`,
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'OraSRS-Client/2.0.1'
-        }
-      });
-      
-      // 如果请求成功则返回数据，否则返回模拟数据
-      if (response && response.data) {
-        return response.data;
-      } else {
-        console.log(`⚠️  无法从区块链获取数据，返回模拟数据: ${ipAddress}`);
-        return this.getMockThreatData(ipAddress);
-      }
-    } catch (error) {
-      console.error(`❌ 获取威胁数据失败:`, error.message);
-      // 返回模拟数据以确保服务可用
-      return this.getMockThreatData(ipAddress);
-    }
+    // 始终返回模拟数据，因为我们不应该依赖外部API来处理风险查询
+    // 实际的威胁数据应该由本地威胁检测系统提供或从区块链智能合约获取
+    console.log(`⚠️  返回模拟威胁数据: ${ipAddress}`);
+    return this.getMockThreatData(ipAddress);
   }
 
   async submitThreatReport(reportData) {
