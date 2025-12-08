@@ -264,10 +264,18 @@ show_completion_info() {
     echo "  查看状态: sudo systemctl status orasrs-client"
     echo "  查看日志: sudo journalctl -u orasrs-client -f"
     echo
+    echo -e "${GREEN}客户端更新:${NC}"
+    echo "  一键更新: curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/update-client.sh | bash"
+    echo
     echo -e "${GREEN}API端点:${NC}"
     echo "  健康检查: http://[SERVER_IP]:3006/health"
     echo "  风险查询: http://[SERVER_IP]:3006/orasrs/v1/query?ip=1.2.3.4"
     echo "  威胁检测: http://[SERVER_IP]:3006/orasrs/v1/threats/detected"
+    echo "  Gas补贴请求: http://[SERVER_IP]:3006/orasrs/v1/gas-subsidy/request"
+    echo "  Gas补贴状态: http://[SERVER_IP]:3006/orasrs/v1/gas-subsidy/status/{address}"
+    echo "  检测威胁: http://[SERVER_IP]:3006/orasrs/v1/threats/detected"
+    echo "  威胁统计: http://[SERVER_IP]:3006/orasrs/v1/threats/stats"
+    echo "  提交威胁: http://[SERVER_IP]:3006/orasrs/v1/threats/submit"
     echo
     echo -e "${GREEN}重要提醒:${NC}"
     echo "  此服务提供咨询建议，最终决策由客户端做出"
