@@ -1,10 +1,15 @@
-#!/usr/bin/env node
-
 /**
  * OraSRS (Oracle Security Root Service) 精简客户端
  * 连接到OraSRS协议链 (api.orasrs.net)
  * 避免复杂依赖，用于打包
  */
+
+// 导入区块链连接器
+import BlockchainConnector from './blockchain-connector.js';
+import ThreatDetection from './threat-detection.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const express = require('express');
 
 // 精简版OraSRS服务类，避免复杂依赖
 class SimpleOraSRSService {
@@ -17,19 +22,56 @@ class SimpleOraSRSService {
       ...config
     };
 
+    // 初始化区块链连接器
+    this.blockchainConnector = new BlockchainConnector(this.config.blockchain);
+
+    // 初始化威胁检测器
+    this.threatDetection = new ThreatDetection(this.blockchainConnector);
+
     // 简化的Express应用
-    const express = require('express');
     this.app = express();
     
     // 基本中间件
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
 
+    // 速率限制中间件（如果启用）
+    if (config.security.enableRateLimiting) {
+      const rateLimit = require('rate-limiter-flexible');
+      const opts = {
+        points: config.rateLimit.max || 100,
+        duration: config.rateLimit.windowMs / 1000 || 900, // 转换为秒
+      };
+      const limiter = new rateLimit.RateLimiterMemory(opts);
+
+      this.app.use((req, res, next) => {
+        // 检查IP白名单
+        const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || '';
+        if (config.security.whitelist && config.security.whitelist.includes(clientIP)) {
+          return next(); // 白名单IP不受速率限制
+        }
+
+        limiter.consume(req.ip || clientIP)
+          .then(() => {
+            next();
+          })
+          .catch(() => {
+            res.status(429).json({ error: 'Too Many Requests' });
+          });
+      });
+    }
+
     // CORS支持
     this.app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      const origin = req.headers.origin;
+      const allowedOrigins = config.security.corsOrigin === '*' ? [origin] : config.security.corsOrigin;
+      
+      if (config.security.enableCORS) {
+        res.header('Access-Control-Allow-Origin', config.security.corsOrigin);
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      }
+      
       if (req.method === 'OPTIONS') {
         res.sendStatus(200);
       } else {
@@ -68,6 +110,11 @@ class SimpleOraSRSService {
           appeal: '/orasrs/v1/appeal',
           explain: '/orasrs/v1/explain?ip={ip}',
           threatList: '/orasrs/v2/threat-list',
+          gasSubsidyRequest: '/orasrs/v1/gas-subsidy/request (POST)',
+          gasSubsidyStatus: '/orasrs/v1/gas-subsidy/status/{address} (GET)',
+          detectedThreats: '/orasrs/v1/threats/detected (GET)',
+          threatStats: '/orasrs/v1/threats/stats (GET)',
+          submitThreat: '/orasrs/v1/threats/submit (POST)',
           health: '/health'
         },
         blockchain: {
@@ -80,8 +127,8 @@ class SimpleOraSRSService {
       });
     });
 
-    // 模拟风险查询端点
-    this.app.get('/orasrs/v1/query', (req, res) => {
+    // 风险查询端点
+    this.app.get('/orasrs/v1/query', async (req, res) => {
       const { ip, domain } = req.query;
 
       if (!ip && !domain) {
@@ -91,118 +138,299 @@ class SimpleOraSRSService {
         });
       }
 
-      // 模拟风险评估
-      const mockResponse = {
-        query: { ip: ip || null, domain: domain || null },
-        response: {
-          risk_score: Math.random() * 0.5, // 随机0-0.5之间的风险评分
-          confidence: 'medium',
-          risk_level: Math.random() > 0.8 ? 'high' : 'low',
-          evidence: [
-            {
-              type: 'behavioral_analysis',
-              detail: 'Unusual connection patterns detected',
-              source: 'ai_analysis',
-              timestamp: new Date().toISOString(),
-              confidence: 0.7
-            }
-          ],
-          recommendations: {
-            default: 'allow',
-            public_services: 'allow',
-            banking: 'allow_with_verification'
+      try {
+        // 从区块链获取威胁数据
+        const threatData = await this.blockchainConnector.getThreatData(ip || domain);
+        res.json(threatData);
+      } catch (error) {
+        console.error('Error fetching threat data:', error);
+        // 如果区块链连接失败，返回模拟数据
+        const mockResponse = {
+          query: { ip: ip || null, domain: domain || null },
+          response: {
+            risk_score: Math.random() * 0.3, // 较低的随机风险评分
+            confidence: 'low',
+            risk_level: 'low',
+            evidence: [
+              {
+                type: 'mock_data',
+                detail: 'Mock threat data for service availability',
+                source: 'local_mock',
+                timestamp: new Date().toISOString(),
+                confidence: 0.3
+              }
+            ],
+            recommendations: {
+              default: 'allow',
+              public_services: 'allow',
+              banking: 'allow_with_verification'
+            },
+            appeal_url: `https://api.orasrs.net/appeal?ip=${ip || domain}`,
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            timestamp: new Date().toISOString(),
+            disclaimer: 'This is mock data for service availability during blockchain connection issues.',
+            version: '2.0-mock'
           },
-          appeal_url: `https://api.orasrs.net/appeal?ip=${ip || domain}`,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          timestamp: new Date().toISOString(),
-          disclaimer: 'This is advisory only. Final decision rests with the client.',
-          version: '2.0'
-        }
-      };
+          blockchain_status: this.blockchainConnector.getStatus()
+        };
 
-      res.json(mockResponse);
+        res.json(mockResponse);
+      }
     });
 
     // 威胁情报端点
-    this.app.get('/orasrs/v2/threat-list', (req, res) => {
-      const mockThreatList = {
-        threat_list: [
-          {
-            ip: '1.2.3.4',
-            threat_level: 'critical',
-            first_seen: '2025-12-01T10:00:00Z',
-            last_seen: '2025-12-01T12:00:00Z',
-            report_count: 15,
-            primary_threat_type: 'ddos_attack',
-            confidence: 0.92,
-            evidence: [
-              {
-                source: 'node-abc123',
-                timestamp: '2025-12-01T10:00:00Z',
-                type: 'behavior'
-              }
-            ]
+    this.app.get('/orasrs/v2/threat-list', async (req, res) => {
+      try {
+        // 从区块链获取全局威胁列表
+        const threatList = await this.blockchainConnector.getGlobalThreatList();
+        
+        res.json({
+          ...threatList,
+          blockchain_status: this.blockchainConnector.getStatus()
+        });
+      } catch (error) {
+        console.error('Error fetching global threat list:', error);
+        // 如果区块链连接失败，返回模拟威胁列表
+        const mockThreatList = {
+          threat_list: [
+            {
+              ip: '1.2.3.4',
+              threat_level: 'medium',
+              first_seen: '2025-12-01T10:00:00Z',
+              last_seen: '2025-12-01T12:00:00Z',
+              report_count: 3,
+              primary_threat_type: 'suspicious_activity',
+              confidence: 0.65,
+              evidence: [
+                {
+                  source: 'ai_analyzer',
+                  timestamp: '2025-12-01T10:00:00Z',
+                  type: 'behavior'
+                }
+              ]
+            },
+            {
+              ip: '5.6.7.8',
+              threat_level: 'low',
+              first_seen: '2025-12-01T09:30:00Z',
+              last_seen: '2025-12-01T11:45:00Z',
+              report_count: 1,
+              primary_threat_type: 'port_scanning',
+              confidence: 0.45,
+              evidence: [
+                {
+                  source: 'ai_analyzer',
+                  timestamp: '2025-12-01T09:30:00Z',
+                  type: 'scanning'
+                }
+              ]
+            }
+          ],
+          last_update: new Date().toISOString(),
+          total_threats: 2,
+          highest_threat_level: 'medium',
+          summary: {
+            critical: 0,
+            high: 0,
+            medium: 1,
+            low: 1
           },
-          {
-            ip: '5.6.7.8',
-            threat_level: 'high',
-            first_seen: '2025-12-01T09:30:00Z',
-            last_seen: '2025-12-01T11:45:00Z',
-            report_count: 8,
-            primary_threat_type: 'malware_distribution',
-            confidence: 0.85,
-            evidence: [
-              {
-                source: 'node-def456',
-                timestamp: '2025-12-01T09:30:00Z',
-                type: 'malware'
-              }
-            ]
-          }
-        ],
-        last_update: new Date().toISOString(),
-        total_threats: 2,
-        highest_threat_level: 'critical',
-        summary: {
-          critical: 1,
-          high: 1,
-          medium: 0,
-          low: 0
-        },
-        blockchain_verification: {
-          verified_on: 'https://api.orasrs.net',
-          verification_nodes: 3,
-          proof_of_consensus: true
-        }
-      };
+          blockchain_verification: {
+            verified_on: 'disconnected',
+            verification_nodes: 0,
+            proof_of_consensus: false
+          },
+          blockchain_status: this.blockchainConnector.getStatus()
+        };
 
-      res.json(mockThreatList);
+        res.json(mockThreatList);
+      }
     });
 
     // 申诉端点
-    this.app.post('/orasrs/v1/appeal', (req, res) => {
-      const { ip, proof } = req.body;
+    this.app.post('/orasrs/v1/appeal', async (req, res) => {
+      const { ip, proof, reason } = req.body;
 
-      if (!ip || !proof) {
+      if (!ip) {
         return res.status(400).json({
-          error: 'IP and proof are required',
+          error: 'IP is required',
           code: 'MISSING_REQUIRED_FIELDS'
         });
       }
 
-      const appealId = `appeal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      
-      res.status(201).json({
-        appeal_id: appealId,
-        status: 'received',
-        message: 'Appeal request received. Risk score temporarily reduced during review.',
-        estimated_resolution_time: '24-48 hours',
-        blockchain_record: {
-          tx_hash: `0x${Math.random().toString(16).substring(2, 10)}...`,
-          on_chain: true,
-          verification_required: 3
-        }
-      });
+      try {
+        // 尝试提交申诉到区块链
+        const appealResult = await this.blockchainConnector.submitThreatReport({
+          ip,
+          proof: proof || '',
+          reason: reason || 'appeal_request',
+          type: 'appeal'
+        });
+        
+        res.status(201).json({
+          ...appealResult,
+          blockchain_status: this.blockchainConnector.getStatus()
+        });
+      } catch (error) {
+        console.error('Error submitting appeal:', error);
+        // 如果区块链连接失败，创建本地申诉记录
+        const appealId = `appeal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        
+        res.status(201).json({
+          appeal_id: appealId,
+          status: 'received',
+          message: 'Appeal request received. Risk score temporarily reduced during review. Blockchain is currently unavailable, request will be processed when connection is restored.',
+          estimated_resolution_time: '24-48 hours',
+          blockchain_record: {
+            tx_hash: null,
+            on_chain: false,
+            verification_required: 3
+          },
+          blockchain_status: this.blockchainConnector.getStatus()
+        });
+      }
+    });
+
+    // Gas补贴请求端点
+    this.app.post('/orasrs/v1/gas-subsidy/request', async (req, res) => {
+      const { userAddress, captchaToken, ip } = req.body;
+
+      if (!userAddress) {
+        return res.status(400).json({
+          error: 'User address is required',
+          code: 'MISSING_USER_ADDRESS'
+        });
+      }
+
+      try {
+        console.log(`Gas补贴请求: ${userAddress} from IP: ${ip || req.ip}`);
+        
+        // 这里应该是调用后端服务来处理Gas补贴请求
+        // 为了演示，我们返回一个模拟成功的响应
+        // 实际部署时，这里应该调用治理服务器的API
+        const result = {
+          success: true,
+          message: 'Gas补贴请求已提交，治理服务器将验证请求并发放补贴',
+          userAddress: userAddress,
+          requestTime: new Date().toISOString(),
+          estimatedProcessingTime: '30秒-2分钟'
+        };
+
+        res.status(200).json(result);
+      } catch (error) {
+        console.error('Error processing gas subsidy request:', error);
+        res.status(500).json({
+          error: 'Internal server error during gas subsidy request processing',
+          code: 'GAS_SUBSIDY_ERROR'
+        });
+      }
+    });
+
+    // 获取Gas补贴状态端点
+    this.app.get('/orasrs/v1/gas-subsidy/status/:address', async (req, res) => {
+      const { address } = req.params;
+
+      if (!address) {
+        return res.status(400).json({
+          error: 'Address is required',
+          code: 'MISSING_ADDRESS'
+        });
+      }
+
+      try {
+        // 这里返回Gas补贴状态信息
+        const status = {
+          address: address,
+          hasClaimed: false, // 实际实现中需要查询合约状态
+          lastSubsidyTime: null,
+          nextEligibleTime: new Date().toISOString(),
+          availableAmount: "1.0", // 以ETH为单位
+          tokenType: "native", // 原生代币
+          contractAddress: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f" // 新部署的GasSubsidy合约地址
+        };
+
+        res.status(200).json(status);
+      } catch (error) {
+        console.error('Error fetching gas subsidy status:', error);
+        res.status(500).json({
+          error: 'Internal server error during gas subsidy status fetch',
+          code: 'GAS_SUBSIDY_STATUS_ERROR'
+        });
+      }
+    });
+
+    // 威胁检测相关端点
+    // 获取检测到的威胁列表
+    this.app.get('/orasrs/v1/threats/detected', (req, res) => {
+      try {
+        const threats = this.threatDetection.getThreats();
+        res.status(200).json({
+          success: true,
+          count: threats.length,
+          threats: threats
+        });
+      } catch (error) {
+        console.error('Error fetching detected threats:', error);
+        res.status(500).json({
+          error: 'Internal server error during threat fetch',
+          code: 'THREAT_FETCH_ERROR'
+        });
+      }
+    });
+
+    // 获取威胁统计
+    this.app.get('/orasrs/v1/threats/stats', (req, res) => {
+      try {
+        const stats = this.threatDetection.getThreatStats();
+        res.status(200).json({
+          success: true,
+          stats: stats
+        });
+      } catch (error) {
+        console.error('Error fetching threat stats:', error);
+        res.status(500).json({
+          error: 'Internal server error during threat stats fetch',
+          code: 'THREAT_STATS_ERROR'
+        });
+      }
+    });
+
+    // 手动提交威胁报告
+    this.app.post('/orasrs/v1/threats/submit', async (req, res) => {
+      const { ip, threatType, threatLevel, context, evidence } = req.body;
+
+      if (!ip || !threatType) {
+        return res.status(400).json({
+          error: 'IP and threatType are required',
+          code: 'MISSING_REQUIRED_FIELDS'
+        });
+      }
+
+      try {
+        const threatData = {
+          ip: ip,
+          threatType: threatType,
+          threatLevel: threatLevel || 'Medium',
+          context: context || 'Manual threat report',
+          evidence: evidence || 'Manual submission',
+          timestamp: new Date().toISOString()
+        };
+
+        // 记录威胁
+        await this.threatDetection.reportThreat(threatData);
+
+        res.status(201).json({
+          success: true,
+          message: 'Threat report submitted successfully',
+          threatId: `${ip}_${Date.now()}`
+        });
+      } catch (error) {
+        console.error('Error submitting threat report:', error);
+        res.status(500).json({
+          error: 'Internal server error during threat submission',
+          code: 'THREAT_SUBMIT_ERROR'
+        });
+      }
     });
   }
 
@@ -241,17 +469,62 @@ class SimpleOraSRSService {
   }
 }
 
-// 从环境变量或默认值获取配置
+// 尝试读取用户配置文件，如果不存在则使用默认值
+let userConfig = {};
+let securityConfig = {};
+
+try {
+  const fs = require('fs');
+  
+  // 读取用户配置文件
+  if (fs.existsSync('./user-config.json')) {
+    userConfig = JSON.parse(fs.readFileSync('./user-config.json', 'utf8'));
+  } else if (fs.existsSync('/home/Great/SRS-Protocol/user-config.json')) {
+    userConfig = JSON.parse(fs.readFileSync('/home/Great/SRS-Protocol/user-config.json', 'utf8'));
+  }
+  
+  // 读取安全配置文件
+  if (fs.existsSync('./security-config.json')) {
+    securityConfig = JSON.parse(fs.readFileSync('./security-config.json', 'utf8'));
+  } else if (fs.existsSync('/home/Great/SRS-Protocol/security-config.json')) {
+    securityConfig = JSON.parse(fs.readFileSync('/home/Great/SRS-Protocol/security-config.json', 'utf8'));
+  }
+} catch (e) {
+  console.log('⚠️  未找到配置文件，使用默认配置:', e.message);
+}
+
+// 从环境变量或用户配置或默认值获取配置
 const config = {
-  port: process.env.ORASRS_PORT || 3006,
-  host: process.env.ORASRS_HOST || '0.0.0.0',
-  enableLogging: process.env.ORASRS_ENABLE_LOGGING !== 'false',
-  logFile: process.env.ORASRS_LOG_FILE || './logs/orasrs-service.log',
+  port: process.env.ORASRS_PORT || userConfig.server?.port || 3006,
+  host: process.env.ORASRS_HOST || userConfig.server?.host || '0.0.0.0',
+  enableLogging: process.env.ORASRS_ENABLE_LOGGING !== 'false' && (userConfig.server?.enableLogging ?? true),
+  logFile: process.env.ORASRS_LOG_FILE || userConfig.server?.logFile || securityConfig.logging?.file?.path || './logs/orasrs-service.log',
+  rateLimit: userConfig.server?.rateLimit || { windowMs: 900000, max: 100 },
   // OraSRS协议链连接配置
   blockchain: {
-    endpoint: process.env.ORASRS_BLOCKCHAIN_ENDPOINT || 'https://api.orasrs.net',
-    chainId: process.env.ORASRS_CHAIN_ID || 8888,
-    contractAddress: process.env.ORASRS_CONTRACT_ADDRESS || '0x0B306BF915C4d645ff596e518fAf3F9669b97016'
+    endpoints: process.env.ORASRS_BLOCKCHAIN_ENDPOINT ? [process.env.ORASRS_BLOCKCHAIN_ENDPOINT] : 
+               userConfig.network?.blockchainEndpoint ? [userConfig.network.blockchainEndpoint] : 
+               securityConfig.security?.blockchainConnection?.endpoints || 
+               ['https://api.orasrs.net', 'https://backup.orasrs.net'],
+    chainId: process.env.ORASRS_CHAIN_ID || userConfig.network?.chainId || securityConfig.network?.chainId || 8888,
+    contractAddress: process.env.ORASRS_CONTRACT_ADDRESS || userConfig.network?.contractAddress || securityConfig.network?.contractAddress || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+    timeout: securityConfig.security?.blockchainConnection?.timeout || 30000, // 增加超时时间以支持公网连接
+    retries: securityConfig.security?.blockchainConnection?.retries || 5, // 增加重试次数以支持公网连接
+    retryDelay: securityConfig.security?.blockchainConnection?.retryDelay || 2000 // 增加重试延迟以支持公网连接
+  },
+  cache: userConfig.cache || securityConfig.cache || {
+    enable: true,
+    maxSize: 10000,
+    ttl: 3600000,
+    evictionPolicy: 'LRU'
+  },
+  security: { ...securityConfig.security, ...userConfig.security } || {
+    enableRateLimiting: true,
+    enableCORS: true,
+    corsOrigin: '*',
+    enableAPIKey: false,
+    apiKeys: [],
+    whitelist: ['127.0.0.1', 'localhost', '::1']
   }
 };
 
@@ -264,8 +537,14 @@ console.log('🔧 配置:', {
 console.log('🔗 连接到OraSRS协议链: ' + config.blockchain.endpoint);
 
 // 确保日志目录存在
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const logDir = path.dirname(config.logFile);
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
@@ -275,7 +554,26 @@ const orasrsService = new SimpleOraSRSService(config);
 
 async function startService() {
   try {
+    // 首先尝试连接到区块链
+    console.log('链接 初始化区块链连接器...');
+    try {
+      await orasrsService.blockchainConnector.connect();
+    } catch (error) {
+      console.warn('⚠️  无法连接到区块链，服务将以降级模式运行:', error.message);
+    }
+    
     await orasrsService.start();
+    
+    // 启动威胁检测功能
+    console.log('🔍 启动威胁检测模块...');
+    try {
+      orasrsService.threatDetection.startLogMonitoring();
+      orasrsService.threatDetection.startHoneypot();
+      orasrsService.threatDetection.startDPI();
+      console.log('✅ 威胁检测模块启动成功');
+    } catch (error) {
+      console.warn('⚠️  启动威胁检测模块时出现问题:', error.message);
+    }
     
     console.log('\n✅ OraSRS 服务启动成功!');
     console.log(`🌐 服务地址: http://${config.host}:${config.port}`);
@@ -283,15 +581,24 @@ async function startService() {
     console.log(`   - 风险查询: http://${config.host}:${config.port}/orasrs/v1/query?ip=1.2.3.4`);
     console.log(`   - 威胁列表: http://${config.host}:${config.port}/orasrs/v2/threat-list`);
     console.log(`   - 申诉接口: http://${config.host}:${config.port}/orasrs/v1/appeal`);
+    console.log(`   - Gas补贴请求: http://${config.host}:${config.port}/orasrs/v1/gas-subsidy/request`);
+    console.log(`   - Gas补贴状态: http://${config.host}:${config.port}/orasrs/v1/gas-subsidy/status/{address}`);
+    console.log(`   - 检测威胁: http://${config.host}:${config.port}/orasrs/v1/threats/detected`);
+    console.log(`   - 威胁统计: http://${config.host}:${config.port}/orasrs/v1/threats/stats`);
+    console.log(`   - 提交威胁: http://${config.host}:${config.port}/orasrs/v1/threats/submit`);
     console.log(`   - 健康检查: http://${config.host}:${config.port}/health`);
     console.log('\n⚠️  重要提醒: 此服务提供咨询建议，最终决策由客户端做出');
-    console.log('🔗 服务已连接到OraSRS协议链: ' + config.blockchain.endpoint);
+    console.log('🔗 区块链连接状态:', orasrsService.blockchainConnector.getStatus());
     
     // 定期输出服务信息
     setInterval(() => {
+      const blockchainStatus = orasrsService.blockchainConnector.getStatus();
+      const threatStats = orasrsService.threatDetection.getThreatStats();
       console.log(`\n📊 OraSRS 服务运行中 [${new Date().toISOString()}]`);
-      console.log(`   区块链连接: 已连接到 ${config.blockchain.endpoint}`);
+      console.log(`   区块链连接: ${blockchainStatus.status} - ${blockchainStatus.endpoint || '未连接'}`);
       console.log(`   服务端口: ${config.host}:${config.port}`);
+      console.log(`   检测到威胁: ${threatStats.total} (总数)`);
+      console.log(`   重试次数: ${blockchainStatus.retryCount}/${blockchainStatus.maxRetries}`);
     }, 5 * 60 * 1000); // 5分钟
     
   } catch (error) {

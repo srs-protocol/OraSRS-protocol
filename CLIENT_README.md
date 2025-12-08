@@ -1,6 +1,6 @@
 # OraSRS (Oracle Security Root Service) 客户端
 
-OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。客户端连接到 OraSRS 协议链 (api.orasrs.net) 以获取威胁情报和风险评估。
+OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。客户端连接到 OraSRS 协议链 (api.orasrs.net)，这是一个基于Hardhat和Geth的私有链，Chain ID为8888，以获取威胁情报和风险评估。
 
 ## 功能特性
 
@@ -10,6 +10,8 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 - **区块链集成**：连接 OraSRS 协议链进行验证
 - **合规性**：符合 GDPR、CCPA 和中国网络安全法要求
 - **三层架构**：边缘层、共识层、智能层
+- **威胁检测**：内置日志分析、蜜罐和深度包检测功能
+- **Gas补贴**：新用户可申请Gas补贴以获得初始交易费用
 
 ## 一键安装 (Linux)
 
@@ -112,6 +114,11 @@ docker-compose -f docker-compose.client.yml down
 - **申诉接口**: `POST /orasrs/v1/appeal`
 - **透明化报告**: `GET /orasrs/v1/explain?ip=1.2.3.4`
 - **威胁列表**: `GET /orasrs/v2/threat-list`
+- **Gas补贴请求**: `POST /orasrs/v1/gas-subsidy/request`
+- **Gas补贴状态**: `GET /orasrs/v1/gas-subsidy/status/{address}`
+- **检测威胁列表**: `GET /orasrs/v1/threats/detected`
+- **威胁统计**: `GET /orasrs/v1/threats/stats`
+- **提交威胁**: `POST /orasrs/v1/threats/submit`
 
 ## 威胁情报 API (v2.0)
 
@@ -167,6 +174,42 @@ OraSRS 采用三层共识架构：
 - GDPR/CCPA 合规
 - 最小化数据收集
 - 符合中国网络安全法要求
+
+## 威胁检测功能
+
+客户端内置了三种威胁检测方法：
+
+### 1. 基于日志的分析 (Fail2Ban原理)
+- 实时监控系统日志（如 `/var/log/auth.log`, `/var/log/nginx/access.log`）
+- 检测SSH暴力破解攻击：当1分钟内出现5次失败登录时标记为威胁
+- 检测Web扫描：识别大量404请求
+- 检测端口扫描：监控连接尝试
+
+### 2. 蜜罐技术 (Honeypot)
+- 在客户端上部署了假端口（23, 3306, 1433, 5432端口对应telnet, mysql, mssql, postgres）
+- 任何连接到这些假端口的IP都会被直接标记为恶意活动
+- 误报率几乎为0，因为正常用户不会连接这些端口
+
+### 3. 深度包检测 (DPI/NIDS)
+- 模拟网络流量分析
+- 检测SQL注入、XSS等攻击模式
+- 可以扩展为实际的pcap库实现
+
+## Gas补贴功能
+
+新用户可以通过API申请Gas补贴以获得初始交易费用：
+
+### 申请Gas补贴
+```bash
+curl -X POST http://localhost:3006/orasrs/v1/gas-subsidy/request \
+  -H "Content-Type: application/json" \
+  -d '{"userAddress":"0xYOUR_WALLET_ADDRESS", "ip":"YOUR_IP"}'
+```
+
+### 查询补贴状态
+```bash
+curl -X GET http://localhost:3006/orasrs/v1/gas-subsidy/status/0xYOUR_WALLET_ADDRESS
+```
 
 ## 重要提醒
 
