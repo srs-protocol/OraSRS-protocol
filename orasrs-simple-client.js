@@ -149,35 +149,37 @@ class SimpleOraSRSService {
       } catch (error) {
         console.error('Error fetching threat data:', error);
         // 如果区块链连接失败，返回模拟数据
-        const mockResponse = {
+        let mockResponse = {
           query: { ip: ip || null, domain: domain || null },
           response: {
             risk_score: Math.random() * 0.3, // 较低的随机风险评分
-            confidence: '低',
-            risk_level: '低',
+            confidence: 'low',
+            risk_level: 'low',
             evidence: [
               {
-                type: '模拟数据',
-                detail: '服务可用性模拟威胁数据',
-                source: '本地模拟',
+                type: 'mock_data',
+                detail: 'Mock threat data for service availability',
+                source: 'local_mock',
                 timestamp: new Date().toISOString(),
                 confidence: 0.3
               }
             ],
             recommendations: {
-              default: '允许',
-              public_services: '允许',
-              banking: '允许但需验证'
+              default: 'allow',
+              public_services: 'allow',
+              banking: 'allow_with_verification'
             },
             appeal_url: `https://api.orasrs.net/appeal?ip=${ip || domain}`,
             expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
             timestamp: new Date().toISOString(),
-            disclaimer: '这是区块链连接问题期间的服务可用性模拟数据。',
+            disclaimer: 'This is mock data for service availability during blockchain connection issues.',
             version: '2.0-mock'
           },
           blockchain_status: this.blockchainConnector.getStatus()
         };
 
+        // 翻译模拟响应
+        mockResponse = this.translateToChinese(mockResponse);
         res.json(mockResponse);
       }
     });
