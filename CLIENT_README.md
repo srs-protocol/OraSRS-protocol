@@ -215,6 +215,16 @@ curl -X GET http://localhost:3006/orasrs/v1/gas-subsidy/status/0xYOUR_WALLET_ADD
 
 此服务提供咨询建议，最终决策由客户端做出。OraSRS 不直接阻断流量，而是提供风险评估供客户端参考。
 
+## 客户端响应类型
+
+OraSRS 客户端根据区块链连接状态和数据可用性提供以下响应类型：
+
+- **正常数据响应** (`version: "2.0-contract"`): 从区块链合约获取的实时威胁数据
+- **无数据响应** (`version: "2.0-no-data"`): 区块链中未找到特定IP的威胁数据，返回"无数据"状态
+- **离线响应** (`version: "2.0-offline"`): 无法连接到区块链时返回离线状态
+
+客户端不再在区块链连接失败时返回模拟数据，确保响应的准确性和透明度。
+
 ## 许可证
 
 MIT License

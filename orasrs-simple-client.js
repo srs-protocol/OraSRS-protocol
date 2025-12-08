@@ -148,39 +148,31 @@ class SimpleOraSRSService {
         res.json(threatData);
       } catch (error) {
         console.error('Error fetching threat data:', error);
-        // 如果区块链连接失败，返回模拟数据
-        let mockResponse = {
+        // 如果区块链连接器抛出异常，我们仍然返回离线响应
+        let offlineResponse = {
           query: { ip: ip || null, domain: domain || null },
           response: {
-            risk_score: Math.random() * 0.3, // 较低的随机风险评分
-            confidence: 'low',
-            risk_level: 'low',
-            evidence: [
-              {
-                type: 'mock_data',
-                detail: 'Mock threat data for service availability',
-                source: 'local_mock',
-                timestamp: new Date().toISOString(),
-                confidence: 0.3
-              }
-            ],
+            risk_score: null,
+            confidence: '离线',
+            risk_level: '离线',
+            evidence: [],
             recommendations: {
-              default: 'allow',
-              public_services: 'allow',
-              banking: 'allow_with_verification'
+              default: '未知',
+              public_services: '未知',
+              banking: '未知'
             },
             appeal_url: `https://api.orasrs.net/appeal?ip=${ip || domain}`,
-            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: null,
             timestamp: new Date().toISOString(),
-            disclaimer: 'This is mock data for service availability during blockchain connection issues.',
-            version: '2.0-mock'
+            disclaimer: '服务暂时离线，无法查询威胁数据。',
+            version: '2.0-offline'
           },
           blockchain_status: this.blockchainConnector.getStatus()
         };
 
-        // 翻译模拟响应
-        mockResponse = this.translateToChinese(mockResponse);
-        res.json(mockResponse);
+        // 翻译离线响应
+        offlineResponse = this.translateToChinese(offlineResponse);
+        res.status(500).json(offlineResponse);
       }
     });
 
@@ -428,11 +420,30 @@ class SimpleOraSRSService {
         // 记录威胁
         await this.threatDetection.reportThreat(threatData);
 
-        res.status(201).json({
+        // 尝试提交到区块链
+        let submitResult = {
           success: true,
-          message: 'Threat report submitted successfully',
-          threatId: `${ip}_${Date.now()}`
-        });
+          message: 'Threat report submitted successfully to local detection system',
+          threatId: `${ip}_${Date.now()}`,
+          blockchain_status: this.blockchainConnector.getStatus()
+        };
+
+        // 如果区块链连接正常，尝试提交到区块链
+        if (this.blockchainConnector.getStatus().isConnected) {
+          try {
+            const blockchainResult = await this.blockchainConnector.submitThreatReport(threatData);
+            submitResult.blockchain_result = blockchainResult;
+            submitResult.message = 'Threat report submitted successfully to both local detection system and blockchain';
+          } catch (blockchainError) {
+            console.error('Failed to submit threat to blockchain:', blockchainError.message);
+            submitResult.message = 'Threat report submitted to local detection system, but failed to submit to blockchain';
+            submitResult.blockchain_error = blockchainError.message;
+          }
+        } else {
+          submitResult.message = 'Threat report submitted to local detection system, but blockchain is currently offline';
+        }
+
+        res.status(201).json(submitResult);
       } catch (error) {
         console.error('Error submitting threat report:', error);
         res.status(500).json({

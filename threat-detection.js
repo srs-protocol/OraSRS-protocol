@@ -288,9 +288,14 @@ class ThreatDetection {
     // 如果有区块链连接器，尝试提交到区块链
     if (this.blockchainConnector) {
       try {
-        console.log(`尝试将威胁提交到区块链: ${threatData.ip}`);
-        // 注意：这里需要根据实际的区块链连接器接口进行调整
-        // await this.blockchainConnector.submitThreatReport(threatData);
+        // 检查区块链连接状态
+        const status = this.blockchainConnector.getStatus();
+        if (status.isConnected) {
+          console.log(`尝试将威胁提交到区块链: ${threatData.ip}`);
+          await this.blockchainConnector.submitThreatReport(threatData);
+        } else {
+          console.log(`区块链连接不可用，威胁数据将保留在本地: ${threatData.ip}`);
+        }
       } catch (error) {
         console.error('提交威胁到区块链失败:', error.message);
       }
