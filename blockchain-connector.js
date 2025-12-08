@@ -154,14 +154,13 @@ class BlockchainConnector {
 
   async getThreatData(ipAddress) {
     try {
-      // 这里需要通过区块链合约查询威胁数据
       // 现在我们首先尝试连接区块链并获取数据
       if (!this.isConnected) {
         await this.connect();
       }
       
-      // 这里需要使用web3或者ethers与智能合约交互
-      // 临时使用axios调用区块链RPC API查询合约数据
+      // 使用web3与智能合约交互
+      // 使用axios调用区块链RPC API查询合约数据
       const rpcResponse = await axios.post(this.config.endpoint, {
         jsonrpc: "2.0",
         method: "eth_call",
@@ -177,18 +176,27 @@ class BlockchainConnector {
         timeout: this.config.timeout
       });
       
-      // 如果成功获取到区块链数据，则处理并返回
+      // 检查响应
       if (rpcResponse.data && rpcResponse.data.result) {
         const rawData = rpcResponse.data.result;
+        
+        // 检查是否是空结果（表示没有找到数据）
+        if (rawData === '0x' || rawData === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+          // 返回"未找到数据"的响应而不是模拟数据
+          return this.getNoDataFoundResponse(ipAddress);
+        }
+        
+        // 如果获取到实际数据，则处理并返回
         return this.processThreatDataFromContract(rawData, ipAddress);
       } else {
-        console.log(`⚠️  无法从区块链获取数据，返回模拟数据: ${ipAddress}`);
-        return this.getMockThreatData(ipAddress);
+        // 如果RPC返回错误，检查连接状态
+        console.log(`⚠️  无法从区块链获取数据: ${ipAddress}`);
+        return this.getNoDataFoundResponse(ipAddress);
       }
     } catch (error) {
       console.error(`❌ 从区块链获取威胁数据失败:`, error.message);
-      // 连接失败时返回模拟数据以确保服务可用
-      return this.getMockThreatData(ipAddress);
+      // 连接失败时返回离线状态
+      return this.getOfflineResponse(ipAddress);
     }
   }
 
@@ -276,6 +284,57 @@ class BlockchainConnector {
     return result;
   }
 
+  // 当没有找到数据时返回的响应
+  getNoDataFoundResponse(ipAddress) {
+    return {
+      query: { ip: ipAddress },
+      response: {
+        risk_score: 0.0, // 无风险评分，因为没有数据
+        confidence: '无数据',
+        risk_level: '无数据',
+        evidence: [],
+        recommendations: {
+          default: '允许',
+          public_services: '允许',
+          banking: '允许'
+        },
+        appeal_url: `https://api.orasrs.net/appeal?ip=${ipAddress}`,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        timestamp: new Date().toISOString(),
+        disclaimer: '在区块链上未找到该IP的威胁数据。',
+        version: '2.0-no-data'
+      }
+    };
+  }
+
+  // 当服务离线时返回的响应
+  getOfflineResponse(ipAddress) {
+    return {
+      query: { ip: ipAddress },
+      response: {
+        risk_score: null,
+        confidence: '离线',
+        risk_level: '离线',
+        evidence: [],
+        recommendations: {
+          default: '未知',
+          public_services: '未知',
+          banking: '未知'
+        },
+        appeal_url: `https://api.orasrs.net/appeal?ip=${ipAddress}`,
+        expires_at: null,
+        timestamp: new Date().toISOString(),
+        disclaimer: '服务暂时离线，无法查询威胁数据。',
+        version: '2.0-offline'
+      },
+      blockchain_status: {
+        isConnected: false,
+        endpoint: this.config.endpoint,
+        error: '无法连接到区块链'
+      }
+    };
+  }
+
   // 解码威胁数据
   processThreatDataFromContract(rawData, ipAddress) {
     // 这里是模拟处理从合约返回的原始数据
@@ -314,8 +373,8 @@ class BlockchainConnector {
         }
       };
     } else {
-      // 如果合约中没有该IP的威胁数据，返回低风险
-      return this.getMockThreatData(ipAddress);
+      // 如果合约中没有该IP的威胁数据，返回无数据响应
+      return this.getNoDataFoundResponse(ipAddress);
     }
   }
 
