@@ -111,6 +111,17 @@ clone_orasrs() {
         git checkout lite-client
     fi
     
+    # 确保所有必要的文件都存在
+    if [[ ! -f "/opt/orasrs/blockchain-connector.js" ]]; then
+        print_error "区块链连接器文件不存在，安装失败"
+        exit 1
+    fi
+    
+    if [[ ! -f "/opt/orasrs/threat-detection.js" ]]; then
+        print_error "威胁检测模块不存在，安装失败"
+        exit 1
+    fi
+    
     print_success "项目克隆完成"
 }
 
