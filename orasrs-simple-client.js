@@ -183,7 +183,6 @@ class SimpleOraSRSService {
         res.json(mockResponse);
       }
     });
-    });
 
     // 威胁情报端点
     this.app.get('/orasrs/v2/threat-list', async (req, res) => {
