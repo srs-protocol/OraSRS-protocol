@@ -140,7 +140,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/orasrs
-ExecStart=/usr/bin/node orasrs-simple-client.js
+ExecStart=/usr/bin/node /opt/orasrs/orasrs-simple-client.js
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
