@@ -1,6 +1,6 @@
 # OraSRS Browser Extension
 
-OraSRS Browser Extension 是一个基于区块链的去中心化安全防护浏览器扩展，它连接到 OraSRS 协议链 (api.orasrs.net) 获取实时威胁情报，并在浏览器中提供主动威胁防护。
+OraSRS Browser Extension 是一个基于区块链的去中心化安全防护浏览器扩展，它连接到 OraSRS 协议链 (api.orasrs.net)，这是一个基于Hardhat和Geth的私有链，Chain ID为8888，以获取实时威胁情报，并在浏览器中提供主动威胁防护。
 
 ## 功能特性
 

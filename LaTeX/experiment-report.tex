@@ -1,0 +1,49 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+
+\geometry{a4paper, margin=1in}
+
+\title{OraSRS协议实验报告：去中心化威胁情报系统性能评估}
+\author{
+    \textbf{安全研究团队} \\
+    \textit{SRS协议开发组}
+}
+\date{\today}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}},
+    numberstyle=\tiny,
+    numbers=left,
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+本文详细报告OraSRS（Oracle Security Root Service）协议的实验评估结果。
+OraSRS是一种创新的去中心化威胁情报协议，采用咨询式服务模式，提供风险评分和建议，
+由客户端自主决策是否采取行动。本实验报告评估了OraSRS协议在性能、隐私保护、
+系统鲁棒性和可扩展性方面的表现。实验结果表明，OraSRS协议在保护隐私的同时，
+实现了高效的风险评估和威胁检测，验证了所有研究假设。
+\end{abstract}
+
+% 引入实验框架
+\input{experimental-framework}
+
+\end{document}

@@ -1,172 +1,133 @@
-/**
- * OraSRS 混合L2架构 - 真实测试网部署脚本
- * 用于在OP Sepolia和Sepolia测试网上部署合约
- */
+// scripts/deploy-to-testnet.js
+// 部署合约到测试网的脚本
 
-const { ethers, run } = require("hardhat");
+import hre from "hardhat";
+import { ethers } from "ethers";
 
-async function main() {
-  console.log("==================================================");
-  console.log("    OraSRS 混合L2架构 - 真实测试网部署");
-  console.log("==================================================");
-
-  // 获取部署者账户
-  const [deployer] = await ethers.getSigners();
-  console.log("部署者地址:", deployer.address);
-  
-  // 检查余额
-  const balance = await ethers.provider.getBalance(deployer.address);
-  console.log("部署者余额:", ethers.utils.formatEther(balance), "ETH");
-  
-  // 验证余额是否足够
-  if (balance.lt(ethers.utils.parseEther("0.1"))) {
-    console.log("⚠️  警告: 余额可能不足以支付部署费用，请确保有足够的测试ETH");
-    return;
-  }
-
-  console.log("\n开始部署合约到测试网...");
-  
-  // 部署顺序：
-  // 1. 首先部署LayerZero Endpoint (使用测试网的预部署地址或Mock)
-  // 2. 部署ThreatIntelSync
-  // 3. 部署GovernanceMirror
+async function deployToTestnet() {
+  console.log("🌍 开始部署到测试网...\n");
   
   try {
-    // 注意：在真实环境中，LayerZero Endpoint通常是预部署的
-    // 这里我们使用LayerZero提供的测试网地址
-    console.log("\n步骤1: 获取LayerZero Endpoint地址...");
-    
-    // LayerZero Endpoint在不同测试网的地址
-    const layerZeroEndpoints = {
-      11155111: "0x902F09715B6303d32d349065971a75f10c95136b", // Sepolia
-      11155420: "0x5530EaE9287d360d7FD83DdB95b132905410A3c9"  // OP Sepolia
-    };
-    
-    const network = await ethers.provider.getNetwork();
-    const currentChainId = network.chainId;
-    let lzEndpointAddress = layerZeroEndpoints[currentChainId];
-    
-    if (!lzEndpointAddress) {
-      console.log("⚠️  当前网络未配置LayerZero Endpoint，部署Mock版本...");
-      const LayerZeroEndpointMock = await ethers.getContractFactory("LayerZeroEndpointMock");
-      const lzEndpointMock = await LayerZeroEndpointMock.deploy();
-      await lzEndpointMock.deployed();
-      lzEndpointAddress = lzEndpointMock.address;
-      console.log("Mock LayerZero Endpoint 部署成功:", lzEndpointAddress);
-    } else {
-      console.log("使用预配置的LayerZero Endpoint:", lzEndpointAddress);
-    }
-
-    console.log("\n步骤2: 部署ThreatIntelSync合约...");
-    
-    // 根据当前网络设置目标链ID
-    let domesticChainId, overseasChainId;
-    if (currentChainId === 11155420) { // OP Sepolia
-      domesticChainId = 11155420; // OP Sepolia
-      overseasChainId = 11155111; // Sepolia
-    } else { // 假设是Sepolia
-      domesticChainId = 11155111; // Sepolia
-      overseasChainId = 11155420; // OP Sepolia
+    // 检查环境变量
+    if (!process.env.TESTNET_RPC_URL) {
+      console.log("⚠️  未设置 TESTNET_RPC_URL 环境变量，使用默认值");
+      process.env.TESTNET_RPC_URL = "https://sepolia.infura.io/v3/YOUR_PROJECT_ID";
     }
     
-    const ThreatIntelSync = await ethers.getContractFactory("ThreatIntelSync");
-    console.log(`部署参数: Endpoint=${lzEndpointAddress}, Governance=${deployer.address}, DomesticChainId=${domesticChainId}, OverseasChainId=${overseasChainId}`);
-    
-    const threatIntelSync = await ThreatIntelSync.deploy(
-      lzEndpointAddress,           // LayerZero端点
-      deployer.address,            // 治理合约地址
-      domesticChainId,             // 国内链ID (当前链)
-      overseasChainId              // 海外界链ID (目标链)
-    );
-    
-    await threatIntelSync.deployed();
-    console.log("ThreatIntelSync部署成功:", threatIntelSync.address);
-
-    console.log("\n步骤3: 部署GovernanceMirror合约...");
-    
-    const GovernanceMirror = await ethers.getContractFactory("GovernanceMirror");
-    const governanceMirror = await GovernanceMirror.deploy(
-      lzEndpointAddress,           // LayerZero端点
-      deployer.address,            // 治理合约地址
-      threatIntelSync.address,     // 威胁情报同步合约地址
-      domesticChainId,             // 国内链ID
-      overseasChainId              // 海外界链ID
-    );
-    
-    await governanceMirror.deployed();
-    console.log("GovernanceMirror部署成功:", governanceMirror.address);
-
-    // 保存部署信息
-    const fs = require('fs');
-    const deploymentInfo = {
-      network: network.name,
-      chainId: currentChainId,
-      deployer: deployer.address,
-      contracts: {
-        layerZeroEndpoint: lzEndpointAddress,
-        threatIntelSync: threatIntelSync.address,
-        governanceMirror: governanceMirror.address
-      },
-      deployedAt: new Date().toISOString(),
-      config: {
-        domesticChainId: domesticChainId,
-        overseasChainId: overseasChainId
-      }
-    };
-    
-    if (!fs.existsSync('deployments')) {
-      fs.mkdirSync('deployments');
+    if (!process.env.PRIVATE_KEY) {
+      console.log("⚠️  未设置 PRIVATE_KEY 环境变量，使用默认值");
+      console.log("💡  请设置您的私钥以部署合约到测试网");
+      return;
     }
     
-    const fileName = `deployment-${currentChainId}-${Date.now()}.json`;
-    fs.writeFileSync(`deployments/${fileName}`, JSON.stringify(deploymentInfo, null, 2));
-    console.log(`\n✓ 部署信息已保存到 deployments/${fileName}`);
-
-    console.log("\n==================================================");
-    console.log("合约部署完成!");
-    console.log(`网络: ${network.name} (Chain ID: ${currentChainId})`);
-    console.log(`ThreatIntelSync: ${threatIntelSync.address}`);
-    console.log(`GovernanceMirror: ${governanceMirror.address}`);
-    console.log("==================================================");
-
-    // 验证合约（如果在支持的网络上）
+    console.log("📋 部署配置:");
+    console.log(`   网络: ${hre.network.name}`);
+    console.log(`   RPC URL: ${process.env.TESTNET_RPC_URL}\n`);
+    
+    // 获取部署者
+    const [deployer] = await hre.ethers.getSigners();
+    console.log(`👤 部署者地址: ${deployer.address}`);
+    
+    // 检查余额
+    const balance = await deployer.provider.getBalance(deployer.address);
+    console.log(`💰 部署者余额: ${ethers.formatEther(balance)} ETH\n`);
+    
+    if (ethers.toBigInt(balance) < ethers.parseEther("0.1")) {
+      console.log("⚠️  余额不足，请确保至少有0.1 ETH用于部署");
+      return;
+    }
+    
+    // 这里我们使用一个模拟的代币地址，实际部署时您需要先部署代币合约
+    const tokenAddress = process.env.TOKEN_ADDRESS || "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // 示例地址
+    
+    console.log("🔄 部署 ThreatConsensus 合约到测试网...");
+    const ThreatConsensus = await hre.ethers.getContractFactory("ThreatConsensus");
+    
+    // 部署合约
+    const threatConsensus = await ThreatConsensus.connect(deployer).deploy(tokenAddress);
+    console.log(`⏳ 等待部署完成... 合约地址: ${await threatConsensus.getAddress()}`);
+    
+    await threatConsensus.waitForDeployment();
+    const contractAddress = await threatConsensus.getAddress();
+    
+    console.log("✅ ThreatConsensus 合约部署成功!");
+    console.log(`📍 合约地址: ${contractAddress}\n`);
+    
+    // 验证部署
+    console.log("🔍 验证部署...");
     try {
-      console.log("\n正在进行合约验证...");
-      await run("verify:verify", {
-        address: threatIntelSync.address,
-        constructorArguments: [
-          lzEndpointAddress,
-          deployer.address,
-          domesticChainId,
-          overseasChainId
-        ],
-      });
+      const threshold = await threatConsensus.CONSENSUS_THRESHOLD();
+      const isWhitelisted = await threatConsensus.isWhitelisted("8.8.8.8");
       
-      await run("verify:verify", {
-        address: governanceMirror.address,
-        constructorArguments: [
-          lzEndpointAddress,
-          deployer.address,
-          threatIntelSync.address,
-          domesticChainId,
-          overseasChainId
-        ],
-      });
-      
-      console.log("✓ 合约验证提交成功");
-    } catch (verificationError) {
-      console.log("⚠️  合约验证失败（这在测试网中是正常的）:", verificationError.message);
+      console.log("✅ 合约验证通过!");
+      console.log(`   共识阈值: ${threshold}`);
+      console.log(`   Google DNS 白名单状态: ${isWhitelisted}`);
+      console.log(`   代币合约地址: ${await threatConsensus.orasrsToken()}`);
+    } catch (error) {
+      console.log(`⚠️  合约验证时出现警告: ${error.message}`);
     }
-
+    
+    // 如果是在以太坊测试网上，可以尝试验证合约
+    if (hre.network.name === "sepolia" || hre.network.name === "goerli") {
+      console.log("\n🔍 准备验证合约...");
+      try {
+        console.log("⏳ 提交合约验证到 Etherscan...");
+        await hre.run("verify:verify", {
+          address: contractAddress,
+          constructorArguments: [tokenAddress],
+        });
+        console.log("✅ 合约验证提交成功!");
+      } catch (error) {
+        console.log(`⚠️  合约验证提交失败: ${error.message}`);
+        console.log("💡  这可能是因为合约尚未在区块链浏览器上同步，稍后可手动验证");
+      }
+    }
+    
+    // 保存部署信息
+    const deploymentInfo = {
+      threatConsensusAddress: contractAddress,
+      tokenAddress: tokenAddress,
+      deployer: deployer.address,
+      network: hre.network.name,
+      timestamp: new Date().toISOString(),
+      rpcUrl: process.env.TESTNET_RPC_URL
+    };
+    
+    await import('fs').then(fs => {
+      fs.writeFileSync("testnet-deployment.json", JSON.stringify(deploymentInfo, null, 2));
+    });
+    
+    console.log("\n💾 部署信息已保存到 testnet-deployment.json");
+    
+    console.log("\n🎯 测试网部署完成!");
+    console.log("\n📋 部署摘要:");
+    console.log(`   合约地址: ${contractAddress}`);
+    console.log(`   网络: ${hre.network.name}`);
+    console.log(`   部署者: ${deployer.address}`);
+    console.log("   功能特性:");
+    console.log("     - 代币验证 (1000+ 代币才能上传)");
+    console.log("     - 提交-揭示防跟风机制");
+    console.log("     - 白名单保护");
+    console.log("     - 多节点共识");
+    
+    console.log("\n🚀 OraSRS 现已部署到公网测试网!");
+    
   } catch (error) {
-    console.error("部署过程中出现错误:", error);
-    throw error;
+    console.error("❌ 部署失败:", error);
+    console.log("\n💡 部署提示:");
+    console.log("   1. 确保环境变量设置正确");
+    console.log("   2. 确保账户有足够余额支付Gas费");
+    console.log("   3. 确保网络连接正常");
+    console.log("   4. 检查合约代码是否正确编译");
   }
 }
 
-main()
-  .then(() => process.exit(0))
+// 运行部署
+console.log("🚀 启动 OraSRS 测试网部署流程\n");
+deployToTestnet()
+  .then(() => {
+    console.log("\n✅ 部署脚本执行完成");
+  })
   .catch((error) => {
-    console.error("部署失败:", error);
-    process.exit(1);
+    console.error("\n💥 部署脚本执行失败:", error);
   });

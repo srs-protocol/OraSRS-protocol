@@ -2,9 +2,9 @@
 import { ethers } from "ethers";
 import fs from "fs";
 
-// 模拟公网用户连接协议链
+// 模拟用户连接OraSRS协议链
 async function simulatePublicUser() {
-    console.log('🌐 模拟公网用户连接OraSRS协议链');
+    console.log('🌐 模拟用户连接OraSRS协议链');
     console.log('----------------------------------------');
     
     // 从部署信息中获取合约地址
@@ -135,7 +135,7 @@ async function simulatePublicUser() {
         console.log('   危胁情报合约事件监听已准备就绪');
         console.log('   可以实时接收新的威胁情报更新');
         
-        console.log('\n🎉 公网用户连接测试完成!');
+        console.log('\n🎉 OraSRS协议链用户连接测试完成!');
         console.log('✅ 用户端可以成功连接协议链');
         console.log('✅ 所有核心功能正常可用');
         console.log('✅ 可以查询威胁情报');

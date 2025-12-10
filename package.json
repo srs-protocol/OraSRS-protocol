@@ -1,30 +1,40 @@
 {
   "name": "orasrs-protocol",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "OraSRS (Oracle Security Root Service) - 咨询式风险评分服务",
   "main": "srs-service.js",
   "type": "module",
   "scripts": {
     "start": "node start-srs-service.js",
+    "start-client": "node orasrs-simple-client.js",
+    "start-enhanced": "node orasrs-enhanced-client.js",
     "test": "node test/orasrs.test.js",
     "test-integration": "node test-srs-integration.js",
     "dev": "nodemon start-srs-service.js",
     "lint": "eslint .",
     "srs-engine": "node srs-engine.js",
-    "faucet": "npx hardhat run script/faucet.js --network sepolia"
+    "faucet": "npx hardhat run script/faucet.js --network sepolia",
+    "build-client": "bash build-client.sh",
+    "build-linux": "npx pkg orasrs-simple-client.js --targets node18-linux-x64 --output dist/orasrs-simple-client-linux",
+    "build-macos": "npx pkg orasrs-simple-client.js --targets node18-macos-x64 --output dist/orasrs-simple-client-macos",
+    "build-windows": "npx pkg orasrs-simple-client.js --targets node18-win-x64 --output dist/orasrs-simple-client-win.exe"
   },
   "keywords": [
     "security",
     "risk-assessment",
     "threat-intelligence",
     "cybersecurity",
-    "advisory-service"
+    "advisory-service",
+    "blockchain",
+    "decentralized"
   ],
   "author": "SRS Protocol Team",
   "license": "MIT",
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
-    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.22.1",
     "rate-limiter-flexible": "^2.4.2"
   },
   "devDependencies": {
@@ -43,6 +53,7 @@
     "hardhat": "^2.27.1",
     "hardhat-gas-reporter": "^1.0.10",
     "nodemon": "^3.0.1",
+    "pkg": "^5.8.1",
     "solidity-coverage": "^0.8.16",
     "ts-node": "^10.9.2",
     "typechain": "^8.3.2",

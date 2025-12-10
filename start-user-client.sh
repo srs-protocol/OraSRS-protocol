@@ -98,7 +98,7 @@ fi
 
 echo "启动OraSRS私有链节点..."
 echo "网络ID: 8888"
-echo "RPC端点: http://localhost:8545"
+    echo "RPC端点: https://api.orasrs.net"
 
 # 在后台启动geth节点
 geth \
@@ -124,7 +124,7 @@ echo "等待节点启动..."
 sleep 8
 
 # 检查节点是否正常运行
-if ! curl -s http://localhost:8545 -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' > /dev/null 2>&1; then
+if ! curl -s https://api.orasrs.net -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' > /dev/null 2>&1; then
     echo "错误: 无法连接到Geth节点"
     kill $GETH_PID
     exit 1
@@ -162,10 +162,10 @@ echo "==========================================="
 echo "    OraSRS 公开许可链启动完成！"
 echo "==========================================="
 if [ "$USE_DOCKER" = true ] && [ -f "docker-compose-permissioned.yml" ]; then
-    echo "✓ API网关端点: http://localhost:8081 (推荐使用)"
-    echo "✓ 直接节点端点: http://localhost:8545"
+    echo "✓ API网关端点: https://api.orasrs.net (推荐使用)"
+    echo "✓ 直接节点端点: https://api.orasrs.net"
 else
-    echo "✓ RPC端点: http://localhost:8545"
+    echo "✓ RPC端点: https://api.orasrs.net"
 fi
 echo "✓ 网络ID: 8888"
 echo "✓ 原生代币: ORA"

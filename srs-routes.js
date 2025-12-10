@@ -4,9 +4,9 @@
  * 遵循咨询式服务模式，提供风险评分而非直接阻断指令
  */
 
-const express = require('express');
-const SRSEngine = require('./srs-engine');
-const AuthRateLimit = require('./src/auth-rate-limit');
+import express from 'express';
+import SRSEngine from './srs-engine.js';
+import AuthRateLimit from './src/auth-rate-limit.js';
 
 const authRateLimit = new AuthRateLimit();
 
@@ -620,4 +620,4 @@ router.use((error, req, res, next) => {
   res.status(500).json(formatError('INTERNAL_ERROR', 'An unexpected error occurred', 500));
 });
 
-module.exports = router;
+export default router;

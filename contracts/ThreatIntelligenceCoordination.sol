@@ -18,9 +18,11 @@ contract ThreatIntelligenceCoordination {
     // 存储威胁情报
     mapping(string => ThreatIntel) public threatIntels;  // IP -> ThreatIntel
     mapping(string => bool) public isThreatIP;          // IP -> 是否为威胁IP
+    mapping(string => uint256) public threatScores;     // IP -> 威胁分数
     
     event ThreatIntelAdded(string indexed ip, ThreatLevel level, string threatType, uint256 timestamp);
     event ThreatIntelRemoved(string indexed ip, uint256 timestamp);
+    event ThreatScoreUpdated(string indexed ip, uint256 score, uint256 timestamp);
     
     /**
      * @dev 构造函数
@@ -50,6 +52,23 @@ contract ThreatIntelligenceCoordination {
         isThreatIP[_ip] = true;
         
         emit ThreatIntelAdded(_ip, _threatLevel, _threatType, block.timestamp);
+    }
+    
+    /**
+     * @dev 更新威胁分数
+     */
+    function updateThreatScore(string memory _ip, uint256 _score) external {
+        require(bytes(_ip).length > 0, "IP cannot be empty");
+        threatScores[_ip] = _score;
+        
+        emit ThreatScoreUpdated(_ip, _score, block.timestamp);
+    }
+    
+    /**
+     * @dev 获取威胁分数
+     */
+    function getThreatScore(string memory _ip) external view returns (uint256) {
+        return threatScores[_ip];
     }
     
     /**
@@ -89,5 +108,28 @@ contract ThreatIntelligenceCoordination {
             intel.threatType,
             intel.isActive
         );
+    }
+    
+    /**
+     * @dev 批量更新多个IP的威胁分数
+     */
+    function batchUpdateThreatScores(string[] memory _ips, uint256[] memory _scores) external {
+        require(_ips.length == _scores.length, "IP and score arrays must have same length");
+        
+        for (uint i = 0; i < _ips.length; i++) {
+            threatScores[_ips[i]] = _scores[i];
+            emit ThreatScoreUpdated(_ips[i], _scores[i], block.timestamp);
+        }
+    }
+    
+    /**
+     * @dev 获取多个IP的威胁分数
+     */
+    function getThreatScores(string[] memory _ips) external view returns (uint256[] memory) {
+        uint256[] memory scores = new uint256[](_ips.length);
+        for (uint i = 0; i < _ips.length; i++) {
+            scores[i] = threatScores[_ips[i]];
+        }
+        return scores;
     }
 }

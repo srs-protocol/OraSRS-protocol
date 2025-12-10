@@ -70,6 +70,10 @@ ORASRS_CHAIN_ID=8888
 ORASRS_CONTRACT_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
 ```
 
+**环境变量说明**:
+- `ORASRS_BLOCKCHAIN_ENDPOINT`: OraSRS协议链端点，这是基于Hardhat和Geth的私有链
+- `ORASRS_CHAIN_ID`: 区块链网络ID，8888是OraSRS私有链的默认Chain ID
+
 如需修改配置，请编辑配置文件后重启服务：
 ```bash
 sudo systemctl restart orasrs-client
@@ -141,7 +145,7 @@ rm -rf $HOME/orasrs-client
 ## 支持协议
 
 - **协议版本**: OraSRS v2.0.1
-- **区块链集成**: 连接 OraSRS 协议链 (api.orasrs.net)
+- **区块链集成**: 连接 OraSRS 协议链 (api.orasrs.net)，这是基于Hardhat和Geth的私有链，Chain ID为8888
 - **去重逻辑**: 防止重复威胁报告的时间窗口机制
 - **三层架构**: 支持边缘层、共识层、智能层
 

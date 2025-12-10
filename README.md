@@ -106,6 +106,7 @@ curl http://localhost:3006/orasrs/v2/threat-list
 
 ## 🚀 部署方案 / Deployment Solutions
 - [SecurityRiskAssessment独立区块链网络 / SecurityRiskAssessment Standalone Blockchain Network](#start-SRA-network) **(推荐)**
+- [OraSRS私有链 (Hardhat+Geth) / OraSRS Private Chain (Hardhat+Geth)](#start-orasrs-chain) **(开发环境)**
 - [长安链部署技术方案 / ChainMaker Deployment Technical Solution](CHAINMAKER_DEPLOYMENT_PLAN.md)
 - [ChainMaker 迁移指南 / ChainMaker Migration Guide](CHAINMAKER_MIGRATION_GUIDE.md)
 - [ChainMaker 安全测试 / ChainMaker Security Testing](CHAINMAKER_SECURITY_TESTING.md)
@@ -220,6 +221,46 @@ docker-compose logs -f SRA-node-1
 - `verifyThreatReport` - 验证威胁报告
 - `getGlobalThreatList` - 获取全局威胁列表
 - `updateReputation` - 更新节点声誉
+
+## 🛠️ 启动OraSRS私有链 (Hardhat+Geth) / Start OraSRS Private Chain (Hardhat+Geth)
+
+### 快速启动 / Quick Start
+```bash
+# 启动OraSRS基于Hardhat和Geth的私有链
+./start-orasrs-chain.sh
+
+# 区块链节点信息
+RPC端点: http://localhost:8545
+Chain ID: 8888
+```
+
+### 网络特性 / Network Features
+- **开发环境** - 专为开发和测试设计的私有链
+- **快速出块** - 1秒一个块，提高开发效率
+- **兼容以太坊** - 完全兼容以太坊工具链
+- **api.orasrs.net** - 在开发环境中，api.orasrs.net指向本地Hardhat节点
+- **智能合约** - 支持OraSRS协议的全部智能合约功能
+
+### API接口 / API Endpoints
+- **RPC端点**: `http://localhost:8545` (本地开发)
+- **公网API端点**: `https://api.OraSRS.net` (通过反向代理访问本地Hardhat节点)
+- **Chain ID**: `8888`
+- **监控**: 通过RPC端点进行
+
+### 开发说明 / Development Notes
+- `api.OraSRS.net` 通过反向代理将请求转发到本地Hardhat节点
+- 所有智能合约都可以通过公网API访问
+- 已部署的合约:
+  - **IPRiskCalculator**: `0x0165878A594ca255338adfa4d48449f69242Eb8F`
+  - **ThreatStats**: `0xa513E6E4b8f2a923D98304ec87F64353C4D5C853`
+  - **OraSRSReader**: `0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6`
+  - **ThreatIntelligenceCoordination**: `0x5FC8d32690cc91D4c39d9d3abcBD16989F875707`
+  - **OraSRSToken (ORA)**: `0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1`
+  - **FaucetUpgradeable**: `0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE`
+  - **OraSRSGovernance**: `0x3Aa5ebB10DC797CAC828524e59A333d0A371443c`
+  - **NodeRegistry**: `0xc6e7DF5E7b4f2A278906862b61205850344D4e7d`
+  - **SimpleSecurityActionContract**: `0x59b670e9fA9D0A427751Af201D676719a970857b`
+- 开发者可以使用标准以太坊工具与该链交互
 
 ## 📄 许可证 / License
 本项目采用 [Apache License 2.0](LICENSE) 开源。

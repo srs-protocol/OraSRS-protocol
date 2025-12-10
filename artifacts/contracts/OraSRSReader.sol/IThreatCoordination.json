@@ -1,0 +1,93 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IThreatCoordination",
+  "sourceName": "contracts/OraSRSReader.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "ip",
+          "type": "string"
+        }
+      ],
+      "name": "getThreatIntel",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "sourceIP",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "targetIP",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "threatLevel",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "threatType",
+          "type": "string"
+        },
+        {
+          "internalType": "bool",
+          "name": "isActive",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "ip",
+          "type": "string"
+        }
+      ],
+      "name": "getThreatScore",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "ip",
+          "type": "string"
+        }
+      ],
+      "name": "isThreatSource",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
