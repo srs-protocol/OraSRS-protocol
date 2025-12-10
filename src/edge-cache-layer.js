@@ -3,7 +3,7 @@
  * 实现小额质押（≥100 ORA）、可验证缓存证明、接受任意挑战
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class EdgeCacheLayer {
   constructor(options = {}) {
@@ -376,4 +376,4 @@ class EdgeCacheLayer {
   }
 }
 
-module.exports = EdgeCacheLayer;
+export default EdgeCacheLayer;

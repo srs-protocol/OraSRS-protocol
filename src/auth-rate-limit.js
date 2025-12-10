@@ -1,208 +1,287 @@
 /**
- * OraSRS 速率限制和认证模块
- * 提供API密钥管理和防滥用机制
+ * 认证和速率限制模块
  */
-
-const crypto = require('crypto');
-const { RateLimiterMemory } = require('rate-limiter-flexible');
 
 class AuthRateLimit {
   constructor(options = {}) {
-    this.apiKeys = new Map(); // 存储API密钥
-    this.rateLimiters = new Map(); // 存储不同类型的限速器
-    this.defaultRateLimit = options.defaultRateLimit || {
-      points: 100, // 每个时间段的请求数
-      duration: 60 // 时间段（秒）
+    this.options = {
+      defaultRateLimit: options.defaultRateLimit || { windowMs: 15 * 60 * 1000, max: 100 }, // 15分钟100次
+      apiKeyLength: options.apiKeyLength || 32,
+      ...options
     };
-    
-    // 创建默认限速器
-    this.createRateLimiter('default', this.defaultRateLimit);
+
+    this.apiKeys = new Map(); // 存储API密钥
+    this.rateLimits = new Map(); // 存储速率限制
+    this.bannedIPs = new Set(); // 存储被封禁的IP
+
+    console.log('AuthRateLimit module initialized');
   }
 
   /**
    * 创建API密钥
    */
-  createApiKey(metadata = {}) {
-    const apiKey = 'orasrs_' + crypto.randomBytes(32).toString('hex');
+  createApiKey(config = {}) {
+    // 生成随机API密钥
+    const apiKey = this.generateApiKey();
     
     const keyData = {
       key: apiKey,
-      createdAt: new Date(),
-      lastUsed: null,
-      usageCount: 0,
-      metadata: metadata,
-      active: true,
-      rateLimit: metadata.rateLimit || this.defaultRateLimit
+      name: config.name || 'unnamed',
+      createdAt: new Date().toISOString(),
+      createdBy: config.createdBy || 'system',
+      permissions: config.permissions || ['read'],
+      rateLimit: config.rateLimit || this.options.defaultRateLimit,
+      active: true
     };
-    
+
     this.apiKeys.set(apiKey, keyData);
     
-    // 为新API密钥创建特定的限速器
-    this.createRateLimiter(apiKey, keyData.rateLimit);
-    
-    console.log(`创建新API密钥: ${apiKey.substring(0, 10)}...`);
+    console.log(`API key created: ${config.name || 'unnamed'}`);
     return keyData;
   }
 
   /**
-   * 创建限速器
+   * 生成API密钥
    */
-  createRateLimiter(id, rateLimitConfig) {
-    const rateLimiter = new RateLimiterMemory({
-      points: rateLimitConfig.points || 100,
-      duration: rateLimitConfig.duration || 60
-    });
+  generateApiKey() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
     
-    this.rateLimiters.set(id, rateLimiter);
-    return rateLimiter;
+    for (let i = 0; i < this.options.apiKeyLength; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    return result;
   }
 
   /**
    * 验证API密钥
    */
   validateApiKey(apiKey) {
-    if (!apiKey) {
-      return { valid: false, error: 'Missing API key' };
+    if (!this.apiKeys.has(apiKey)) {
+      return { valid: false, reason: 'API key not found' };
     }
-    
+
     const keyData = this.apiKeys.get(apiKey);
     
-    if (!keyData) {
-      return { valid: false, error: 'Invalid API key' };
-    }
-    
     if (!keyData.active) {
-      return { valid: false, error: 'API key is deactivated' };
+      return { valid: false, reason: 'API key is deactivated' };
     }
-    
-    // 更新使用统计
-    keyData.lastUsed = new Date();
-    keyData.usageCount += 1;
-    
-    return { valid: true, keyData };
+
+    return {
+      valid: true,
+      keyData: keyData,
+      remainingRequests: this.getRemainingRequests(apiKey)
+    };
   }
 
   /**
    * 检查速率限制
    */
-  async checkRateLimit(apiKey, endpoint = 'default') {
+  checkRateLimit(apiKey, ip = 'unknown') {
     const validation = this.validateApiKey(apiKey);
     
     if (!validation.valid) {
-      return { allowed: false, error: validation.error };
-    }
-    
-    // 使用特定于API密钥的限速器，或者使用默认限速器
-    const rateLimiterId = this.rateLimiters.has(apiKey) ? apiKey : 'default';
-    const rateLimiter = this.rateLimiters.get(rateLimiterId);
-    
-    try {
-      await rateLimiter.consume(apiKey);
-      return { allowed: true, remaining: rateLimiter.points - 1 };
-    } catch (rejRes) {
-      return { 
-        allowed: false, 
-        error: 'Rate limit exceeded', 
-        retryAfter: rejRes.msBeforeNext / 1000 
-      };
-    }
-  }
-
-  /**
-   * 手动限制请求
-   */
-  async consumeRateLimit(apiKey, points = 1) {
-    const rateLimiter = this.rateLimiters.get('default');
-    
-    if (!rateLimiter) {
-      return { allowed: true };
-    }
-    
-    try {
-      const result = await rateLimiter.consume(apiKey, points);
-      return { 
-        allowed: true, 
-        remaining: result.remainingPoints,
-        resetTime: new Date(Date.now() + result.msBeforeNext)
-      };
-    } catch (rejRes) {
-      return { 
-        allowed: false, 
-        error: 'Rate limit exceeded', 
-        retryAfter: rejRes.msBeforeNext / 1000 
-      };
-    }
-  }
-
-  /**
-   * 激活/停用API密钥
-   */
-  setApiKeyStatus(apiKey, active) {
-    const keyData = this.apiKeys.get(apiKey);
-    
-    if (!keyData) {
-      return false;
-    }
-    
-    keyData.active = active;
-    return true;
-  }
-
-  /**
-   * 获取API密钥统计信息
-   */
-  getApiKeyStats(apiKey) {
-    return this.apiKeys.get(apiKey) || null;
-  }
-
-  /**
-   * 获取所有API密钥（管理用途）
-   */
-  getAllApiKeys() {
-    return Array.from(this.apiKeys.values()).map(key => ({
-      key: key.key.substring(0, 10) + '...', // 只返回部分密钥
-      createdAt: key.createdAt,
-      lastUsed: key.lastUsed,
-      usageCount: key.usageCount,
-      active: key.active,
-      metadata: key.metadata
-    }));
-  }
-
-  /**
-   * 删除API密钥
-   */
-  removeApiKey(apiKey) {
-    const result = this.apiKeys.delete(apiKey);
-    if (result) {
-      this.rateLimiters.delete(apiKey);
-      console.log(`删除API密钥: ${apiKey.substring(0, 10)}...`);
-    }
-    return result;
-  }
-
-  /**
-   * 防止暴力破解的高级验证
-   */
-  async advancedValidation(apiKey, clientInfo = {}) {
-    const validation = this.validateApiKey(apiKey);
-    
-    if (!validation.valid) {
-      // 记录失败的尝试（可选）
-      console.log(`API密钥验证失败: ${apiKey ? apiKey.substring(0, 10) : 'NULL'} from ${clientInfo.ip || 'unknown'}`);
       return validation;
     }
+
+    const keyData = validation.keyData;
+    const clientId = `${apiKey}_${ip}`;
     
-    // 检查来自同一IP的失败尝试（需要额外的存储来跟踪）
-    // 这里是一个简化版本
-    const rateLimitCheck = await this.checkRateLimit(apiKey);
+    // 初始化客户端速率限制数据
+    if (!this.rateLimits.has(clientId)) {
+      this.rateLimits.set(clientId, {
+        count: 0,
+        resetTime: Date.now() + keyData.rateLimit.windowMs
+      });
+    }
+
+    const rateLimitData = this.rateLimits.get(clientId);
     
-    if (!rateLimitCheck.allowed) {
-      return { valid: false, error: rateLimitCheck.error };
+    // 检查是否需要重置窗口
+    if (Date.now() >= rateLimitData.resetTime) {
+      rateLimitData.count = 0;
+      rateLimitData.resetTime = Date.now() + keyData.rateLimit.windowMs;
+    }
+
+    // 检查是否超过限制
+    if (rateLimitData.count >= keyData.rateLimit.max) {
+      return {
+        valid: false,
+        reason: 'Rate limit exceeded',
+        resetTime: rateLimitData.resetTime
+      };
+    }
+
+    // 增加计数
+    rateLimitData.count++;
+    
+    return {
+      valid: true,
+      remaining: keyData.rateLimit.max - rateLimitData.count,
+      resetTime: rateLimitData.resetTime
+    };
+  }
+
+  /**
+   * 获取剩余请求数
+   */
+  getRemainingRequests(apiKey) {
+    // 这在验证密钥时更新速率限制，这里只是一个辅助方法
+    return this.options.defaultRateLimit.max;
+  }
+
+  /**
+   * 封禁IP地址
+   */
+  banIP(ipAddress, reason = 'Unknown', duration = 3600000) { // 默认1小时
+    this.bannedIPs.add(ipAddress);
+    
+    // 设置定时器自动解封
+    setTimeout(() => {
+      this.bannedIPs.delete(ipAddress);
+      console.log(`IP ${ipAddress} automatically unbaned after ban period`);
+    }, duration);
+
+    console.log(`IP ${ipAddress} banned for ${reason}`);
+    return { success: true, bannedUntil: new Date(Date.now() + duration) };
+  }
+
+  /**
+   * 检查IP是否被封禁
+   */
+  isIPBanned(ipAddress) {
+    return this.bannedIPs.has(ipAddress);
+  }
+
+  /**
+   * 获取API密钥列表（管理功能）
+   */
+  listApiKeys() {
+    const keys = [];
+    for (const [key, data] of this.apiKeys) {
+      // 不返回完整的密钥，只返回部分信息
+      keys.push({
+        keyPreview: key.substring(0, 8) + '...',
+        name: data.name,
+        createdAt: data.createdAt,
+        active: data.active,
+        permissions: data.permissions
+      });
+    }
+    return keys;
+  }
+
+  /**
+   * 撤销API密钥
+   */
+  revokeApiKey(apiKey) {
+    if (this.apiKeys.has(apiKey)) {
+      const keyData = this.apiKeys.get(apiKey);
+      keyData.active = false;
+      console.log(`API key revoked: ${keyData.name}`);
+      return { success: true };
+    }
+    return { success: false, reason: 'API key not found' };
+  }
+
+  /**
+   * 更新API密钥权限
+   */
+  updateApiKeyPermissions(apiKey, newPermissions) {
+    if (this.apiKeys.has(apiKey)) {
+      const keyData = this.apiKeys.get(apiKey);
+      keyData.permissions = newPermissions;
+      console.log(`Updated permissions for API key: ${keyData.name}`);
+      return { success: true, permissions: newPermissions };
+    }
+    return { success: false, reason: 'API key not found' };
+  }
+
+  /**
+   * 获取速率限制统计
+   */
+  getRateLimitStats() {
+    return {
+      totalApiKeys: this.apiKeys.size,
+      activeRateLimits: this.rateLimits.size,
+      bannedIPs: this.bannedIPs.size,
+      rateLimitConfig: this.options.defaultRateLimit
+    };
+  }
+
+  /**
+   * 清理过期的速率限制数据
+   */
+  cleanupExpiredRateLimits() {
+    const now = Date.now();
+    let cleanedCount = 0;
+    
+    for (const [clientId, data] of this.rateLimits) {
+      if (now >= data.resetTime) {
+        this.rateLimits.delete(clientId);
+        cleanedCount++;
+      }
     }
     
-    return { valid: true, keyData: validation.keyData };
+    if (cleanedCount > 0) {
+      console.log(`Cleaned up ${cleanedCount} expired rate limit entries`);
+    }
+    
+    return { cleaned: cleanedCount };
+  }
+
+  /**
+   * 重置特定客户端的速率限制
+   */
+  resetRateLimit(apiKey, ip = 'unknown') {
+    const clientId = `${apiKey}_${ip}`;
+    if (this.rateLimits.has(clientId)) {
+      this.rateLimits.delete(clientId);
+      console.log(`Rate limit reset for client: ${clientId}`);
+      return { success: true };
+    }
+    return { success: false, reason: 'Rate limit data not found' };
+  }
+
+  /**
+   * 获取客户端速率限制详情
+   */
+  getRateLimitDetails(apiKey, ip = 'unknown') {
+    const clientId = `${apiKey}_${ip}`;
+    const rateLimitData = this.rateLimits.get(clientId);
+    
+    if (!rateLimitData) {
+      return {
+        count: 0,
+        remaining: this.options.defaultRateLimit.max,
+        resetTime: Date.now() + this.options.defaultRateLimit.windowMs
+      };
+    }
+    
+    return {
+      count: rateLimitData.count,
+      remaining: this.options.defaultRateLimit.max - rateLimitData.count,
+      resetTime: rateLimitData.resetTime
+    };
+  }
+
+  /**
+   * 应用自定义速率限制策略
+   */
+  applyCustomRateLimit(apiKey, customLimit) {
+    if (this.apiKeys.has(apiKey)) {
+      const keyData = this.apiKeys.get(apiKey);
+      keyData.rateLimit = {
+        windowMs: customLimit.windowMs || keyData.rateLimit.windowMs,
+        max: customLimit.max || keyData.rateLimit.max
+      };
+      
+      console.log(`Applied custom rate limit to API key: ${keyData.name}`);
+      return { success: true, rateLimit: keyData.rateLimit };
+    }
+    return { success: false, reason: 'API key not found' };
   }
 }
 
-module.exports = AuthRateLimit;
+export default AuthRateLimit;

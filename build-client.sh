@@ -24,7 +24,7 @@ echo ""
 echo "📋 使用说明:"
 echo "1. 给 Linux/macOS 文件添加执行权限: chmod +x filename"
 echo "2. 直接运行二进制文件启动 OraSRS 客户端"
-echo "3. 客户端将自动连接到 OraSRS 协议链 (api.orasrs.net)"
+echo "3. 客户端将自动连接到 OraSRS 协议链 (api.orasrs.net)，这是一个基于Hardhat和Geth的私有链，Chain ID为8888"
 
 echo ""
 echo "🔗 服务启动后将运行在 http://localhost:3006"

@@ -5,13 +5,13 @@
  * OraSRS 是信用评分机构（如 FICO），不是法院。客户端自己决定是否采取行动。
  */
 
-const FederatedLearning = require('./src/federated-learning');
-const ConsensusMechanism = require('./src/consensus-mechanism');
-const GovernanceCommittee = require('./src/governance-committee');
-const SecurityCompliance = require('./src/security-compliance');
-const EdgeCacheLayer = require('./src/edge-cache-layer');
-const ArchitectureCoordinator = require('./src/architecture-coordinator');
-const crypto = require('crypto');
+import FederatedLearning from './src/federated-learning.js';
+import ConsensusMechanism from './src/consensus-mechanism.js';
+import GovernanceCommittee from './src/governance-committee.js';
+import SecurityCompliance from './src/security-compliance.js';
+import EdgeCacheLayer from './src/edge-cache-layer.js';
+import ArchitectureCoordinator from './src/architecture-coordinator.js';
+import crypto from 'crypto';
 
 class SRSEngine {
   constructor(options = {}) {
@@ -1597,10 +1597,18 @@ class SRSEngine {
 }
 
 // 导出SRS引擎
-module.exports = SRSEngine;
+export default SRSEngine;
 
 // 如果直接运行此文件，启动测试
-if (require.main === module) {
+// 检查是否是主模块运行
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// 注意：在ES模块中，没有等同于require.main的直接方法
+// 我们使用命令行参数来检测是否直接运行此模块
+if (process.argv[1] === __filename) {
   console.log('OraSRS Engine initialized');
   console.log('This engine provides advisory risk scoring services.');
   console.log('It does NOT directly block traffic - clients make the final decision.');

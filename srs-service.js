@@ -3,13 +3,13 @@
  * 完整的OraSRS服务实现，包含引擎、API和管理功能
  */
 
-const express = require('express');
-const SRSEngine = require('./srs-engine');
-const srsRoutes = require('./srs-routes');
-const { MetricsCollector, StructuredLogger, formatPrometheusMetrics } = require('./src/monitoring');
-const fs = require('fs').promises;
-const path = require('path');
-const os = require('os');
+import express from 'express';
+import SRSEngine from './srs-engine.js';
+import srsRoutes from './srs-routes.js';
+import { MetricsCollector, StructuredLogger, formatPrometheusMetrics } from './src/monitoring/index.js';
+import { promises as fs } from 'fs';
+import path from 'path';
+import os from 'os';
 
 class OraSRSService {
   constructor(config = {}) {
@@ -475,6 +475,22 @@ class OraSRSService {
   }
 
   /**
+   * 设置性能优化
+   */
+  setupPerformanceOptimizations() {
+    // 设置服务器级别的性能优化
+    this.app.set('etag', false);  // 禁用ETag以减少开销
+    this.app.set('x-powered-by', false);  // 隐藏服务器类型以提高安全性
+    
+    // 连接和超时设置
+    if (this.server) {
+      this.server.keepAliveTimeout = this.config.keepAliveTimeout;
+      this.server.headersTimeout = this.config.headersTimeout;
+      this.server.timeout = this.config.requestTimeout;
+    }
+  }
+
+  /**
    * 启动OraSRS服务
    */
   async start() {
@@ -587,7 +603,13 @@ class OraSRSService {
 }
 
 // 如果直接运行此文件，啟動OraSRS服務
-if (require.main === module) {
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// 检查是否直接运行此模块
+if (process.argv[1] === __filename) {
   const orasrsService = new OraSRSService({
     port: 3006, // 使用專用端口以避免與主服務器衝突
     enableLogging: true
@@ -612,4 +634,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = OraSRSService;
+export default OraSRSService;

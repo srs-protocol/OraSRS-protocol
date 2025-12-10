@@ -4,12 +4,12 @@ import { ethers } from "ethers";
 import fs from "fs";
 
 async function testRealPublicConnection() {
-    console.log('🌐 开始测试用户端连接到OraSRS公网协议链...');
+    console.log('🌐 开始测试用户端连接到OraSRS协议链...');
     console.log('🔧 目标端点: https://api.orasrs.net');
     
     try {
         // 尝试连接到公网端点
-        console.log('🔗 正在连接到公网OraSRS协议链...');
+        console.log('🔗 正在连接到OraSRS协议链...');
         const provider = new ethers.JsonRpcProvider("https://api.orasrs.net", {
             chainId: 8888,
             name: 'orasrs'
@@ -109,7 +109,7 @@ async function testRealPublicConnection() {
             console.error(`   错误详情: ${error.message}`);
         }
         
-        console.log('\n💡 说明: 在开发/测试环境中，api.orasrs.net 通常配置为指向本地节点');
+        console.log('\n💡 说明: api.orasrs.net 就是OraSRS私有链，基于Hardhat和Geth，Chain ID为8888');
         console.log('   要测试真实的公网连接，需要:');
         console.log('   1. 确保公网OraSRS链已部署并运行');
         console.log('   2. DNS记录 api.orasrs.net 指向公网节点IP');

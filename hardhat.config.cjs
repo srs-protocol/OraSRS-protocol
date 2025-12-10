@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+// require("./plugins/hardhat-security"); // 暂时注释，因为ES模块问题
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -15,22 +16,30 @@ module.exports = {
       }
     }
   },
+  defaultNetwork: "localhost",
   networks: {
     localhost: {
-      url: "http://127.0.0.1:8545",  // Hardhat默认端口
-      accounts: {
-        mnemonic: "test test test test test test test test test test test junk"
-      }
+      url: "http://127.0.0.1:8545",  // 本地Hardhat节点
+      chainId: 31337,                // Hardhat默认链ID
+      // 使用Hardhat默认账户
+      secureMode: true,              // 启用安全模式
+      allowUnlimitedContractSize: false,
+      gas: 12000000,
+      blockGasLimit: 12000000,
+      timeout: 30000,
     },
     "my_private_chain": {
-      url: "http://127.0.0.1:8545",  // Geth私有链的URL
-      // Geth开发模式默认账户已预充值，无需私钥
+      url: "http://127.0.0.1:8545",  // 本地Hardhat节点
+      chainId: 31337,                // Hardhat默认链ID
+      secureMode: true,              // 启用安全模式
       accounts: {
         mnemonic: "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
       }
     },
     "api.orasrs": {
-      url: "http://localhost:8545",  // 本地OraSRS网络RPC端点
+      url: "http://127.0.0.1:8545",  // 本地Hardhat节点，代表OraSRS私有链
+      chainId: 8888,                  // OraSRS协议链ID
+      secureMode: true,               // 启用安全模式
       accounts: [
         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" // 默认Hardhat账户私钥
       ]

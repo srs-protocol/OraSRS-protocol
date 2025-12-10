@@ -2,11 +2,11 @@
  * OraSRS 基本功能单元测试
  */
 
-const assert = require('assert');
-const SRSEngine = require('../srs-engine');
-const { MetricsCollector, StructuredLogger } = require('../src/monitoring');
-const FederatedLearning = require('../src/federated-learning');
-const AuthRateLimit = require('../src/auth-rate-limit');
+import assert from 'assert';
+import SRSEngine from '../srs-engine.js';
+import { MetricsCollector, StructuredLogger } from '../src/monitoring/index.js';
+import FederatedLearning from '../src/federated-learning.js';
+import AuthRateLimit from '../src/auth-rate-limit.js';
 
 async function testOraSRSEngine() {
   console.log('测试 OraSRS 引擎...');
@@ -182,7 +182,7 @@ async function runAllTests() {
 }
 
 // 如果直接运行此文件，则执行测试
-if (require.main === module) {
+if (import.meta.url === new URL(import.meta.url).href) {
   runAllTests().catch(error => {
     console.error('测试执行失败:', error);
     process.exit(1);
@@ -202,3 +202,5 @@ function expect(actual) {
     toBeInstanceOf: (constructor) => assert.ok(actual instanceof constructor)
   };
 }
+
+export { testOraSRSEngine, testMonitoring, testFederatedLearning, testAuthRateLimit, runAllTests };

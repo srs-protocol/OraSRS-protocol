@@ -1,0 +1,86 @@
+{
+  "server": {
+    "port": 3006,
+    "host": "0.0.0.0",
+    "enableLogging": true,
+    "logFile": "./logs/orasrs-service.log",
+    "rateLimit": {
+      "windowMs": 900000,
+      "max": 100
+    }
+  },
+  "network": {
+    "chainId": 8888,
+    "rpcUrl": "https://api.orasrs.net",
+    "blockTime": 1,
+    "nativeToken": "ORA",
+    "blockchainEndpoint": "https://api.orasrs.net",
+    "contractAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  },
+  "contracts": {
+    "deployTimeout": 30000,
+    "gasLimit": 8000000,
+    "gasPrice": 1,
+    "maxRetries": 3,
+    "retryDelay": 1000
+  },
+  "deployment": {
+    "faucetInitialBalance": "1000000",
+    "defaultStakeAmount": "1000",
+    "minStakeAmount": "100",
+    "maxStakeAmount": "100000"
+  },
+  "monitoring": {
+    "enable": true,
+    "port": 3000,
+    "metrics": {
+      "enable": true,
+      "collectionInterval": 30000
+    }
+  },
+  "security": {
+    "enableRateLimiting": true,
+    "enableCORS": true,
+    "corsOrigin": "*",
+    "enableAPIKey": false,
+    "apiKeys": [],
+    "whitelist": [
+      "127.0.0.1",
+      "localhost"
+    ]
+  },
+  "cache": {
+    "enable": true,
+    "maxSize": 10000,
+    "ttl": 3600000,
+    "evictionPolicy": "LRU"
+  },
+  "integration": {
+    "pfSense": {
+      "enabled": true,
+      "apiEndpoint": "https://localhost:8443",
+      "apiKey": ""
+    },
+    "OPNsense": {
+      "enabled": true,
+      "apiEndpoint": "https://localhost:443",
+      "apiKey": ""
+    },
+    "nginx": {
+      "enabled": true,
+      "modulePath": "/etc/nginx/modules/ngx_http_threat_check_module.so"
+    }
+  },
+  "compliance": {
+    "gdprCompliant": true,
+    "ccpaCompliant": true,
+    "dataRetentionDays": 90,
+    "anonymizeIPs": true
+  },
+  "alerts": {
+    "enable": true,
+    "webhookUrl": "",
+    "emailNotifications": false,
+    "criticalThreshold": 0.8
+  }
+}

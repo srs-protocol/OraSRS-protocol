@@ -780,4 +780,4 @@ class ConsensusMechanism {
   }
 }
 
-module.exports = ConsensusMechanism;
+export default ConsensusMechanism;

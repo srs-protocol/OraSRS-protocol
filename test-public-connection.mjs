@@ -1,12 +1,12 @@
-// 测试连接到公网api.orasrs.net
+// 测试连接到OraSRS私有链api.orasrs.net (基于Hardhat和Geth)
 import pkg from 'hardhat';
 const { ethers } = pkg;
 
 async function testPublicConnection() {
-  console.log("测试连接到公网api.orasrs.net...");
+  console.log("测试连接到OraSRS私有链api.orasrs.net (基于Hardhat和Geth)...");
 
   try {
-    // 连接到公网节点
+    // 连接到OraSRS私有链节点
     const provider = new ethers.JsonRpcProvider("https://api.orasrs.net");
     
     // 获取网络信息
@@ -29,9 +29,9 @@ async function testPublicConnection() {
     const nodes = await nodeRegistry.getNodes();
     console.log("节点数量:", nodes.length);
     
-    console.log("公网连接测试完成！");
+    console.log("OraSRS私有链连接测试完成！");
   } catch (error) {
-    console.log("连接到公网节点可能失败，这可能是由于合约尚未部署到公网或网络配置问题。");
+    console.log("连接到OraSRS私有链节点可能失败，这可能是由于合约尚未部署或网络配置问题。");
     console.log("错误详情:", error.message);
   }
 }
