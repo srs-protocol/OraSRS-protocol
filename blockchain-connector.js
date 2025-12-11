@@ -28,55 +28,29 @@ class BlockchainConnector {
     try {
       console.log(`🔗 尝试连接到OraSRS区块链: ${this.config.endpoint}`);
       
-      // 尝试连接到区块链 - 首先尝试RPC端点
-      try {
-        const response = await axios.post(this.config.endpoint, {
-          jsonrpc: "2.0",
-          method: "eth_blockNumber",
-          params: [],
-          id: 1
-        }, {
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          timeout: this.config.timeout
-        });
-        
-        if (response.data && response.data.result) {
-          this.isConnected = true;
-          this.lastConnectionAttempt = new Date();
-          this.retryCount = 0;
-          
-          console.log(`✅ 成功连接到OraSRS区块链: ${this.config.endpoint}`);
-          console.log(`📋 区块链信息:`, {
-            endpoint: this.config.endpoint,
-            chainId: this.config.chainId,
-            blockNumber: response.data.result
-          });
-          
-          return true;
-        }
-      } catch (rpcError) {
-        console.log(`⚠️  RPC端点连接失败: ${rpcError.message}, 尝试HTTP端点...`);
-      }
-      
-      // 如果RPC端点失败，尝试HTTP端点
-      const httpResponse = await axios({
-        method: 'GET',
-        url: `${this.config.endpoint}/health`,
+      // 只尝试RPC端点连接（区块链节点）
+      const response = await axios.post(this.config.endpoint, {
+        jsonrpc: "2.0",
+        method: "eth_blockNumber",
+        params: [],
+        id: 1
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
         timeout: this.config.timeout
       });
       
-      if (httpResponse && httpResponse.data) {
+      if (response.data && response.data.result) {
         this.isConnected = true;
         this.lastConnectionAttempt = new Date();
         this.retryCount = 0;
         
-        console.log(`✅ 成功连接到OraSRS区块链 (HTTP): ${this.config.endpoint}`);
+        console.log(`✅ 成功连接到OraSRS区块链: ${this.config.endpoint}`);
         console.log(`📋 区块链信息:`, {
           endpoint: this.config.endpoint,
           chainId: this.config.chainId,
-          status: httpResponse.data.status || 'unknown'
+          blockNumber: response.data.result
         });
         
         return true;
@@ -111,19 +85,9 @@ class BlockchainConnector {
         await this.connect();
       }
       
-      // 检查是否是HTTP API请求（包含 /api/ 路径）
-      // 如果是，我们不应该尝试区块链RPC端点
-      if (requestConfig.url.includes('/api/')) {
-        console.log(`⚠️  检测到API请求，但区块链连接器不支持HTTP API请求: ${requestConfig.url}`);
-        return null;
-      }
-      
-      const response = await axios({
-        ...requestConfig,
-        timeout: this.config.timeout
-      });
-      
-      return response;
+      // 区块链连接器现在只处理RPC请求，不处理HTTP API请求
+      console.log(`⚠️  区块链连接器不支持HTTP API请求: ${requestConfig.url}`);
+      return null;
     } catch (error) {
       console.error(`❌ 区块链请求失败:`, error.message);
       
@@ -139,16 +103,7 @@ class BlockchainConnector {
         return null;
       }
       
-      // 重新发送请求
-      try {
-        return await axios({
-          ...requestConfig,
-          timeout: this.config.timeout
-        });
-      } catch (retryError) {
-        console.error(`❌ 重试请求也失败:`, retryError.message);
-        return null;
-      }
+      return null; // HTTP API请求不被支持，即使重连后也不处理
     }
   }
 
@@ -202,20 +157,31 @@ class BlockchainConnector {
 
   async submitThreatReport(reportData) {
     try {
-      const response = await this.makeRequest({
-        method: 'POST',
-        url: `${this.config.endpoint}/api/threats`,
-        data: reportData,
+      // 通过区块链合约提交威胁报告，而不是API
+      const response = await axios.post(this.config.endpoint, {
+        jsonrpc: "2.0",
+        method: "eth_sendTransaction",  // 或其他适当的RPC方法
+        params: [{
+          to: this.config.contractAddress,
+          data: this.encodeThreatSubmissionCall(reportData) // 编码威胁提交调用
+        }],
+        id: Date.now()
+      }, {
         headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'OraSRS-Client/2.0.1'
-        }
+          'Content-Type': 'application/json'
+        },
+        timeout: this.config.timeout
       });
       
       // 检查response是否为null
-      if (response === null || response === undefined) {
-        console.error('提交威胁报告失败: 无法连接到区块链API');
-        throw new Error('无法连接到区块链API');
+      if (response === null || response === undefined || !response.data) {
+        console.error('提交威胁报告失败: 无法连接到区块链或没有响应数据');
+        throw new Error('无法连接到区块链或没有响应数据');
+      }
+      
+      if (response.data.error) {
+        console.error('提交威胁报告失败:', response.data.error.message);
+        throw new Error(response.data.error.message);
       }
       
       return response.data;
@@ -227,18 +193,31 @@ class BlockchainConnector {
 
   async getGlobalThreatList() {
     try {
-      const response = await this.makeRequest({
-        method: 'GET',
-        url: `${this.config.endpoint}/api/threats/list`,
+      // 通过区块链合约获取威胁列表
+      const response = await axios.post(this.config.endpoint, {
+        jsonrpc: "2.0",
+        method: "eth_call",
+        params: [{
+          to: this.config.contractAddress,
+          data: this.encodeGetThreatListCall() // 调用合约方法获取威胁列表
+        }, "latest"],
+        id: Date.now()
+      }, {
         headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'OraSRS-Client/2.0.1'
-        }
+          'Content-Type': 'application/json'
+        },
+        timeout: this.config.timeout
       });
       
-      return response.data;
+      if (response.data && response.data.result) {
+        // 解析从合约返回的数据
+        return this.processThreatListFromContract(response.data.result);
+      } else {
+        throw new Error('No data returned from blockchain contract');
+      }
     } catch (error) {
       console.error(`❌ 获取全局威胁列表失败:`, error.message);
+      // 返回模拟威胁列表以保持服务可用性
       return { threat_list: [], last_update: new Date().toISOString() };
     }
   }
@@ -402,6 +381,44 @@ class BlockchainConnector {
     const paddedIpHex = ipHex.padEnd(64, '0');
     
     return '0x' + functionSelector + paddedIpHex;
+  }
+
+  // 编码威胁提交调用
+  encodeThreatSubmissionCall(reportData) {
+    // 计算 "submitThreatReport(string,string,string)" 的函数选择器
+    // 实际的keccak256("submitThreatReport(string,string,string)")的前4字节是 0x... (需要根据实际合约确定)
+    // 使用一个模拟的函数选择器
+    const functionSelector = 'a5b2c3d4'; // 这是一个模拟的函数选择器，实际应根据合约确定
+    
+    // 创建一个简单的威胁提交数据编码
+    // 实际编码需要根据智能合约的ABI来正确编码参数
+    const ipParam = this.encodeStringParam(reportData.ip || '');
+    const typeParam = this.encodeStringParam(reportData.threatType || '');
+    const levelParam = this.encodeStringParam(reportData.threatLevel || '');
+    
+    // 组合函数选择器和参数
+    return '0x' + functionSelector + ipParam.slice(2) + typeParam.slice(2) + levelParam.slice(2);
+  }
+
+  // 编码获取威胁列表调用
+  encodeGetThreatListCall() {
+    // 计算 "getThreatList()" 的函数选择器
+    // 实际的keccak256("getThreatList()")的前4字节 (需要根据实际合约确定)
+    const functionSelector = 'f1e2d3c4'; // 这是一个模拟的函数选择器，实际应根据合约确定
+    
+    return '0x' + functionSelector;
+  }
+
+  // 处理从合约获取的威胁列表数据
+  processThreatListFromContract(rawData) {
+    // 这里应该根据实际合约返回格式解析数据
+    // 目前返回空列表，实际部署时需要根据合约ABI正确解析
+    console.log('从合约获取的威胁列表原始数据:', rawData);
+    return {
+      threat_list: [],
+      last_update: new Date().toISOString(),
+      total_threats: 0
+    };
   }
 
   // 编码字符串参数 (简化版)
