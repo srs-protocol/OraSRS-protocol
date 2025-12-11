@@ -95,8 +95,9 @@ curl http://localhost:3006/orasrs/v2/threat-list
 - [API 接口 / API Interface](api.md)
 
 ## 🧩 智能合约 / Smart Contracts
-- [国密版质押合约 / SM Cryptography Staking Contract](contracts/SRA-staking-gm.sol)
-- [国密算法库 / SM Cryptography Library](contracts/libs/GmSupport.sol)
+- [威胁情报协调合约 / Threat Intelligence Coordination Contract](contracts/ThreatIntelligenceCoordination.sol)
+- [OraSRS治理合约 / OraSRS Governance Contract](contracts/OraSRSGovernance.sol)
+- [风险计算器合约 / Risk Calculator Contract](contracts/IPRiskCalculator.sol)
 
 ## 🔒 安全测试 / Security Testing
 - [安全测试指南 / Security Testing Guide](SECURITY_TESTING_GUIDE.md)
