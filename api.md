@@ -213,7 +213,7 @@ curl -X GET "https://api.SRA.example.com/api/v2/threats/global?limit=10&threatLe
     "cpuUsage": 15.5,
     "networkUsage": 10485760,
     "lastThreatReport": 1623456789,
-    "p2pConnected": true,
+    "networkConnected": true,
     "complianceMode": "GDPR"
   }
 }

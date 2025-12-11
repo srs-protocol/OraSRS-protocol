@@ -1,0 +1,25 @@
+{
+  "orasrs": {
+    "api_endpoint": "https://api.orasrs.net",
+    "chain_id": 8888,
+    "contract_address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "update_interval": 300000,
+    "cache_ttl": 3600000,
+    "max_cache_size": 10000,
+    "network": {
+      "timeout": 10000,
+      "retries": 3,
+      "retry_delay": 2000
+    },
+    "security": {
+      "enable_sm_crypto": true,
+      "sm2_public_key": null,
+      "sm2_private_key": null
+    },
+    "storage": {
+      "use_ipset": true,
+      "fallback_to_iptables": true,
+      "max_threats": 100000
+    }
+  }
+}
