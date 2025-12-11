@@ -1,4 +1,4 @@
-# OraSRS 协议智能合约安全测试指南
+# SecurityRiskAssessment 协议智能合约安全测试指南
 
 ## 目录
 1. [概述](#概述)
@@ -13,7 +13,7 @@
 
 ## 概述
 
-本指南详细介绍了如何对 OraSRS 国密版质押合约进行全面的安全测试。OraSRS 协议智能合约是一个支持国密算法的质押系统，需要特别关注密码学算法的安全性和合约逻辑的正确性。
+本指南详细介绍了如何对 SecurityRiskAssessment 国密版质押合约进行全面的安全测试。SecurityRiskAssessment 协议智能合约是一个支持国密算法的质押系统，需要特别关注密码学算法的安全性和合约逻辑的正确性。
 
 ### 安全测试目标
 - 验证合约逻辑的正确性
@@ -48,19 +48,19 @@
 slither . --filter-paths "node_modules|test|script"
 
 # 详细报告
-slither contracts/orasrs-staking-gm.sol --print human-summary
+slither contracts/SRA-staking-gm.sol --print human-summary
 
 # 检查特定问题
-slither-check-upgradeability contracts/orasrs-staking-gm.sol
+slither-check-upgradeability contracts/SRA-staking-gm.sol
 ```
 
 #### Mythril
 ```bash
 # 符号执行分析
-myth analyze contracts/orasrs-staking-gm.sol --max-depth 15
+myth analyze contracts/SRA-staking-gm.sol --max-depth 15
 
 # 生成交互式图形
-myth analyze contracts/orasrs-staking-gm.sol --graph /tmp/graph.html
+myth analyze contracts/SRA-staking-gm.sol --graph /tmp/graph.html
 ```
 
 #### Solhint
@@ -110,9 +110,9 @@ foundryup
 
 #### 基础测试结构
 ```solidity
-// test/orasrs-security.t.sol
+// test/SRA-security.t.sol
 import "forge-std/Test.sol";
-import "../contracts/orasrs-staking-gm.sol";
+import "../contracts/SRA-staking-gm.sol";
 
 contract OrasrsSecurityTest is Test {
     OrasrsStakingGmContract public stakingContract;
@@ -192,7 +192,7 @@ function testBoundaryConditions() public {
 
 #### 基础测试设置
 ```javascript
-// test/orasrs-security.js
+// test/SRA-security.js
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
@@ -296,7 +296,7 @@ it("Should prevent challenge system abuse", async function () {
 });
 ```
 
-## 国密算法特有安全测试
+## 国密算法及抗量子算法特有安全测试
 
 ### SM2 签名验证测试
 由于标准 EVM 不支持国密算法，需要在支持国密的国产联盟链上进行测试：
@@ -333,6 +333,52 @@ function testSM3HashConsistency() {
     expect(result).to.equal(testCase.expected);
   }
 }
+
+### 抗量子算法测试
+function testPostQuantumSignatureValidation() {
+  // 生成 Lamport 密钥对
+  const { privateKey, publicKey } = generateLamportKeyPair();
+  const message = "test data for post-quantum signature";
+  const messageHash = keccak256(message);
+  
+  // 生成 Lamport 签名
+  const signature = generateLamportSignature(messageHash, privateKey);
+  
+  // 验证 Lamport 签名
+  const isValid = verifyLamportSignature(messageHash, signature, publicKey);
+  assertTrue(isValid);
+}
+
+### KYBER 加密算法测试
+function testKyberEncryption() {
+  // 生成 KYBER 密钥对
+  const { publicKey, privateKey } = generateKyberKeyPair();
+  const plaintext = "test data for kyber encryption";
+  
+  // 使用 KYBER 公钥加密
+  const ciphertext = kyberEncrypt(plaintext, publicKey);
+  
+  // 使用 KYBER 私钥解密
+  const decrypted = kyberDecrypt(ciphertext, privateKey);
+  
+  assertEq(plaintext, decrypted);
+}
+
+### 混合加密方案测试
+function testHybridEncryption() {
+  // 生成传统加密密钥和抗量子加密密钥
+  const traditionalKey = generateSM4Key();
+  const pqKey = generateKyberPublicKey();
+  const data = "test data for hybrid encryption";
+  
+  // 使用混合方案加密
+  const encrypted = hybridEncrypt(data, traditionalKey, pqKey);
+  
+  // 使用混合方案解密
+  const decrypted = hybridDecrypt(encrypted, traditionalKey, pqKey);
+  
+  assertEq(data, decrypted);
+}
 ```
 
 ### 国密算法集成测试
@@ -348,6 +394,22 @@ function testGmAlgorithmIntegration() public {
   
   // 测试备案号验证
   assertTrue(GmSupport.validateFilingNumber("京网信备123456789012345678号"));
+}
+
+### 抗量子算法集成测试
+function testPostQuantumAlgorithmIntegration() public {
+  // 测试抗量子算法库函数
+  bytes memory privateKey = new bytes(16384); // Lamport私钥大小
+  // 初始化私钥...
+  
+  bytes memory publicKey = PostQuantumCrypto.lamportGeneratePublicKey(privateKey);
+  assertTrue(publicKey.length > 0);
+  
+  bytes32 message = keccak256("test message for pq crypto");
+  bytes memory signature = PostQuantumCrypto.lamportSign(message, privateKey);
+  
+  bool isValid = PostQuantumCrypto.lamportVerify(message, signature, publicKey);
+  assertTrue(isValid);
 }
 ```
 

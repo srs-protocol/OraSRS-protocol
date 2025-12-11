@@ -1,12 +1,12 @@
-# OraSRS 共识参数白皮书
+# SecurityRiskAssessment 共识参数白皮书
 
 **版本**: 1.0  
 **发布日期**: 2025年12月  
-**协议**: OraSRS (Oracle Security Root Service)
+**协议**: SecurityRiskAssessment (Oracle Security Root Service)
 
 ## 摘要
 
-本白皮书详细阐述了 OraSRS 协议的共识参数设计，包括三层架构的参数配置、质押机制、声誉系统和安全模型。这些参数旨在确保网络的安全性、去中心化和高效运行，同时满足中国法律法规和国产化要求。
+本白皮书详细阐述了 SecurityRiskAssessment 协议的共识参数设计，包括三层架构的参数配置、质押机制、声誉系统和安全模型。这些参数旨在确保网络的安全性、去中心化和高效运行，同时满足中国法律法规和国产化要求。
 
 ## 1. 三层共识架构参数
 

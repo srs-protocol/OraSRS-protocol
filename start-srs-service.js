@@ -5,7 +5,7 @@
  * 启动咨询式风险评分服务
  */
 
-const SRSService = require('./srs-service');
+import OraSRSService from './srs-service.js';
 
 // 从环境变量或默认值获取配置
 const config = {
@@ -19,8 +19,8 @@ console.log('🚀 启动 OraSRS (Oracle Security Root Service)...');
 console.log('🔧 配置:', config);
 
 // 确保日志目录存在
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 const logDir = path.dirname(config.logFile);
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });

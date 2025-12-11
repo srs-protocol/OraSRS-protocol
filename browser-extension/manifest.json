@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "OraSRS Security Plugin",
+  "version": "2.0.1",
+  "description": "OraSRS 威脅情報瀏覽器擴展 - 基於區塊鏈的去中心化安全防護",
+  
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "https://api.orasrs.net/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["src/content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["src/*"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "OraSRS Security Plugin"
+  },
+  
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

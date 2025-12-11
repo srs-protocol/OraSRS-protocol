@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-12-05T17:20:11.742Z",
+  "validationSteps": {
+    "contractSetup": {
+      "status": "PASSED",
+      "checks": [
+        "ThreatIntelSync继承LzApp基类",
+        "实现lzReceive回调函数",
+        "正确的onlyLzEndpoint修饰符"
+      ]
+    },
+    "layerZeroConfig": {
+      "status": "PASSED",
+      "checks": [
+        "Endpoint地址配置正确",
+        "适配器参数设置",
+        "防重放机制启用"
+      ]
+    },
+    "messageFlow": {
+      "status": "CONFIGURED",
+      "checks": [
+        "sendThreatIntel -> LayerZero.send流程",
+        "receivePayload -> lzReceive流程",
+        "消息解码和验证流程"
+      ]
+    },
+    "security": {
+      "status": "PASSED",
+      "checks": [
+        "nonce防重放检查",
+        "源链ID验证",
+        "访问控制检查"
+      ]
+    }
+  },
+  "endpoints": {
+    "domestic": {
+      "chainId": 1001,
+      "endpoint": "0x8cdaf0cd259887258bc13a92c0a6da92698644c0",
+      "contract": "0xf12b5dd4ead5f743c6baa640b0216200e89b60da"
+    },
+    "overseas": {
+      "chainId": 1002,
+      "endpoint": "0x023fbca7cf7703d4454a8facbefd23faa4bf99f5",
+      "contract": "0x6dfe6d5d7851f50aa5147e70b7846e8c67dae19c"
+    }
+  },
+  "crossChainCapabilities": {
+    "domesticToOverseas": {
+      "enabled": true,
+      "dstChainId": 1002,
+      "estimatedFee": "0.2 ETH"
+    },
+    "overseasToDomestic": {
+      "enabled": true,
+      "dstChainId": 1001,
+      "estimatedFee": "0.2 ETH"
+    }
+  }
+}

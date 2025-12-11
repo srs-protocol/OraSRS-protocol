@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # 国内链节点 (私有OP Stack模拟)
+  domestic-chain-node:
+    image: trufflesuite/ganache-cli:latest
+    container_name: orasrs-domestic-node
+    ports:
+      - "8545:8545"
+    command: -h 0.0.0.0 -p 8545 -m "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" --chainId 1001
+    networks:
+      - orasrs-testnet
+
+  # 海外界节点 (OP Sepolia模拟) 
+  overseas-chain-node:
+    image: trufflesuite/ganache-cli:latest
+    container_name: orasrs-overseas-node
+    ports:
+      - "8546:8545"
+    command: -h 0.0.0.0 -p 8545 -m "oven crisp session identify globe avoid injury unfair behave core ethics science" --chainId 1002
+    networks:
+      - orasrs-testnet
+
+  # Mock LayerZero跨链桥接服务
+  mock-layerzero:
+    image: node:16-alpine
+    container_name: orasrs-mock-lz
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3001:3001"
+    command: >
+      sh -c "
+        npm install express &&
+        echo '
+        const express = require(\"express\");
+        const app = express();
+        app.use(express.json());
+        
+        // 模拟LayerZero端点服务 - 跨链消息转发
+        let messages = [];
+        
+        app.post(\"/send\", (req, res) => {
+          messages.push({
+            ...req.body,
+            timestamp: new Date().toISOString(),
+            messageId: messages.length
+          });
+          console.log(\"收到跨链消息:\", req.body);
+          
+          // 模拟跨链消息传递延迟
+          setTimeout(() => {
+            console.log(\"跨链消息已转发到目标链:\", req.body.dstChainId);
+          }, 1000);
+          
+          res.json({ 
+            success: true, 
+            messageId: messages.length - 1,
+            status: \"message_queued_for_crosschain_delivery\"
+          });
+        });
+        
+        app.get(\"/messages\", (req, res) => {
+          res.json({ messages, count: messages.length });
+        });
+        
+        app.listen(3001, \"0.0.0.0\", () => {
+          console.log(\"Mock LayerZero跨链桥接服务运行在端口 3001\");
+        });
+        ' > server.js &&
+        node server.js
+      "
+    networks:
+      - orasrs-testnet
+
+  # 监控和管理服务
+  test-monitor:
+    image: node:16-alpine
+    container_name: orasrs-test-monitor
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3002:3002"
+    command: >
+      sh -c "
+        npm install express &&
+        echo '
+        const express = require(\"express\");
+        const app = express();
+        app.use(express.json());
+        
+        app.get(\"/status\", (req, res) => {
+          res.json({ 
+            status: \"running\",
+            chains: {
+              domestic: { chainId: 1001, endpoint: \"http://domestic-chain-node:8545\" },
+              overseas: { chainId: 1002, endpoint: \"http://overseas-chain-node:8545\" }
+            },
+            timestamp: new Date().toISOString()
+          });
+        });
+        
+        app.listen(3002, \"0.0.0.0\", () => {
+          console.log(\"OraSRS测试网监控服务运行在端口 3002\");
+        });
+        ' > monitor.js &&
+        node monitor.js
+      "
+    networks:
+      - orasrs-testnet
+
+networks:
+  orasrs-testnet:
+    driver: bridge

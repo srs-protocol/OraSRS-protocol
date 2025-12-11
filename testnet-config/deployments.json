@@ -1,0 +1,57 @@
+{
+  "testnet": {
+    "name": "OraSRS Hybrid Testnet",
+    "version": "2.0.0",
+    "status": "active"
+  },
+  "domestic_op_stack": {
+    "name": "OraSRS Domestic OP Stack Testnet",
+    "rpc_url": "http://localhost:9545",
+    "chain_id": 31337,
+    "contracts": {
+      "OraSRSGovernance": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "ThreatEvidence": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "ThreatIntelligenceCoordination": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+    },
+    "layerzero": {
+      "endpoint": "0x0000000000000000000000000000000000000001",
+      "config": {
+        "dst_chain_id": 11155420,
+        "bridge_address": "0x784eCe6c0e3a81752f288f63bD9B689Af3a3eC8A"
+      }
+    }
+  },
+  "overseas_op_sepolia": {
+    "name": "OraSRS Overseas OP Sepolia Testnet",
+    "rpc_url": "https://sepolia.optimism.io",
+    "chain_id": 11155420,
+    "contracts": {
+      "ThreatIntelSync": "0x784eCe6c0e3a81752f288f63bD9B689Af3a3eC8A",
+      "GovernanceMirror": "0x74bEc635b231b6622dB39dB0a7619B3d59762937",
+      "CrossChainBridge": "0x4200000000000000000000000000000000000010"
+    },
+    "layerzero": {
+      "endpoint": "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
+      "config": {
+        "dst_chain_id": 31337,
+        "bridge_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      }
+    }
+  },
+  "layerzero": {
+    "version": "v2",
+    "testnet": true,
+    "contracts": {
+      "uln": "0xbD83574c232d6D8a36e4A225a65b6D4895b1bBe9",
+      "oft": "0x784eCe6c0e3a81752f288f63bD9B689Af3a3eC8A"
+    }
+  },
+  "testing": {
+    "status": "ready",
+    "test_scripts": [
+      "test/cross-chain-transfer.js",
+      "test/threat-sync.js",
+      "test/governance-mirror.js"
+    ]
+  }
+}

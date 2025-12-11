@@ -1,0 +1,47 @@
+#!/bin/sh
+# OpenWrt Init Script for OraSRS Client
+
+NAME=orasrs_client
+DAEMON=/usr/bin/orasrs_client
+CONFIG=/etc/config/orasrs
+
+[ -f $DAEMON ] || exit 0
+[ -f $CONFIG ] || exit 0
+
+. /lib/functions.sh
+. /etc/init.d/functions
+
+START=90
+STOP=10
+
+boot_hook_add preinit_main boot_preinit_do_maybe
+boot_hook_add preinit_main boot_preinit_wait_for_ifdown
+
+start_service() {
+    # 检查是否已启用
+    enabled=$(uci get orasrs.main.enabled 2>/dev/null)
+    if [ "$enabled" = "1" ]; then
+        # 启动OraSRS客户端
+        $DAEMON start
+        echo "OraSRS client started"
+    else
+        echo "OraSRS client is disabled in config"
+    fi
+}
+
+stop_service() {
+    # 停止OraSRS客户端
+    $DAEMON stop
+    echo "OraSRS client stopped"
+}
+
+restart_service() {
+    stop_service
+    sleep 1
+    start_service
+}
+
+service_triggers() {
+    # 重启服务的触发器
+    procd_add_reload_trigger "orasrs"
+}

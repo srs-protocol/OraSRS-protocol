@@ -1,14 +1,14 @@
-# OraSRS Agent 架构设计文档
+# SecurityRiskAssessment Agent 架构设计文档
 
 ## 概述
 
-OraSRS Agent 是 OraSRS v2.0 框架的边缘层核心组件，是一个超轻量级的威胁检测和响应代理，部署在终端设备和网络边缘，资源占用 < 5MB。
+SecurityRiskAssessment Agent 是 SecurityRiskAssessment v2.0 框架的边缘层核心组件，是一个超轻量级的威胁检测和响应代理，部署在终端设备和网络边缘，资源占用 < 5MB。
 
 ## 架构设计
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    OraSRS Agent Core                        │
+│                    SecurityRiskAssessment Agent Core                        │
 ├─────────────────────────────────────────────────────────────┤
 │  Memory Limit: < 5MB    Privacy Level: Configurable        │
 │  Runtime: Rust/WASM     Compliance: Auto-regional          │
@@ -113,7 +113,7 @@ OraSRS Agent 是 OraSRS v2.0 框架的边缘层核心组件，是一个超轻量
 
 ### 个人/开发者
 ```bash
-curl -sSf https://orasrs.global/install.sh | sh
+curl -sSf https://SRA.global/install.sh | sh
 ```
 
 ### 企业内网
@@ -122,13 +122,13 @@ curl -sSf https://orasrs.global/install.sh | sh
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: orasrs-agent
+  name: SRA-agent
 spec:
   template:
     spec:
       containers:
       - name: agent
-        image: orasrs/agent:latest
+        image: SRA/agent:latest
         resources:
           limits:
             memory: "5Mi"

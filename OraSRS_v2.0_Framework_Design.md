@@ -1,5 +1,5 @@
-# OraSRS v2.0 — 全球轻量级主动防御协调框架
-# OraSRS v2.0 — Global Lightweight Proactive Defense Coordination Framework
+# SecurityRiskAssessment v2.0 — 全球轻量级主动防御协调框架
+# SecurityRiskAssessment v2.0 — Global Lightweight Proactive Defense Coordination Framework
 
 ## 使命 / Mission
 让每一次网络攻击在扩散前被群体免疫系统识别、阻断、存证。
@@ -8,6 +8,18 @@ Let the collective immune system identify, block, and evidence every cyber attac
 ## 核心价值主张 / Core Value Proposition
 **"全球网络的第一道主动防御防线"**
 **"The First Line of Active Defense for Global Networks"**
+
+---
+
+## 重要更新 (V2.0.1) - 最新特性
+## Key Updates (V2.0.1) - Latest Features
+
+### 🚀 增强功能
+- **去重逻辑 (Deduplication Logic)**: 防止重复威胁报告的时间窗口机制
+- **区块链集成 (Blockchain Integration)**: 所有威胁情报记录在OraSRS协议链上
+- **国密算法 (Chinese Cryptographic Algorithms)**: 支持SM2/SM3/SM4国密算法
+- **长安链部署 (ChainMaker Deployment)**: 完整的ChainMaker区块链部署方案
+- **三层共识架构 (Three-Tier Consensus Architecture)**: 全局根网络层 + 分区共识层 + 边缘缓存层
 
 ---
 
@@ -31,7 +43,7 @@ Let the collective immune system identify, block, and evidence every cyber attac
 #### 3. Intelligence Fabric（智能层）：威胁情报协调网络
 #### 3. Intelligence Fabric: Threat Intelligence Coordination Network
 - **生态接入 / Ecosystem Integration**: 与主流安全系统协同 / Coordination with mainstream security systems
-- **P2P 验证 / P2P Verification**: 去中心化威胁确认 / Decentralized threat confirmation
+- **简化验证 / Simplified Verification**: 高效威胁确认 / Efficient threat confirmation
 - **输出驱动 / Output Drive**: 驱动现有防御体系 / Drive existing defense systems
 
 ✅ 无中心服务器 / No Central Servers  
@@ -92,9 +104,9 @@ Let the collective immune system identify, block, and evidence every cyber attac
 - **MISP 实例** → 企业私有情报聚合 / Enterprise private intelligence aggregation
 - **AlienVault OTX** → 开源 Pulse 订阅 / Open-source Pulse subscription
 
-#### （2）处理：P2P 共识验证
-#### (2) Processing: P2P Consensus Verification
-- Agent 通过 libp2p gossipsub 广播可疑事件 / Agent broadcasts suspicious events via libp2p gossipsub
+#### （2）处理：简化共识验证
+#### (2) Processing: Simplified Consensus Verification
+- Agent 通过客户端-服务器模式提交可疑事件 / Agent submits suspicious events via client-server model
 - ≥3 个独立地理位置节点确认 → 触发全局响应 / ≥3 independent geographic location nodes confirm → trigger global response
 - 声誉系统动态评分 / Dynamic reputation scoring system
 
@@ -108,8 +120,8 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 
 | 下游系统 / Downstream System | 输出方式 / Output Method | 示例 / Example |
 |-----------------------------|-------------------------|----------------|
-| 防火墙 / Firewall | https://orasrs.global/blocklist.txt | `iptables -A INPUT -m set --match-set orasrs src -j DROP` |
-| SIEM | Syslog (CEF 格式) | `cs2Label=orasrs_tx_id cs2=0xabc123...` |
+| 防火墙 / Firewall | https://SRA.global/blocklist.txt | `iptables -A INPUT -m set --match-set SRA src -j DROP` |
+| SIEM | Syslog (CEF 格式) | `cs2Label=SRA_tx_id cs2=0xabc123...` |
 | SOAR | REST API Webhook | `POST /soar/trigger { "threat_level": "CRITICAL", "tx_id": "..." }` |
 | 云 WAF / Cloud WAF | AWS IP Set / Azure Firewall Rule | 自动更新恶意 IP 列表 / Automatically update malicious IP lists |
 
@@ -138,7 +150,7 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 | Agent 被控 / Agent Compromised | - 代码完整性自检 / Code integrity self-check<br>- 声誉熔断（连续误报暂停权限） / Reputation circuit breaker (suspend permissions for continuous false positives)<br>- 多源交叉验证 / Multi-source cross-validation |
 | 虚假威胁泛滥 / False Threat Flooding | - 启动"免疫抑制"模式 / Activate "immune suppression" mode<br>- 切换至仅信任 CISA/VirusTotal / Switch to trust only CISA/VirusTotal<br>- DAO 社区投票冻结异常源 / DAO community vote to freeze abnormal sources |
 | 链上存证被质疑 / On-Chain Evidence Questioned | - 提供 Merkle Proof + 时间戳 / Provide Merkle Proof + timestamp<br>- 支持司法取证包导出 / Support forensic package export |
-| P2P 网络分裂 / P2P Network Split | - 本地缓存最近 1000 条规则 / Local cache of most recent 1000 rules<br>- 离线模式持续防御 / Offline mode continuous defense |
+| 网络连接中断 / Network Disconnection | - 本地缓存最近 1000 条规则 / Local cache of most recent 1000 rules<br>- 离线模式持续防御 / Offline mode continuous defense |
 
 ---
 
@@ -147,7 +159,7 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 
 | 场景 / Scenario | 方案 / Solution |
 |----------------|----------------|
-| 个人/开发者 / Individual/Developer | `curl -sSf https://orasrs.global/install.sh` |
+| 个人/开发者 / Individual/Developer | `curl -sSf https://SRA.global/install.sh` |
 | 企业内网 / Enterprise Intranet | Helm Chart 部署 K8s DaemonSet + 私有长安链 / Helm Chart deploy K8s DaemonSet + Private ChainMaker |
 | IoT 设备 / IoT Devices | C 语言微型 Agent（<1MB），通过网关聚合上报 / C language micro Agent (<1MB), aggregate reporting through gateway |
 | 云原生 / Cloud Native | AWS Lambda / Azure Function 作为边缘节点 / AWS Lambda / Azure Function as edge nodes |
@@ -161,14 +173,14 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 |------------|-------------------|
 | 2025 Q2 | 开源 Agent 核心 + 长安链/Polygon 双链支持 / Open source Agent core + ChainMaker/Polygon dual-chain support |
 | 2025 Q3 | 发布 Splunk/XSOAR 插件 + GDPR 合规模板 / Release Splunk/XSOAR plugins + GDPR compliance templates |
-| 2025 Q4 | 启动 OraSRS DAO，社区治理声誉算法 / Launch OraSRS DAO, community governance reputation algorithm |
+| 2025 Q4 | 启动 SecurityRiskAssessment DAO，社区治理声誉算法 / Launch SecurityRiskAssessment DAO, community governance reputation algorithm |
 | 2026 Q1 | 集成 CISA AIS + VirusTotal 官方合作 / Integrate CISA AIS + VirusTotal official partnership |
 | 2026 Q2 | 支持 FIDO2 安全启动，硬件级完整性验证 / Support FIDO2 secure boot, hardware-level integrity verification |
 
 ---
 
-## 七、为什么 OraSRS v2.0 是"第一防线"？
-## VII. Why OraSRS v2.0 is the "First Line of Defense"?
+## 七、为什么 SecurityRiskAssessment v2.0 是"第一防线"？
+## VII. Why SecurityRiskAssessment v2.0 is the "First Line of Defense"?
 
 - **前置 / Pre-positioned**: 部署在终端/边缘，早于传统防火墙 / Deployed at terminal/edge, earlier than traditional firewalls
 - **轻量 / Lightweight**: 资源消耗 < EDR 的 10%，适合 IoT/移动设备 / Resource consumption < 10% of EDR, suitable for IoT/mobile devices
@@ -176,8 +188,8 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 - **可信 / Trustworthy**: 所有威胁有链上存证，可司法举证 / All threats have on-chain evidence, judicially admissible
 - **合规 / Compliant**: 开箱即用满足全球主要法规 / Out-of-box compliance with global regulations
 
-> OraSRS v2.0 不是另一个安全产品，而是现有安全生态的"免疫增强剂"。  
-> OraSRS v2.0 is not another security product, but an "immune enhancer" for the existing security ecosystem.
+> SecurityRiskAssessment v2.0 不是另一个安全产品，而是现有安全生态的"免疫增强剂"。  
+> SecurityRiskAssessment v2.0 is not another security product, but an "immune enhancer" for the existing security ecosystem.
 
 ---
 
@@ -238,20 +250,20 @@ const (
 )
 ```
 
-### 8.3 P2P 协调网络
-### 8.3 P2P Coordination Network
+### 8.3 简化威胁协调
+### 8.3 Simplified Threat Coordination
 
 ```go
-// P2P 威胁协调 / P2P Threat Coordination
+// 简化威胁协调 / Simplified Threat Coordination
 type ThreatCoordination struct {
-    pubsub: PubSub,           // GossipSub 广播 / GossipSub broadcast
+    network_client: NetworkClient,        // 网络客户端 / Network client
     reputation_system: ReputationSystem,  // 声誉系统 / Reputation system
     evidence_verifier: EvidenceVerifier,  // 证据验证 / Evidence verification
     compliance_checker: ComplianceChecker, // 合规检查 / Compliance check
 }
 
-// 威胁广播消息 / Threat broadcast message
-type ThreatBroadcast struct {
+// 威胁提交消息 / Threat submission message
+type ThreatSubmission struct {
     attestation: ThreatAttestation,
     signature: String,         // 节点签名 / Node signature
     timestamp: i64,            // 时间戳 / Timestamp
@@ -288,7 +300,7 @@ type ThreatBroadcast struct {
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   OraSRS v2.0   │◄──►│  Existing Stack  │◄──►│  Business Apps  │
+│   SecurityRiskAssessment v2.0   │◄──►│  Existing Stack  │◄──►│  Business Apps  │
 │   (First Line)  │    │   (Second Line)  │    │                 │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                       │                        │
@@ -324,4 +336,4 @@ ComplianceAPI:
   response: Audit trail + Evidence
 ```
 
-OraSRS v2.0 代表了网络安全范式的转变：从被动防御到主动免疫，从中心化控制到分布式协作，从合规负担到合规赋能。通过这一框架，我们正在构建真正全球可用、本地合规、抗毁可信的网络防御基础设施。
+SecurityRiskAssessment v2.0 代表了网络安全范式的转变：从被动防御到主动免疫，从中心化控制到分布式协作，从合规负担到合规赋能。通过这一框架，我们正在构建真正全球可用、本地合规、抗毁可信的网络防御基础设施。

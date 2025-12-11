@@ -1,0 +1,45 @@
+{
+  "name": "orasrs-client",
+  "version": "2.0.1",
+  "description": "OraSRS (Oracle Security Root Service) - 咨询式风险评分服务客户端完整配置",
+  "main": "orasrs-client.js",
+  "bin": "orasrs-client.js",
+  "pkg": {
+    "assets": [
+      "orasrs-client.js",
+      "orasrs-simple-client.js",
+      "srs-service.js",
+      "srs-engine.js",
+      "srs-routes.js",
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "all-deployments.json",
+      "user-config.json",
+      "client-config.json",
+      "security-config.json"
+    ],
+    "targets": [
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
+  },
+  "scripts": {
+    "build": "pkg .",
+    "build-linux": "pkg . --targets node18-linux-x64 --output dist/orasrs-client-linux",
+    "build-macos": "pkg . --targets node18-macos-x64 --output dist/orasrs-client-macos",
+    "build-windows": "pkg . --targets node18-win-x64 --output dist/orasrs-client-win.exe",
+    "start": "node orasrs-client.js",
+    "start-simple": "node orasrs-simple-client.js",
+    "dev": "nodemon orasrs-client.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ethers": "^6.16.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "rate-limiter-flexible": "^2.4.2",
+    "axios": "^1.6.0"
+  }
+}

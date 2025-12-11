@@ -1,0 +1,27 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install Foundry
+RUN apk add --no-cache curl git bash
+RUN curl -L https://foundry.paradigm.xyz | bash
+ENV PATH="/root/.foundry/bin:${PATH}"
+
+# Install project dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy contracts
+COPY contracts/ ./contracts/
+COPY foundry.toml ./
+COPY remappings.txt ./
+
+# Initialize submodules
+RUN git init
+RUN git submodule add https://github.com/foundry-rs/forge-std lib/forge-std || echo "Submodule already exists"
+RUN git submodule add https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts || echo "Submodule already exists"
+
+# Build contracts
+RUN forge build
+
+CMD ["sh"]

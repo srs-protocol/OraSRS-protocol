@@ -3,11 +3,11 @@ package main
 
 import (
 	sdk "chainmaker.org/chainmaker/contract-sdk-go/v2/sdk"
-	"orasrs-chainmaker-contract/orasrscontract"
+	"orasrs-chainmaker-contract/sracontract"
 )
 
 func main() {
-	contract := &orasrscontract.OrasrsStakingContract{}
+	contract := &sracontract.SecurityRiskAssessmentContract{}
 	sdk.RegisterContract(contract)
 	sdk.Run()
 }

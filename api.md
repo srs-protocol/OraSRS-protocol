@@ -1,17 +1,23 @@
-# OraSRS v2.0 API 接口文档
-# OraSRS v2.0 API Interface Documentation
+# SecurityRiskAssessment v2.0 API 接口文档 - V2.0.1
+# SecurityRiskAssessment v2.0 API Interface Documentation - V2.0.1
 
 ## 1. API 基础信息
 ## 1. API Basic Information
 
-- **API 版本**: v2.0
-- **API Version**: v2.0
-- **基础 URL**: `https://api.orasrs.example.com/api/v2`
-- **Base URL**: `https://api.orasrs.example.com/api/v2`
+- **API 版本**: v2.0.1
+- **API Version**: v2.0.1
+- **基础 URL**: `https://api.OraSRS.net` (通过反向代理访问本地Hardhat节点)
+- **Base URL**: `https://api.OraSRS.net` (Accessing local Hardhat node via reverse proxy)
 - **内容类型**: `application/json`
 - **Content Type**: `application/json`
 - **认证方式**: API Key + 国密算法签名
 - **Authentication**: API Key + SM Algorithm Signature
+- **区块链集成**: 所有威胁情报记录在OraSRS协议链上
+- **Blockchain Integration**: All threat intelligence recorded on OraSRS protocol chain
+- **去重逻辑**: 防止重复威胁报告的时间窗口机制
+- **Deduplication Logic**: Time window mechanism to prevent duplicate threat reports
+- **说明**: `api.OraSRS.net` 通过反向代理将请求转发到本地Hardhat节点，Chain ID为8888。所有智能合约都可以通过此公网API访问。
+- **Note**: `api.OraSRS.net` forwards requests to local Hardhat node via reverse proxy, Chain ID is 8888. All smart contracts are accessible through this public API.
 
 ## 2. 认证 (Authentication)
 
@@ -19,17 +25,17 @@
 
 ```http
 Authorization: Bearer {your_api_key}
-X-OraSRS-Signature: {sm2_signature}
-X-OraSRS-Timestamp: {timestamp}
-X-OraSRS-Nonce: {random_nonce}
+X-SecurityRiskAssessment-Signature: {sm2_signature}
+X-SecurityRiskAssessment-Timestamp: {timestamp}
+X-SecurityRiskAssessment-Nonce: {random_nonce}
 ```
 
 ## 3. 威胁情报 API (Threat Intelligence API)
 
 ### 3.1 提交威胁报告 (Submit Threat Report)
 - **端点 / Endpoint**: `POST /threats/submit`
-- **描述 / Description**: 向 OraSRS 网络提交威胁证据
-- **Description**: Submit threat evidence to the OraSRS network
+- **描述 / Description**: 向 SecurityRiskAssessment 网络提交威胁证据
+- **Description**: Submit threat evidence to the SecurityRiskAssessment network
 
 #### 请求参数 (Request Parameters)
 ```json
@@ -49,7 +55,7 @@ X-OraSRS-Nonce: {random_nonce}
 
 #### 示例请求 (Example Request)
 ```bash
-curl -X POST "https://api.orasrs.example.com/api/v2/threats/submit" \
+curl -X POST "https://api.SRA.example.com/api/v2/threats/submit" \
   -H "Authorization: Bearer your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -86,7 +92,7 @@ curl -X POST "https://api.orasrs.example.com/api/v2/threats/submit" \
 
 #### 示例请求 (Example Request)
 ```bash
-curl -X GET "https://api.orasrs.example.com/api/v2/threats/threat_192.168.1.100_1623456789" \
+curl -X GET "https://api.SRA.example.com/api/v2/threats/threat_192.168.1.100_1623456789" \
   -H "Authorization: Bearer your_api_key"
 ```
 
@@ -131,7 +137,7 @@ curl -X GET "https://api.orasrs.example.com/api/v2/threats/threat_192.168.1.100_
 
 #### 示例请求 (Example Request)
 ```bash
-curl -X POST "https://api.orasrs.example.com/api/v2/threats/threat_192.168.1.100_1623456789/verify" \
+curl -X POST "https://api.SRA.example.com/api/v2/threats/threat_192.168.1.100_1623456789/verify" \
   -H "Authorization: Bearer your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -154,7 +160,7 @@ curl -X POST "https://api.orasrs.example.com/api/v2/threats/threat_192.168.1.100
 
 #### 示例请求 (Example Request)
 ```bash
-curl -X GET "https://api.orasrs.example.com/api/v2/threats/global?limit=10&threatLevel=Critical" \
+curl -X GET "https://api.SRA.example.com/api/v2/threats/global?limit=10&threatLevel=Critical" \
   -H "Authorization: Bearer your_api_key"
 ```
 
@@ -207,7 +213,7 @@ curl -X GET "https://api.orasrs.example.com/api/v2/threats/global?limit=10&threa
     "cpuUsage": 15.5,
     "networkUsage": 10485760,
     "lastThreatReport": 1623456789,
-    "p2pConnected": true,
+    "networkConnected": true,
     "complianceMode": "GDPR"
   }
 }

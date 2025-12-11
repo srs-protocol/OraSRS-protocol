@@ -3,7 +3,7 @@
 ## 1. 概述
 
 ### 1.1 迁移背景
-本指南描述如何将基于 Solidity 的 OraSRS 质押合约迁移到长安链（ChainMaker）的 Go 语言智能合约。
+本指南描述如何将基于 Solidity 的 SecurityRiskAssessment 质押合约迁移到长安链（ChainMaker）的 Go 语言智能合约。
 
 ### 1.2 ChainMaker 合约特性
 - 使用 Go 语言编写
@@ -24,7 +24,7 @@ export PATH=$PATH:/usr/local/go/bin
 ### 2.2 ChainMaker SDK
 ```bash
 # 安装 ChainMaker Go SDK
-go mod init orasrs-chainmaker-contract
+go mod init SRA-chainmaker-contract
 go get github.com/chainmaker/chainmaker-sdk-go/v2
 ```
 
@@ -50,7 +50,7 @@ go get github.com/chainmaker/chainmaker-sdk-go/v2
 | string | string | 字符串 |
 | bool | bool | 布尔类型 |
 
-## 4. OraSRS Go 合约实现
+## 4. SecurityRiskAssessment Go 合约实现
 
 ### 4.1 基础合约结构
 
@@ -94,8 +94,8 @@ type Node struct {
     IsConsensusNode bool       `json:"is_consensus_node"`
 }
 
-// OrasrsStakingContract OraSRS 质押合约
-type OrasrsStakingContract struct {
+// SecurityRiskAssessmentContract SecurityRiskAssessment 质押合约
+type SecurityRiskAssessmentContract struct {
     // 合约相关状态存储
 }
 
@@ -152,7 +152,7 @@ const (
 
 ```go
 // InitContract 合约初始化方法
-func (c *OrasrsStakingContract) InitContract() error {
+func (c *SecurityRiskAssessmentContract) InitContract() error {
     // 初始化合约状态
     ctx := contract.GetContext()
     
@@ -201,7 +201,7 @@ func (c *OrasrsStakingContract) InitContract() error {
 
 ```go
 // StakeWithGmSign 带国密签名的节点质押方法
-func (c *OrasrsStakingContract) StakeWithGmSign() error {
+func (c *SecurityRiskAssessmentContract) StakeWithGmSign() error {
     ctx := contract.GetContext()
     
     // 检查合约状态
@@ -357,7 +357,7 @@ func (c *OrasrsStakingContract) StakeWithGmSign() error {
 
 ```go
 // getMinStakeForNodeType 根据节点类型获取最小质押额
-func (c *OrasrsStakingContract) getMinStakeForNodeType(nodeType uint8) uint64 {
+func (c *SecurityRiskAssessmentContract) getMinStakeForNodeType(nodeType uint8) uint64 {
     switch nodeType {
     case 0: // 根层
         return MinStakeRoot
@@ -369,7 +369,7 @@ func (c *OrasrsStakingContract) getMinStakeForNodeType(nodeType uint8) uint64 {
 }
 
 // saveNode 保存节点信息
-func (c *OrasrsStakingContract) saveNode(node Node) error {
+func (c *SecurityRiskAssessmentContract) saveNode(node Node) error {
     ctx := contract.GetContext()
     
     nodeBytes, err := json.Marshal(node)
@@ -395,7 +395,7 @@ func (c *OrasrsStakingContract) saveNode(node Node) error {
 }
 
 // getNodeById 根据节点ID获取节点信息
-func (c *OrasrsStakingContract) getNodeById(nodeId string) (*Node, error) {
+func (c *SecurityRiskAssessmentContract) getNodeById(nodeId string) (*Node, error) {
     ctx := contract.GetContext()
     
     addr, err := c.getNodeAddressById(nodeId)
@@ -419,7 +419,7 @@ func (c *OrasrsStakingContract) getNodeById(nodeId string) (*Node, error) {
 }
 
 // getNodeAddressById 根据节点ID获取地址
-func (c *OrasrsStakingContract) getNodeAddressById(nodeId string) (string, error) {
+func (c *SecurityRiskAssessmentContract) getNodeAddressById(nodeId string) (string, error) {
     ctx := contract.GetContext()
     
     idToAddrKey := NodeIdToAddressKey + nodeId
@@ -432,7 +432,7 @@ func (c *OrasrsStakingContract) getNodeAddressById(nodeId string) (string, error
 }
 
 // verifySM2Signature 验证SM2签名
-func (c *OrasrsStakingContract) verifySM2Signature(signature, dataHash []byte, publicKey string) (bool, error) {
+func (c *SecurityRiskAssessmentContract) verifySM2Signature(signature, dataHash []byte, publicKey string) (bool, error) {
     // 在实际实现中，这将调用长安链的内置SM2验证函数
     // 这里是概念性实现
     fmt.Printf("Verifying SM2 signature for public key: %s\n", publicKey)
@@ -445,7 +445,7 @@ func (c *OrasrsStakingContract) verifySM2Signature(signature, dataHash []byte, p
 }
 
 // isNonceUsed 检查nonce是否已被使用
-func (c *OrasrsStakingContract) isNonceUsed(nonceHash []byte) bool {
+func (c *SecurityRiskAssessmentContract) isNonceUsed(nonceHash []byte) bool {
     ctx := contract.GetContext()
     
     key := UsedNonceKey + string(nonceHash)
@@ -454,7 +454,7 @@ func (c *OrasrsStakingContract) isNonceUsed(nonceHash []byte) bool {
 }
 
 // setNonceUsed 设置nonce为已使用
-func (c *OrasrsStakingContract) setNonceUsed(nonceHash []byte) error {
+func (c *SecurityRiskAssessmentContract) setNonceUsed(nonceHash []byte) error {
     ctx := contract.GetContext()
     
     key := UsedNonceKey + string(nonceHash)
@@ -462,7 +462,7 @@ func (c *OrasrsStakingContract) setNonceUsed(nonceHash []byte) error {
 }
 
 // getContractState 获取合约状态
-func (c *OrasrsStakingContract) getContractState() (ContractState, error) {
+func (c *SecurityRiskAssessmentContract) getContractState() (ContractState, error) {
     ctx := contract.GetContext()
     
     stateBytes, err := ctx.GetObject([]byte(ContractStateKey))
@@ -479,7 +479,7 @@ func (c *OrasrsStakingContract) getContractState() (ContractState, error) {
 }
 
 // onlyGovernance 仅治理地址可调用的验证
-func (c *OrasrsStakingContract) onlyGovernance() error {
+func (c *SecurityRiskAssessmentContract) onlyGovernance() error {
     ctx := contract.GetContext()
     caller := ctx.GetCallerAddress()
     
@@ -497,7 +497,7 @@ func (c *OrasrsStakingContract) onlyGovernance() error {
 }
 
 // addNodeToConsensusList 添加节点到共识列表
-func (c *OrasrsStakingContract) addNodeToConsensusList(nodeAddr string) error {
+func (c *SecurityRiskAssessmentContract) addNodeToConsensusList(nodeAddr string) error {
     ctx := contract.GetContext()
     
     consensusNodesBytes, err := ctx.GetObject([]byte(ConsensusNodesKey))
@@ -536,7 +536,7 @@ func (c *OrasrsStakingContract) addNodeToConsensusList(nodeAddr string) error {
 }
 
 // addNodeToPartitionList 添加节点到分区列表
-func (c *OrasrsStakingContract) addNodeToPartitionList(nodeAddr string) error {
+func (c *SecurityRiskAssessmentContract) addNodeToPartitionList(nodeAddr string) error {
     ctx := contract.GetContext()
     
     partitionNodesBytes, err := ctx.GetObject([]byte(PartitionNodesKey))
@@ -570,7 +570,7 @@ func (c *OrasrsStakingContract) addNodeToPartitionList(nodeAddr string) error {
 }
 
 // addNodeToEdgeList 添加节点到边缘列表
-func (c *OrasrsStakingContract) addNodeToEdgeList(nodeAddr string) error {
+func (c *SecurityRiskAssessmentContract) addNodeToEdgeList(nodeAddr string) error {
     ctx := contract.GetContext()
     
     edgeNodesBytes, err := ctx.GetObject([]byte(EdgeNodesKey))
@@ -604,7 +604,7 @@ func (c *OrasrsStakingContract) addNodeToEdgeList(nodeAddr string) error {
 }
 
 // GetNodeInfo 查询节点信息
-func (c *OrasrsStakingContract) GetNodeInfo() ([]byte, error) {
+func (c *SecurityRiskAssessmentContract) GetNodeInfo() ([]byte, error) {
     ctx := contract.GetContext()
     
     nodeAddr := string(ctx.GetArgs()["node_address"])
@@ -626,7 +626,7 @@ func (c *OrasrsStakingContract) GetNodeInfo() ([]byte, error) {
 }
 
 // getNodeByAddress 根据地址获取节点
-func (c *OrasrsStakingContract) getNodeByAddress(nodeAddr string) (*Node, error) {
+func (c *SecurityRiskAssessmentContract) getNodeByAddress(nodeAddr string) (*Node, error) {
     ctx := contract.GetContext()
     
     nodeKey := NodeKeyPrefix + nodeAddr
@@ -645,7 +645,7 @@ func (c *OrasrsStakingContract) getNodeByAddress(nodeAddr string) (*Node, error)
 }
 
 // GetContractStats 获取合约统计信息
-func (c *OrasrsStakingContract) GetContractStats() ([]byte, error) {
+func (c *SecurityRiskAssessmentContract) GetContractStats() ([]byte, error) {
     ctx := contract.GetContext()
     
     consensusNodesBytes, _ := ctx.GetObject([]byte(ConsensusNodesKey))
@@ -696,7 +696,7 @@ func (c *OrasrsStakingContract) GetContractStats() ([]byte, error) {
 
 // Main 主函数入口
 func Main() {
-    contract.Start(&OrasrsStakingContract{})
+    contract.Start(&SecurityRiskAssessmentContract{})
 }
 ```
 
@@ -726,7 +726,7 @@ func Main() {
 
 ### 6.1 单元测试
 ```go
-// test/orasrs_contract_test.go
+// test/SRA_contract_test.go
 package main
 
 import (
@@ -753,16 +753,16 @@ func TestNodeManagement(t *testing.T) {
 ### 7.1 编译合约
 ```bash
 # 编译 Go 合约为 WASM
-GOOS=wasip1 GOARCH=wasm go build -o orasrs_staking.wasm orasrs_staking.go
+GOOS=wasip1 GOARCH=wasm go build -o SRA_staking.wasm SRA_staking.go
 ```
 
 ### 7.2 部署合约
 ```bash
 # 使用 ChainMaker 客户端部署合约
 ./bin/chainmaker contract install \
-  --contract-name orasrs-staking \
+  --contract-name SRA-staking \
   --contract-version 1.0.0 \
-  --contract-file orasrs_staking.wasm \
+  --contract-file SRA_staking.wasm \
   --parameters '{"governance_address":"your_governance_address"}'
 ```
 

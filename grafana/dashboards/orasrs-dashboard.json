@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "OraSRS Network Dashboard",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Network Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"orasrs-nodes\"}",
+            "legendFormat": "{{instance}}"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Threat Reports",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "orasrs_threat_reports_total",
+            "legendFormat": "Total Threat Reports"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Active Nodes",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "orasrs_active_nodes",
+            "legendFormat": "Active Nodes"
+          }
+        ]
+      }
+    ]
+  }
+}

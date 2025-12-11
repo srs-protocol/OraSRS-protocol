@@ -1,48 +1,95 @@
 {
-  "compiler": {
-    "version": "0.8.0",
-    "settings": {
-      "optimizer": {
-        "enabled": true,
-        "runs": 200
-      },
-      "outputSelection": {
-        "*": {
-          "*": [
-            "abi",
-            "evm.bytecode.object",
-            "evm.bytecode.sourceMap",
-            "evm.deployedBytecode.object",
-            "evm.deployedBytecode.sourceMap"
-          ]
-        }
-      }
+  "security": {
+    "enableRateLimiting": true,
+    "enableCORS": true,
+    "corsOrigin": "*",
+    "enableAPIKey": false,
+    "apiKeys": [],
+    "whitelist": [
+      "127.0.0.1",
+      "localhost",
+      "::1"
+    ],
+    "blockchainConnection": {
+      "endpoints": [
+        "https://api.orasrs.net",
+        "https://backup.orasrs.net",
+        "https://fallback.orasrs.net"
+      ],
+      "timeout": 10000,
+      "retries": 3,
+      "retryDelay": 1000,
+      "maxIdleConnections": 50,
+      "keepAlive": true
+    },
+    "tls": {
+      "enabled": true,
+      "minVersion": "TLSv1.2",
+      "cipherSuites": [
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+      ]
     }
   },
-  "slither": {
-    "filter_paths": "node_modules|test|script",
-    "detectors_to_exclude": "solc-version,unused-state,similar-names",
-    "fail_on": "high",
-    "exclude_dependencies": true
+  "network": {
+    "chainId": 8888,
+    "nativeToken": "ORA",
+    "contractAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "blockTime": 1
   },
-  "security_tests": {
-    "reentrancy": true,
-    "access_control": true,
-    "integer_overflow": true,
-    "front_running": false,
-    "time_manipulation": true,
-    "signature_replay": true,
-    "denial_of_service": true,
-    "blockchain_specific": true
+  "monitoring": {
+    "enable": true,
+    "port": 3000,
+    "metrics": {
+      "enable": true,
+      "collectionInterval": 30000,
+      "endpoints": [
+        "/metrics"
+      ]
+    }
   },
-  "test_coverage": {
-    "minimum_coverage": 90,
-    "exclude_contracts": [
-      "Migrations.sol"
-    ],
-    "exclude_files": [
-      "test/*",
-      "node_modules/*"
-    ]
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "file": {
+      "enabled": true,
+      "path": "./logs/orasrs-service.log",
+      "maxSize": "100m",
+      "maxFiles": "7d"
+    },
+    "console": {
+      "enabled": true
+    }
+  },
+  "cache": {
+    "enabled": true,
+    "maxSize": 10000,
+    "ttl": 3600000,
+    "evictionPolicy": "LRU",
+    "redis": {
+      "enabled": false,
+      "host": "localhost",
+      "port": 6379,
+      "password": "",
+      "db": 0
+    }
+  },
+  "performance": {
+    "maxConcurrentRequests": 1000,
+    "requestTimeout": 30000,
+    "connectionTimeout": 5000,
+    "keepAliveTimeout": 65000
+  },
+  "compliance": {
+    "gdprCompliant": true,
+    "ccpaCompliant": true,
+    "dataRetentionDays": 90,
+    "anonymizeIPs": true,
+    "privacyPolicyUrl": "https://api.orasrs.net/privacy",
+    "termsOfServiceUrl": "https://api.orasrs.net/terms"
   }
 }
