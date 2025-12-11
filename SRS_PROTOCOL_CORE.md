@@ -11,6 +11,7 @@ SecurityRiskAssessment (Oracle Security Root Service) 是一个咨询式风险�
 - **国密算法 (Chinese Cryptographic Algorithms)**: 支持SM2/SM3/SM4国密算法
 - **长安链部署 (ChainMaker Deployment)**: 完整的ChainMaker区块链部署方案
 - **三层共识架构 (Three-Tier Consensus Architecture)**: 全局根网络层 + 分区共识层 + 边缘缓存层
+- **简化的网络架构 (Simplified Network Architecture)**: 移除复杂的P2P设置，采用更高效的客户端-服务器模式
 
 ## 设计原则 / Design Principles
 

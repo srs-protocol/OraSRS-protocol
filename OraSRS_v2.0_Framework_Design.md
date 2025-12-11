@@ -43,7 +43,7 @@ Let the collective immune system identify, block, and evidence every cyber attac
 #### 3. Intelligence Fabric（智能层）：威胁情报协调网络
 #### 3. Intelligence Fabric: Threat Intelligence Coordination Network
 - **生态接入 / Ecosystem Integration**: 与主流安全系统协同 / Coordination with mainstream security systems
-- **P2P 验证 / P2P Verification**: 去中心化威胁确认 / Decentralized threat confirmation
+- **简化验证 / Simplified Verification**: 高效威胁确认 / Efficient threat confirmation
 - **输出驱动 / Output Drive**: 驱动现有防御体系 / Drive existing defense systems
 
 ✅ 无中心服务器 / No Central Servers  
@@ -104,9 +104,9 @@ Let the collective immune system identify, block, and evidence every cyber attac
 - **MISP 实例** → 企业私有情报聚合 / Enterprise private intelligence aggregation
 - **AlienVault OTX** → 开源 Pulse 订阅 / Open-source Pulse subscription
 
-#### （2）处理：P2P 共识验证
-#### (2) Processing: P2P Consensus Verification
-- Agent 通过 libp2p gossipsub 广播可疑事件 / Agent broadcasts suspicious events via libp2p gossipsub
+#### （2）处理：简化共识验证
+#### (2) Processing: Simplified Consensus Verification
+- Agent 通过客户端-服务器模式提交可疑事件 / Agent submits suspicious events via client-server model
 - ≥3 个独立地理位置节点确认 → 触发全局响应 / ≥3 independent geographic location nodes confirm → trigger global response
 - 声誉系统动态评分 / Dynamic reputation scoring system
 
@@ -150,7 +150,7 @@ New Reputation = Old Reputation × 0.9 + Accuracy × 0.1
 | Agent 被控 / Agent Compromised | - 代码完整性自检 / Code integrity self-check<br>- 声誉熔断（连续误报暂停权限） / Reputation circuit breaker (suspend permissions for continuous false positives)<br>- 多源交叉验证 / Multi-source cross-validation |
 | 虚假威胁泛滥 / False Threat Flooding | - 启动"免疫抑制"模式 / Activate "immune suppression" mode<br>- 切换至仅信任 CISA/VirusTotal / Switch to trust only CISA/VirusTotal<br>- DAO 社区投票冻结异常源 / DAO community vote to freeze abnormal sources |
 | 链上存证被质疑 / On-Chain Evidence Questioned | - 提供 Merkle Proof + 时间戳 / Provide Merkle Proof + timestamp<br>- 支持司法取证包导出 / Support forensic package export |
-| P2P 网络分裂 / P2P Network Split | - 本地缓存最近 1000 条规则 / Local cache of most recent 1000 rules<br>- 离线模式持续防御 / Offline mode continuous defense |
+| 网络连接中断 / Network Disconnection | - 本地缓存最近 1000 条规则 / Local cache of most recent 1000 rules<br>- 离线模式持续防御 / Offline mode continuous defense |
 
 ---
 
@@ -250,20 +250,20 @@ const (
 )
 ```
 
-### 8.3 P2P 协调网络
-### 8.3 P2P Coordination Network
+### 8.3 简化威胁协调
+### 8.3 Simplified Threat Coordination
 
 ```go
-// P2P 威胁协调 / P2P Threat Coordination
+// 简化威胁协调 / Simplified Threat Coordination
 type ThreatCoordination struct {
-    pubsub: PubSub,           // GossipSub 广播 / GossipSub broadcast
+    network_client: NetworkClient,        // 网络客户端 / Network client
     reputation_system: ReputationSystem,  // 声誉系统 / Reputation system
     evidence_verifier: EvidenceVerifier,  // 证据验证 / Evidence verification
     compliance_checker: ComplianceChecker, // 合规检查 / Compliance check
 }
 
-// 威胁广播消息 / Threat broadcast message
-type ThreatBroadcast struct {
+// 威胁提交消息 / Threat submission message
+type ThreatSubmission struct {
     attestation: ThreatAttestation,
     signature: String,         // 节点签名 / Node signature
     timestamp: i64,            // 时间戳 / Timestamp

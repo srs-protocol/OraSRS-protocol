@@ -1,35 +1,72 @@
-# OraSRS 轻量客户端 (Lite Client)
+# OraSRS Lite Client
 
-这是一个基于Tauri (Rust + 前端) 框架的桌面应用，用于实现OraSRS威胁情报的本地订阅与阻断功能。
-客户端连接到OraSRS官方区块链网络 (https://api.orasrs.net)，这是一个基于Hardhat和Geth的私有链，Chain ID为8888。
+OraSRS Lite Client 是一个轻量级的威胁情报客户端，用于订阅和应用OraSRS协议链上的威胁情报。
 
-## 架构概述
+## 功能特性
 
-### 1. 增量更新机制
-- 客户端只下载 LastBlock 之后的新增威胁
-- 全量库通过压缩包定期（如每周）更新
-- 遾免每次启动都下载全量黑名单
+- **轻量级设计**: <5MB 内存占用
+- **实时同步**: 从OraSRS协议链同步威胁情报
+- **本地缓存**: 高效的本地缓存机制
+- **自动阻断**: 根据威胁等级自动阻断恶意IP
+- **国密算法**: 支持SM2/SM3/SM4国密算法
+- **IPSet集成**: 使用IPSet实现高效的IP阻断
 
-### 2. 过期淘汰 (TTL)
-- 本地防火墙规则设置过期时间（如 24 小时）
-- 自动从本地黑名单移除过期IP，防正规则库无限膨胀
+## 安装
 
-### 3. 静默模式
-- 默认不弹窗
-- 只有拦截到高危攻击时才右下角弹窗提示
-- 功能精简为 "链上订阅 -> 本地同步 -> 内核阻断"
+### 前提条件
 
-## 核心组件
+- Rust 1.70+
+- Node.js 18+
+- Tauri CLI
 
-### 1. 链上订阅 (Lightweight Subscriber)
-- 通过WebSocket监听合约事件
-- 仅下载增量哈希，流量忽略不计
+### 一键安装
 
-### 2. 本地同步 (Memory Sync)
-- 使用布隆过滤器或Roaring Bitmaps存储黑名单
-- 100万个恶意IP仅需占用约5MB内存
-- 查询速度为纳秒级（O(1)）
+```bash
+bash scripts/install.sh
+```
 
-### 3. 内核/应用阻断 (Abstract Blocker)
-- 提供标准化接口
-- 根据宿主环境调用不同的阻断层
+### 手动安装
+
+```bash
+# 安装依赖
+npm install
+
+# 开发模式运行
+npm run tauri dev
+
+# 生产模式构建
+npm run tauri build
+```
+
+## 配置
+
+配置文件位于 `config/orasrs.config.json`，主要配置项包括：
+
+- `api_endpoint`: OraSRS API端点
+- `update_interval`: 更新间隔（毫秒）
+- `cache_ttl`: 缓存生存时间
+- `max_cache_size`: 最大缓存大小
+- `security`: 安全相关配置
+
+## 使用方法
+
+客户端会自动从OraSRS协议链获取威胁情报，并使用IPSet或iptables进行本地阻断。
+
+## 测试
+
+运行单元测试：
+```bash
+npm run test:unit
+```
+
+运行集成测试：
+```bash
+npm run test:integration
+```
+
+## 性能基准
+
+性能测试位于 `benchmarks/` 目录，包括：
+
+- 10k-ip-test.js: 10000个IP的性能测试
+- latency-check.sh: 延迟检查脚本

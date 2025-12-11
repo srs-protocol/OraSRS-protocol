@@ -83,6 +83,7 @@ curl http://localhost:3006/orasrs/v2/threat-list
 - **合规治理 / Compliance Governance**: 自动区域合规引擎，满足GDPR/CCPA/等保2.0 / Automatic regional compliance engine, compliant with GDPR/CCPA/Cybersecurity Protection Level 2.0
 - **SecurityRiskAssessment v2.0 协调防御 / SecurityRiskAssessment v2.0 Coordinated Defense**: 全球轻量级主动防御协调框架 / Global Lightweight Proactive Defense Coordination Framework
 - **SecurityRiskAssessment Agent**: 超轻量级威胁检测代理，< 5MB内存占用 / Ultra-lightweight threat detection agent with < 5MB memory footprint
+- **简化的网络架构 / Simplified Network Architecture**: 移除了复杂的P2P设置，采用更高效的客户端-服务器模式 / Removed complex P2P setup,采用 more efficient client-server model
 
 ## 📚 协议规范 / Protocol Specifications
 - [v0.1 规范文档 / v0.1 Specification Document](SRS_PROTOCOL_SPEC.md)（中文/英文 / Chinese/English）
