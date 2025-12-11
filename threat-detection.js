@@ -298,6 +298,7 @@ class ThreatDetection {
         }
       } catch (error) {
         console.error('提交威胁到区块链失败:', error.message);
+        // 不抛出错误，仅记录
       }
     }
   }
