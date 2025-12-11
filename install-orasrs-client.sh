@@ -133,52 +133,9 @@ install_node_dependencies() {
     npm install
     
     # 确保所有必要的文件都存在
-    if [[ ! -f "/opt/orasrs/blockchain-connector.js" ]]; then
-        print_error "区块链连接器文件不存在"
+    if [[ ! -f "/opt/orasrs/orasrs-simple-client.js" ]]; then
+        print_error "OraSRS简单客户端文件不存在"
         exit 1
-    fi
-    
-    if [[ ! -f "/opt/orasrs/threat-detection.js" ]]; then
-        print_error "威胁检测模块不存在"
-        exit 1
-    fi
-    
-    # 如果user-config.json不存在，创建一个默认的
-    if [[ ! -f "/opt/orasrs/user-config.json" ]]; then
-        cat > /opt/orasrs/user-config.json << EOF
-{
-  "server": {
-    "port": 3006,
-    "host": "0.0.0.0",
-    "enableLogging": true,
-    "logFile": "./logs/orasrs-service.log",
-    "rateLimit": {
-      "windowMs": 900000,
-      "max": 100
-    }
-  },
-  "network": {
-    "blockchainEndpoint": "https://api.orasrs.net",
-    "chainId": 8888,
-    "contractAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
-  },
-  "cache": {
-    "enable": true,
-    "maxSize": 10000,
-    "ttl": 3600000,
-    "evictionPolicy": "LRU"
-  },
-  "security": {
-    "enableRateLimiting": true,
-    "enableCORS": true,
-    "corsOrigin": "*",
-    "enableAPIKey": false,
-    "apiKeys": [],
-    "whitelist": ["127.0.0.1", "localhost", "::1"]
-  }
-}
-EOF
-        print_info "已创建默认的用户配置文件"
     fi
     
     print_success "Node.js依赖安装完成"
@@ -285,6 +242,10 @@ show_completion_info() {
     echo "  检测威胁: http://localhost:3006/orasrs/v1/threats/detected"
     echo "  威胁统计: http://localhost:3006/orasrs/v1/threats/stats"
     echo "  提交威胁: http://localhost:3006/orasrs/v1/threats/submit"
+    echo
+    echo -e "${GREEN}性能测试:${NC}"
+    echo "  运行10k IP测试: node /opt/orasrs/orasrs-lite-client/benchmarks/10k-ip-test.js"
+    echo "  运行延迟检查: bash /opt/orasrs/orasrs-lite-client/benchmarks/latency-check.sh"
     echo
     echo -e "${GREEN}重要提醒:${NC}"
     echo "  此服务提供咨询建议，最终决策由客户端做出"

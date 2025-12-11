@@ -1,25 +1,31 @@
 {
-  "orasrs": {
-    "api_endpoint": "https://api.orasrs.net",
-    "chain_id": 8888,
-    "contract_address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "update_interval": 300000,
-    "cache_ttl": 3600000,
-    "max_cache_size": 10000,
-    "network": {
-      "timeout": 10000,
-      "retries": 3,
-      "retry_delay": 2000
-    },
-    "security": {
-      "enable_sm_crypto": true,
-      "sm2_public_key": null,
-      "sm2_private_key": null
-    },
-    "storage": {
-      "use_ipset": true,
-      "fallback_to_iptables": true,
-      "max_threats": 100000
+  "server": {
+    "port": 3006,
+    "host": "0.0.0.0",
+    "enableLogging": true,
+    "logFile": "./logs/orasrs-service.log",
+    "rateLimit": {
+      "windowMs": 900000,
+      "max": 100
     }
+  },
+  "network": {
+    "blockchainEndpoint": "https://api.orasrs.net",
+    "chainId": 8888,
+    "contractAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  },
+  "cache": {
+    "enable": true,
+    "maxSize": 10000,
+    "ttl": 3600000,
+    "evictionPolicy": "LRU"
+  },
+  "security": {
+    "enableRateLimiting": true,
+    "enableCORS": true,
+    "corsOrigin": "*",
+    "enableAPIKey": false,
+    "apiKeys": [],
+    "whitelist": ["127.0.0.1", "localhost", "::1"]
   }
 }
