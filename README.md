@@ -87,7 +87,7 @@ curl http://localhost:3006/orasrs/v2/threat-list
 
 ## 📚 协议规范 / Protocol Specifications
 - [v0.1 规范文档 / v0.1 Specification Document](SRS_PROTOCOL_SPEC.md)（中文/英文 / Chinese/English）
-- [SecurityRiskAssessment v2.0 威胁情报协议 / SecurityRiskAssessment v2.0 Threat Intelligence Protocol](SecurityRiskAssessment_v2.0_Threat_Intelligence_Protocol.md)（中英双语 / Chinese-English）
+- [SecurityRiskAssessment v2.0 威胁情报协议 / SecurityRiskAssessment v2.0 Threat Intelligence Protocol](OraSRS_v2.0_Threat_Intelligence_Protocol.md)（中英双语 / Chinese-English）
 - [共识参数白皮书 / Consensus Parameters Whitepaper](CONSENSUS_PARAMETERS_WHITEPAPER.md)
 - [国密算法集成指南 / SM Cryptography Integration Guide](SM_CRYPTO_INTEGRATION.md)
 - [设计哲学 / Design Philosophy](docs/design.md)
