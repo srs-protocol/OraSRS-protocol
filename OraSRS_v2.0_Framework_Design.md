@@ -209,6 +209,8 @@ pub struct OrasrsAgent {
     pub evidence_collector: EvidenceCollector,
     pub p2p_client: P2pClient,
     pub compliance_engine: ComplianceEngine,
+    pub cross_chain_bridge: CrossChainBridge,  // 跨链桥接 / Cross-chain bridge
+    pub threat_reporter: ThreatReporter,       // 威胁报告器 / Threat reporter
 }
 
 pub struct AgentConfig {
@@ -217,6 +219,11 @@ pub struct AgentConfig {
     pub memory_limit: usize,      // 内存限制 / Memory limit
     pub privacy_level: u8,        // 隐私级别 / Privacy level
     pub reputation: f64,          // 声誉分数 / Reputation score
+    pub domestic_rpc: String,     // 国内RPC / Domestic RPC for hybrid L2
+    pub overseas_rpc: String,     // 海外RPC / Overseas RPC for hybrid L2
+    pub crypto_mode: CryptoMode,  // 加密模式 / Cryptographic mode
+    pub routing_rules: RoutingRules, // 路由规则 / Routing rules
+    pub last_threat_report: Option<i64>, // 最后威胁报告时间 / Last threat report time
 }
 ```
 
@@ -260,6 +267,7 @@ type ThreatCoordination struct {
     reputation_system: ReputationSystem,  // 声誉系统 / Reputation system
     evidence_verifier: EvidenceVerifier,  // 证据验证 / Evidence verification
     compliance_checker: ComplianceChecker, // 合规检查 / Compliance check
+    cross_chain_bridge: CrossChainBridge,  // 跨链桥接 / Cross-chain bridge
 }
 
 // 威胁提交消息 / Threat submission message
@@ -268,6 +276,47 @@ type ThreatSubmission struct {
     signature: String,         // 节点签名 / Node signature
     timestamp: i64,            // 时间戳 / Timestamp
     geo_location: String,      // 地理位置 / Geographic location
+    compliance_tag: String,    // 合规标签 / Compliance tag
+    target_chain_id: u64,      // 目标链ID / Target chain ID for hybrid L2
+}
+
+// 跨链威胁情报同步 / Cross-chain threat intelligence synchronization
+type CrossChainThreatIntel struct {
+    threat_id: String,                    // 威胁ID / Threat ID
+    source_chain_id: u64,                // 源链ID / Source chain ID
+    target_chain_id: u64,                // 目标链ID / Target chain ID
+    threat_data: ThreatAttestation,      // 威胁数据 / Threat data
+    verification_status: VerificationStatus, // 验证状态 / Verification status
+}
+```
+
+### 8.4 混合L2架构组件
+### 8.4 Hybrid L2 Architecture Components
+
+```go
+// 混合L2架构配置 / Hybrid L2 Architecture Configuration
+type HybridL2Config struct {
+    domestic_rpc: String,               // 国内RPC端点 / Domestic RPC endpoint
+    overseas_rpc: String,               // 海外RPC端点 / Overseas RPC endpoint
+    domestic_chain_id: u64,             // 国内链ID / Domestic chain ID
+    overseas_chain_id: u64,             // 海外链ID / Overseas chain ID
+    layer_zero_endpoint: String,        // LayerZero端点 / LayerZero endpoint
+    routing_rules: RoutingRules,         // 路由规则 / Routing rules
+    crypto_mode: CryptoMode,            // 加密模式 / Cryptographic mode
+}
+
+// 智能路由规则 / Smart Routing Rules
+type RoutingRules struct {
+    domestic_threshold: u8,             // 国内路由阈值 / Domestic routing threshold
+    sensitive_keywords: Vec<String>,    // 敏感关键词 / Sensitive keywords
+    geographic_routing: Map<String, u64>, // 地理路由 / Geographic routing
+}
+
+// 加密模式 / Cryptographic Mode
+enum CryptoMode {
+    Domestic,      // 国密算法 / Chinese cryptographic algorithms (SM2/SM3/SM4)
+    International, // 国际算法 / International algorithms (ECDSA/Keccak256)
+    Auto,          // 自动选择 / Automatic selection
 }
 ```
 

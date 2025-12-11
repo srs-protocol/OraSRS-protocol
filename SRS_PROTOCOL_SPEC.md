@@ -322,7 +322,9 @@ POST /SRA/v2/threat-report
   "context": "SYN flood attack detected",
   "evidence_hash": "a1b2c3d4e5f6...",
   "geolocation": "Shanghai, China",
-  "network_flow": "source_port: 1024-65535, dest_port: 80"
+  "network_flow": "source_port: 1024-65535, dest_port: 80",
+  "compliance_tag": "cn_gov",
+  "region": "domestic"
 }
 ```
 
@@ -360,17 +362,79 @@ GET /SRA/v2/threat-list
       "first_seen": "2025-12-01T10:00:00Z",
       "last_seen": "2025-12-01T12:00:00Z",
       "report_count": 15,
+      "verification_count": 5,
       "evidence": [
         {
           "source": "node-abc123",
           "timestamp": "2025-12-01T10:00:00Z",
           "type": "behavior"
         }
-      ]
+      ],
+      "compliance_tag": "cn_gov",
+      "region": "domestic"
     }
   ],
   "last_update": "2025-12-01T12:00:00Z",
-  "total_threats": 125
+  "total_threats": 125,
+  "cross_chain_sync_status": "synchronized"
+}
+```
+
+#### 批量提交威胁报告 / Batch Submit Threat Reports
+```
+POST /SRA/v2/threat-report/batch
+```
+
+**请求体 / Request Body**:
+```json
+{
+  "threat_reports": [
+    {
+      "source_ip": "192.168.1.10",
+      "target_ip": "10.0.0.5",
+      "threat_type": "ddos_attack",
+      "threat_level": "critical",
+      "context": "SYN flood attack detected",
+      "evidence_hash": "a1b2c3d4e5f6...",
+      "geolocation": "Shanghai, China",
+      "network_flow": "source_port: 1024-65535, dest_port: 80"
+    }
+  ]
+}
+```
+
+#### 跨链威胁情报同步 / Cross-chain Threat Intelligence Synchronization
+```
+POST /SRA/v2/threat-sync/{chain_id}
+```
+
+**请求体 / Request Body**:
+```json
+{
+  "threat_id": "threat_192.168.1.10_1701234567",
+  "source_chain_id": 8888,
+  "target_chain_id": 11155420,
+  "threat_data": {
+    "source_ip": "192.168.1.10",
+    "threat_level": 3,
+    "threat_type": 0,
+    "evidence_hash": "a1b2c3d4e5f6...",
+    "geolocation": "Shanghai, China"
+  }
+}
+```
+
+#### 撤销威胁报告 / Revoke Threat Report
+```
+POST /SRA/v2/threat-revoke
+```
+
+**请求体 / Request Body**:
+```json
+{
+  "report_id": "threat_192.168.1.10_1701234567",
+  "reason": "false positive detection",
+  "evidence": "investigation proves benign activity"
 }
 ```
 
@@ -467,6 +531,24 @@ SecurityRiskAssessment仅提供风险评估和建议，最终的安全决策由�
 - 边缘层P95响应时间 ≤ 15ms
 - 支持 ≥ 50个共识节点
 - TPS ≥ 1000（测试网）
+- 单IP速率限制：20r/s（每秒20个请求）
+- 并发连接限制：每个IP最多10个并发连接
+- 缓存容量：10MB
+
+## 性能测试方法
+为了验证协议性能，我们提供了一键性能测试脚本，可复现协议的性能指标：
+
+1. **速率限制测试**：验证客户端是否正确实现了20r/s的速率限制
+2. **协议链连接测试**：验证与OraSRS协议链的连接能力
+3. **IP查询性能测试**：测试单个和批量IP查询的响应时间和吞吐量
+4. **缓存性能测试**：验证缓存机制的有效性
+
+运行测试：
+```bash
+./run-performance-test.sh
+```
+
+测试完成后将生成详细的性能报告，包含QPS、响应时间、缓存命中率等关键指标。
 
 ## SecurityRiskAssessment v2.0 威胁情报协议规范
 
@@ -484,24 +566,36 @@ SecurityRiskAssessment仅提供风险评估和建议，最终的安全决策由�
   - EvidenceHash: 证据哈希值 / Evidence hash value
   - Geolocation: 地理位置信息 / Geographic location information
   - NetworkFlow: 网络流量模式 / Network traffic pattern
+  - VerificationCount: 验证计数 / Number of verifications
+  - ComplianceTag: 合规标签 / Compliance tag for regional requirements
+  - Region: 来源区域 / Region of origin
 
 ### 2. 威胁情报验证机制 / Threat Intelligence Verification Mechanism
 - **多节点交叉验证**: 至少3个独立节点验证每个威胁报告 / Multi-node cross-validation: At least 3 independent nodes verify each threat report
 - **声誉加权**: 基于行为的动态声誉评分 / Reputation weighting: Behavior-based dynamic reputation scoring
 - **时间窗口验证**: 防止重复威胁报告 / Time window verification: Prevent duplicate threat reports
 - **证据链验证**: 确保威胁证据完整性和真实性 / Evidence chain verification: Ensure integrity and authenticity of threat evidence
+- **防重放机制**: 防止重复提交相同威胁情报 / Replay protection: Prevent submitting identical threat intelligence
 
 ### 3. 威胁情报同步机制 / Threat Intelligence Synchronization Mechanism
 - **实时同步**: 秒级威胁情报更新 / Real-time synchronization: Second-level threat intelligence updates
 - **分层扩散**: 按三层架构分发威胁情报 / Hierarchical distribution: Distribute threat intelligence according to three-layer architecture
 - **智能缓存**: 频繁威胁本地缓存，减少网络传输 / Intelligent caching: Cache frequent threats locally to reduce network transmission
 - **自动衰减**: 威胁等级随时间和验证结果自动调整 / Automatic decay: Threat level automatically adjusts with time and verification results
+- **跨链同步**: 支持混合L2架构的跨链威胁情报同步 / Cross-chain synchronization: Support for cross-chain threat intelligence synchronization in hybrid L2 architecture
 
 ### 4. 合规性与隐私保护 / Compliance and Privacy Protection
 - **GDPR/CCPA合规**: 支持威胁数据的删除和修改请求 / GDPR/CCPA compliance: Support deletion and modification requests for threat data
 - **等保2.0合规**: 符合中国网络安全等级保护要求 / Compliance with China Cybersecurity Protection Level 2.0 requirements
 - **数据最小化**: 仅收集必要的威胁相关信息 / Data minimization: Only collect necessary threat-related information
 - **透明化**: 所有威胁情报处理过程可审计和验证 / Transparency: All threat intelligence processing is auditable and verifiable
+- **数据本地化**: 敏感信息仅在本地处理，不跨境传输 / Data localization: Sensitive information processed locally without cross-border transfer
+
+### 5. 混合L2架构支持 / Hybrid L2 Architecture Support
+- **国内私有OP Stack**: 支持国内合规的私有链部署 / Support for domestic compliant private chain deployment
+- **海外以太坊L2**: 支持海外以太坊L2网络连接 / Support for overseas Ethereum L2 network connections
+- **LayerZero跨链桥接**: 实现安全的跨链威胁情报同步 / Secure cross-chain threat intelligence synchronization via LayerZero
+- **智能路由**: 根据威胁类型和地理位置自动选择目标链 / Automatic target chain selection based on threat type and geographic location
 
 ## 国密算法集成规范
 
@@ -543,3 +637,19 @@ SecurityRiskAssessment仅提供风险评估和建议，最终的安全决策由�
 - 通过国家密码管理局认证
 - 满足等保三级要求
 - 数据不出境，境内部署
+
+### 6. 混合L2架构集成规范
+- **国内私有OP Stack**: 部署在国内的私有OP Stack网络，满足数据本地化要求
+- **海外OP Sepolia**: 部署在海外的OP Sepolia测试网，支持国际威胁情报共享
+- **LayerZero跨链协议**: 使用LayerZero实现安全的跨链通信
+- **智能路由规则**: 
+  - 根据威胁类型自动选择目标链
+  - 高敏感信息仅在国内链处理
+  - 支持动态加密算法切换（国密/国际标准）
+- **跨链合约**:
+  - `ThreatIntelSync.sol`: 威胁情报跨链同步合约
+  - `GovernanceMirror.sol`: 治理功能跨链镜像合约
+- **部署配置**:
+  - 国内RPC: http://localhost:9545 (OP Stack)
+  - 海外RPC: https://sepolia.optimism.io (OP Sepolia)
+  - LayerZero端点: 配置跨链通信参数

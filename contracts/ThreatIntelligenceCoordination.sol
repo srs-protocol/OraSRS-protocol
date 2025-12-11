@@ -20,6 +20,10 @@ contract ThreatIntelligenceCoordination {
     mapping(string => bool) public isThreatIP;          // IP -> 是否为威胁IP
     mapping(string => uint256) public threatScores;     // IP -> 威胁分数
     
+    // 为了支持获取所有IP，我们需要一个数组来存储IP地址
+    string[] public allThreatIPs;
+    mapping(string => uint256) private ipIndex;  // IP到数组索引的映射，用于快速删除
+    
     event ThreatIntelAdded(string indexed ip, ThreatLevel level, string threatType, uint256 timestamp);
     event ThreatIntelRemoved(string indexed ip, uint256 timestamp);
     event ThreatScoreUpdated(string indexed ip, uint256 score, uint256 timestamp);
@@ -51,6 +55,12 @@ contract ThreatIntelligenceCoordination {
         
         isThreatIP[_ip] = true;
         
+        // 如果IP不在列表中，则添加到列表
+        if (ipIndex[_ip] == 0) {
+            allThreatIPs.push(_ip);
+            ipIndex[_ip] = allThreatIPs.length; // 存储索引，从1开始，0表示不存在
+        }
+        
         emit ThreatIntelAdded(_ip, _threatLevel, _threatType, block.timestamp);
     }
     
@@ -77,6 +87,20 @@ contract ThreatIntelligenceCoordination {
     function removeThreatIntel(string memory _ip) external {
         threatIntels[_ip].isActive = false;
         isThreatIP[_ip] = false;
+        
+        // 从数组中移除IP
+        uint256 index = ipIndex[_ip];
+        if (index > 0 && index <= allThreatIPs.length) {
+            // 将最后一个元素移到被删除元素的位置
+            string memory lastIP = allThreatIPs[allThreatIPs.length - 1];
+            allThreatIPs[index - 1] = lastIP;
+            // 更新最后一个元素的索引
+            ipIndex[lastIP] = index;
+            // 删除最后一个元素
+            allThreatIPs.pop();
+            // 重置被删除IP的索引
+            delete ipIndex[_ip];
+        }
         
         emit ThreatIntelRemoved(_ip, block.timestamp);
     }
@@ -131,5 +155,44 @@ contract ThreatIntelligenceCoordination {
             scores[i] = threatScores[_ips[i]];
         }
         return scores;
+    }
+    
+    /**
+     * @dev 获取所有威胁IP的数量
+     */
+    function getThreatIPsCount() external view returns (uint256) {
+        return allThreatIPs.length;
+    }
+    
+    /**
+     * @dev 获取指定范围内的威胁IP
+     */
+    function getThreatIPs(uint256 offset, uint256 count) external view returns (string[] memory ips) {
+        require(offset < allThreatIPs.length, "Offset out of bounds");
+        
+        uint256 actualCount = count;
+        if (offset + actualCount > allThreatIPs.length) {
+            actualCount = allThreatIPs.length - offset;
+        }
+        
+        ips = new string[](actualCount);
+        for (uint256 i = 0; i < actualCount; i++) {
+            ips[i] = allThreatIPs[offset + i];
+        }
+    }
+    
+    /**
+     * @dev 获取所有威胁IP（限制数量以防止gas耗尽）
+     */
+    function getAllThreatIPs(uint256 maxCount) external view returns (string[] memory ips) {
+        uint256 count = allThreatIPs.length;
+        if (maxCount < count) {
+            count = maxCount;
+        }
+        
+        ips = new string[](count);
+        for (uint256 i = 0; i < count; i++) {
+            ips[i] = allThreatIPs[i];
+        }
     }
 }

@@ -120,6 +120,18 @@ curl http://localhost:3006/orasrs/v2/threat-list
 - [合约创建总结 / Contract Creation Summary](CHAINMAKER_CONTRACT_SUMMARY.md)
 - [构建测试脚本 / Build and Test Script](build-and-test.sh)
 
+## 🧪 性能测试 / Performance Testing
+- [一键性能测试脚本 / One-Click Performance Test Script](run-performance-test.sh)
+- [IP性能测试脚本 / IP Performance Test Script](test-ip-performance-advanced.js)
+- [性能测试报告 / Performance Test Report](oraSRS-client-performance-report.json)
+- [性能测试指南 / Performance Test Guide](PERFORMANCE_TEST_GUIDE.md)
+
+## 🔒 安全说明 / Security Notes
+为了安全考虑，系统实施了以下保护措施：
+- **速率限制**: 每个IP每秒最多20个请求 (`limit_req_zone $binary_remote_addr zone=rpc_limit:10m rate=20r/s;`)
+- **连接限制**: 每个IP最多10个并发连接 (`limit_conn_zone $binary_remote_addr zone=addr_limit:10m;`)
+- **日志脱敏**: 所有日志中的敏感数据都已删除，确保不会泄露任何隐私信息
+
 ## 🤖 SecurityRiskAssessment Agent
 - [Agent 架构设计 / Agent Architecture Design](SRA-agent/agent-architecture.md)
 - [使用指南 / Usage Guide](SRA-agent/USAGE.md)

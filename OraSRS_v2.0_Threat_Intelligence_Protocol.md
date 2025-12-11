@@ -129,6 +129,18 @@ const (
     Critical                      // Critical level / 严重级
     Emergency                     // Emergency level / 紧急级
 )
+
+// ThreatType 威胁类型
+type ThreatType int
+const (
+    DDoS ThreatType = iota        // Distributed Denial of Service / 分布式拒绝服务
+    Malware                       // Malware / 恶意软件
+    Phishing                      // Phishing / 网络钓鱼
+    BruteForce                    // Brute Force / 暴力破解
+    SuspiciousConnection          // Suspicious Connection / 可疑连接
+    AnomalousBehavior             // Anomalous Behavior / 异常行为
+    IoCMatch                      // Indicator of Compromise Match / 威胁指标匹配
+)
 ```
 
 ### Core Methods
@@ -145,12 +157,20 @@ const (
   - `threat_level`: Severity level (Info/Warning/Critical/Emergency)
   - `context`: Additional threat context
   - `evidence_hash`: Hash of supporting evidence
+  - `geolocation`: Geographic location of the threat
+  - `network_flow`: Network traffic flow information
+  - `compliance_tag`: Compliance tag for regional requirements
+  - `region`: Region of origin
   - `threat_type`: 检测到的威胁类型
   - `source_ip`: 威胁的源IP
   - `target_ip`: 威胁的目标IP
   - `threat_level`: 严重程度 (信息/警告/严重/紧急)
   - `context`: 额外的威胁上下文
   - `evidence_hash`: 支持证据的哈希
+  - `geolocation`: 威胁的地理位置
+  - `network_flow`: 网络流量信息
+  - `compliance_tag`: 区域合规标签
+  - `region`: 来源区域
 
 #### `verifyThreatReport` - Verify Threat Report
 #### `verifyThreatReport` - 验证威胁报告
@@ -173,6 +193,42 @@ const (
 
 - **Purpose (目的)**: Retrieves a specific threat report by ID
 - **目的**: 按ID检索特定威胁报告
+
+#### `batchSubmitThreatReports` - Batch Submit Threat Reports
+#### `batchSubmitThreatReports` - 批量提交威胁报告
+
+- **Purpose (目的)**: Allows nodes to submit multiple threat reports in a single transaction
+- **Parameters (参数)**:
+  - `threat_reports`: Array of threat report objects
+- **目的**: 允许节点在单个交易中提交多个威胁报告
+- **参数**:
+  - `threat_reports`: 威胁报告对象数组
+
+#### `revokeThreatReport` - Revoke Threat Report
+#### `revokeThreatReport` - 撤销威胁报告
+
+- **Purpose (目的)**: Allows authorized nodes to revoke false or invalid threat reports
+- **Parameters (参数)**:
+  - `report_id`: ID of the threat report to revoke
+  - `reason`: Reason for revocation
+- **目的**: 允许授权节点撤销错误或无效的威胁报告
+- **参数**:
+  - `report_id`: 要撤销的威胁报告ID
+  - `reason`: 撤销原因
+
+#### `sendCrossChainThreatIntel` - Send Cross-Chain Threat Intelligence
+#### `sendCrossChainThreatIntel` - 发送跨链威胁情报
+
+- **Purpose (目的)**: Synchronize threat intelligence across different blockchain networks
+- **Parameters (参数)**:
+  - `threat_id`: ID of the threat to sync
+  - `target_chain_id`: Target blockchain network ID
+  - `threat_data`: Threat intelligence data to sync
+- **目的**: 在不同区块链网络之间同步威胁情报
+- **参数**:
+  - `threat_id`: 要同步的威胁ID
+  - `target_chain_id`: 目标区块链网络ID
+  - `threat_data`: 要同步的威胁情报数据
 
 ## Compliance and Security Standards
 ## 合规性和安全标准
@@ -220,6 +276,12 @@ const (
 - **Hybrid Schemes (混合方案)**:
   - Combined traditional and post-quantum algorithms for enhanced security
   - 传统算法与抗量子算法结合，提供增强安全性
+
+### Dynamic Algorithm Selection (动态算法选择)
+- **智能路由**: 根据地理位置和合规要求自动切换加密算法 / Automatic encryption algorithm switching based on geographic location and compliance requirements
+- **国密模式**: 国内节点使用SM2/SM3/SM4算法 / Domestic nodes use SM2/SM3/SM4 algorithms
+- **国际模式**: 海外节点使用ECDSA/Keccak256等国际标准 / Overseas nodes use international standards like ECDSA/Keccak256
+- **自动模式**: 根据威胁类型智能选择最优算法 / Automatic selection of optimal algorithm based on threat type
 
 ## Threat Detection and Response
 ## 威胁检测和响应
@@ -340,6 +402,75 @@ const (
 - 跨云提供商的分布式威胁检测
 - 多租户威胁情报共享
 
+## Hybrid L2 Architecture Integration
+## 混合L2架构集成
+
+### Architecture Overview
+### 架构概述
+
+OraSRS Protocol v2.0 implements a hybrid L2 architecture that combines domestic private OP Stack and overseas Ethereum L2 (OP Sepolia testnet), connected via LayerZero cross-chain bridge protocol.
+
+OraSRS协议v2.0实现了混合L2架构，结合了国内私有OP Stack和海外以太坊L2（OP Sepolia测试网），通过LayerZero跨链桥接协议连接。
+
+### Key Components
+### 关键组件
+
+1. **Domestic Private OP Stack (国内私有OP Stack)**:
+   - Local deployment for compliance with Chinese regulations
+   - Processes sensitive threat intelligence data domestically
+   - 符合中国法规的本地部署
+   - 在国内处理敏感威胁情报数据
+
+2. **Overseas Ethereum L2 (海外以太坊L2)**:
+   - OP Sepolia testnet connection for global threat sharing
+   - Enables international threat intelligence collaboration
+   - 用于全球威胁共享的OP Sepolia测试网连接
+   - 实现国际威胁情报协作
+
+3. **LayerZero Cross-Chain Bridge (LayerZero跨链桥)**:
+   - Secure cross-chain threat intelligence synchronization
+   - Safe cross-chain threat intelligence synchronization
+   - 安全的跨链威胁情报同步
+
+4. **Cross-Chain Contracts (跨链合约)**:
+   - `ThreatIntelSync.sol`: Cross-chain threat intelligence synchronization contract
+   - `GovernanceMirror.sol`: Cross-chain governance function mirroring contract
+   - `ThreatIntelSync.sol`: 跨链威胁情报同步合约
+   - `GovernanceMirror.sol`: 跨链治理功能镜像合约
+
+### Cross-Chain Threat Intelligence Synchronization
+### 跨链威胁情报同步
+
+#### Smart Routing Rules (智能路由规则)
+- **Threat Classification and Routing**: Automatically select target chain based on threat type
+- **Threat Level Threshold Control**: Route threats above threshold to domestic chain
+- **Geographic Routing Rules**: Apply location-based routing policies
+- **Sensitive Information Localization**: Process sensitive information locally only
+- **威胁分类和路由**: 根据威胁类型自动选择目标链
+- **威胁等级阈值控制**: 将超过阈值的威胁路由到国内链
+- **地理位置路由规则**: 应用基于位置的路由策略
+- **敏感信息本地化**: 仅在本地处理敏感信息
+
+#### Cross-Chain Synchronization Methods
+#### 跨链同步方法
+
+- `sendThreatIntel`: Send threat intelligence to target chain
+- `verifyCrossChainThreat`: Verify threat intelligence across chains
+- `syncThreatStatus`: Synchronize threat status across chains
+- `sendThreatIntel`: 向目标链发送威胁情报
+- `verifyCrossChainThreat`: 跨链验证威胁情报
+- `syncThreatStatus`: 跨链同步威胁状态
+
+### Configuration Requirements
+### 配置要求
+
+- **Domestic RPC**: http://localhost:9545 (OP Stack)
+- **Overseas RPC**: https://sepolia.optimism.io (OP Sepolia)
+- **LayerZero Endpoint**: Configured cross-chain communication parameters
+- **国内RPC**: http://localhost:9545 (OP Stack)
+- **海外RPC**: https://sepolia.optimism.io (OP Sepolia)
+- **LayerZero端点**: 配置的跨链通信参数
+
 ## Future Enhancements
 ## 未来增强
 
@@ -348,5 +479,7 @@ const (
 
 - **AI-Powered Threat Analysis (AI驱动的威胁分析)**: Advanced machine learning for threat detection
 - **Quantum-Resistant Algorithms (抗量子算法)**: Integration of post-quantum cryptographic algorithms
+- **Enhanced Cross-Chain Security (增强跨链安全)**: Advanced security mechanisms for cross-chain operations
 - **AI驱动的威胁分析**: 用于威胁检测的高级机器学习
 - **抗量子算法**: 集成后量子密码算法
+- **增强跨链安全**: 跨链操作的高级安全机制
