@@ -123,7 +123,7 @@ curl http://localhost:3006/orasrs/v2/threat-list
 ## 🧪 性能测试 / Performance Testing
 - [一键性能测试脚本 / One-Click Performance Test Script](run-performance-test.sh)
 - [IP性能测试脚本 / IP Performance Test Script](test-ip-performance-advanced.js)
-- [精度和抗女巫测试脚本 / Precision and Sybil Resistance Test Script](precision-sybil-test.js) - 精度/召回率和抗女巫攻击能力测试
+- [精度和抗女巫测试脚本 / Precision and Sybil Resistance Test Script](precision-sybil-test.js) - （待完成对精度/召回率和抗女巫攻击能力的测试）
 - [性能测试报告 / Performance Test Report](oraSRS-client-performance-report.json)
 - [性能测试指南 / Performance Test Guide](PERFORMANCE_TEST_GUIDE.md)
 
