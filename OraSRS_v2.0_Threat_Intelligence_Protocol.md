@@ -483,3 +483,30 @@ OraSRS协议v2.0实现了混合L2架构，结合了国内私有OP Stack和海外
 - **AI驱动的威胁分析**: 用于威胁检测的高级机器学习
 - **抗量子算法**: 集成后量子密码算法
 - **增强跨链安全**: 跨链操作的高级安全机制
+
+## Testing and Logging
+## 测试与日志记录
+
+### Performance Testing
+### 性能测试
+
+- **One-Click Test Script**: `run-performance-test.sh` for easy test execution
+- **Rate Limit Verification**: Tests client compliance with 20r/s rate limit
+- **Protocol Chain Connectivity**: Validates connection to OraSRS protocol chain
+- **Performance Metrics**: QPS, response time, cache hit rate measurements
+- **一键测试脚本**: `run-performance-test.sh` 便于测试执行
+- **速率限制验证**: 测试客户端是否符合20r/s速率限制
+- **协议链接连性**: 验证与OraSRS协议链的连接
+- **性能指标**: QPS、响应时间、缓存命中率测量
+
+### Logging and Audit Trail
+### 日志记录和审计轨迹
+
+- **De-Identified Logs**: All logs processed to remove sensitive information
+- **Access Control Logs**: Records rate limiting and connection control events
+- **Audit Support**: Standard test logs in `logs/` directory for review
+- **Compliance Auditing**: Complete operation audit trail for regulatory review
+- **脱敏日志**: 所有日志处理以移除敏感信息
+- **访问控制日志**: 记录速率限制和连接控制事件
+- **审计支持**: `logs/` 目录中的标准测试日志供审查
+- **合规审计**: 完整的操作审计轨迹供监管审查

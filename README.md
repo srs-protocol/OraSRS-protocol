@@ -132,6 +132,11 @@ curl http://localhost:3006/orasrs/v2/threat-list
 - **连接限制**: 每个IP最多10个并发连接 (`limit_conn_zone $binary_remote_addr zone=addr_limit:10m;`)
 - **日志脱敏**: 所有日志中的敏感数据都已删除，确保不会泄露任何隐私信息
 
+## 📊 测试日志 / Test Logs
+标准的测试日志已保存在 `logs/` 目录中，供审稿人审查：
+- [性能测试日志 / Performance Test Log](logs/sample-performance-test.log)
+- [访问日志样本 / Access Log Sample](logs/sample-access.log)
+
 ## 🤖 SecurityRiskAssessment Agent
 - [Agent 架构设计 / Agent Architecture Design](SRA-agent/agent-architecture.md)
 - [使用指南 / Usage Guide](SRA-agent/USAGE.md)

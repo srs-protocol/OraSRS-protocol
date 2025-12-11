@@ -1,0 +1,509 @@
+{
+  "simulationResults": [
+    {
+      "timestamp": 0,
+      "normalActivity": {
+        "reportsSubmitted": 4,
+        "votesCasted": 2,
+        "reputationChange": 0.5258892104820382
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 8,
+        "votesCasted": 10,
+        "reputationChange": 0.8091532143156094,
+        "attackEffectiveness": 0.6000000000000001
+      }
+    },
+    {
+      "timestamp": 60,
+      "normalActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 2,
+        "reputationChange": -0.5556871577532
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 7,
+        "votesCasted": 10,
+        "reputationChange": 0.2150466622302699,
+        "attackEffectiveness": 0.6298003996192592
+      }
+    },
+    {
+      "timestamp": 120,
+      "normalActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 0,
+        "reputationChange": 0.4745379742962389
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 13,
+        "votesCasted": 10,
+        "reputationChange": 4.653431679627795,
+        "attackEffectiveness": 0.6584127513462976
+      }
+    },
+    {
+      "timestamp": 180,
+      "normalActivity": {
+        "reportsSubmitted": 4,
+        "votesCasted": 1,
+        "reputationChange": 1.3509623714117258
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 10,
+        "reputationChange": 4.775793580017835,
+        "attackEffectiveness": 0.6846963710092554
+      }
+    },
+    {
+      "timestamp": 240,
+      "normalActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 0,
+        "reputationChange": 0.21149197450318058
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 10,
+        "reputationChange": 2.267894826713119,
+        "attackEffectiveness": 0.7076034136349285
+      }
+    },
+    {
+      "timestamp": 300,
+      "normalActivity": {
+        "reportsSubmitted": 2,
+        "votesCasted": 2,
+        "reputationChange": -0.30110958757413153
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 18,
+        "votesCasted": 10,
+        "reputationChange": 4.592766257843723,
+        "attackEffectiveness": 0.7262206477211846
+      }
+    },
+    {
+      "timestamp": 360,
+      "normalActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 0,
+        "reputationChange": 0.38746088706896187
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 10,
+        "reputationChange": 0.41444446669778146,
+        "attackEffectiveness": 0.739805862895084
+      }
+    },
+    {
+      "timestamp": 420,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 1,
+        "reputationChange": -0.5926823085739009
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 12,
+        "votesCasted": 10,
+        "reputationChange": 3.7364215491737913,
+        "attackEffectiveness": 0.747817459498269
+      }
+    },
+    {
+      "timestamp": 480,
+      "normalActivity": {
+        "reportsSubmitted": 2,
+        "votesCasted": 0,
+        "reputationChange": -0.18500852609543517
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 10,
+        "reputationChange": 0.3412533008320079,
+        "attackEffectiveness": 0.7499360404562259
+      }
+    },
+    {
+      "timestamp": 540,
+      "normalActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 1,
+        "reputationChange": 1.2495530735275735
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 15,
+        "votesCasted": 10,
+        "reputationChange": 3.770492613515353,
+        "attackEffectiveness": 0.7460771446317294
+      }
+    },
+    {
+      "timestamp": 600,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 0,
+        "reputationChange": 0.5206755756042661
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 16,
+        "votesCasted": 10,
+        "reputationChange": 2.4709040896085015,
+        "attackEffectiveness": 0.7363946140238522
+      }
+    },
+    {
+      "timestamp": 660,
+      "normalActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 1,
+        "reputationChange": 0.666059516958376
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 13,
+        "votesCasted": 10,
+        "reputationChange": 4.966401431638776,
+        "attackEffectiveness": 0.7212744605729385
+      }
+    },
+    {
+      "timestamp": 720,
+      "normalActivity": {
+        "reportsSubmitted": 4,
+        "votesCasted": 1,
+        "reputationChange": 0.4145809069703591
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 14,
+        "votesCasted": 10,
+        "reputationChange": 4.173979687682746,
+        "attackEffectiveness": 0.7013194770826727
+      }
+    },
+    {
+      "timestamp": 780,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 0,
+        "reputationChange": -0.5215245294517666
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 7,
+        "votesCasted": 10,
+        "reputationChange": 1.440184795666638,
+        "attackEffectiveness": 0.6773252057732196
+      }
+    },
+    {
+      "timestamp": 840,
+      "normalActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 1,
+        "reputationChange": 0.2606294568955515
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 10,
+        "reputationChange": 4.1890571627079,
+        "attackEffectiveness": 0.6502482225233858
+      }
+    },
+    {
+      "timestamp": 900,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 1,
+        "reputationChange": -0.3657282228993971
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 8,
+        "votesCasted": 10,
+        "reputationChange": 1.6047305800868716,
+        "attackEffectiveness": 0.6211680012089802
+      }
+    },
+    {
+      "timestamp": 960,
+      "normalActivity": {
+        "reportsSubmitted": 2,
+        "votesCasted": 0,
+        "reputationChange": 0.5109771918221139
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 10,
+        "reputationChange": 4.672801161528928,
+        "attackEffectiveness": 0.591243878485863
+      }
+    },
+    {
+      "timestamp": 1020,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 1,
+        "reputationChange": -0.27782914759004573
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 10,
+        "reputationChange": 1.8903287117021477,
+        "attackEffectiveness": 0.5616688346959754
+      }
+    },
+    {
+      "timestamp": 1080,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 1,
+        "reputationChange": -0.5288843194165435
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 10,
+        "reputationChange": 3.769125124638189,
+        "attackEffectiveness": 0.5336219335057721
+      }
+    },
+    {
+      "timestamp": 1140,
+      "normalActivity": {
+        "reportsSubmitted": 2,
+        "votesCasted": 2,
+        "reputationChange": 0.11649833668140219
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 5,
+        "votesCasted": 10,
+        "reputationChange": 0.27344233664749085,
+        "attackEffectiveness": 0.5082213163585921
+      }
+    },
+    {
+      "timestamp": 1200,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 0,
+        "reputationChange": 0.8651954720737155
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 10,
+        "reputationChange": 2.269484992997559,
+        "attackEffectiveness": 0.48647962570381076
+      }
+    },
+    {
+      "timestamp": 1260,
+      "normalActivity": {
+        "reportsSubmitted": 3,
+        "votesCasted": 2,
+        "reputationChange": 0.7933429183790403
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 19,
+        "votesCasted": 10,
+        "reputationChange": 4.3222001651257616,
+        "attackEffectiveness": 0.4692636341379618
+      }
+    },
+    {
+      "timestamp": 1320,
+      "normalActivity": {
+        "reportsSubmitted": 2,
+        "votesCasted": 2,
+        "reputationChange": 1.1031269825107244
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 9,
+        "votesCasted": 10,
+        "reputationChange": 0.4330251750377556,
+        "attackEffectiveness": 0.45725968891657265
+      }
+    },
+    {
+      "timestamp": 1380,
+      "normalActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 1,
+        "reputationChange": 0.9438174587491263
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 6,
+        "votesCasted": 10,
+        "reputationChange": 4.331109127962945,
+        "attackEffectiveness": 0.45094634945498036
+      }
+    },
+    {
+      "timestamp": 1440,
+      "normalActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 1,
+        "reputationChange": 0.8641530468751343
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 17,
+        "votesCasted": 10,
+        "reputationChange": 3.855639470431516,
+        "attackEffectiveness": 0.4505753086746239
+      }
+    },
+    {
+      "timestamp": 1500,
+      "normalActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 2,
+        "reputationChange": 0.13937980334314537
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 12,
+        "votesCasted": 10,
+        "reputationChange": 3.243122321917642,
+        "attackEffectiveness": 0.4561613588005292
+      }
+    },
+    {
+      "timestamp": 1560,
+      "normalActivity": {
+        "reportsSubmitted": 2,
+        "votesCasted": 2,
+        "reputationChange": 0.6410605726140407
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 16,
+        "votesCasted": 10,
+        "reputationChange": 1.2459691968326299,
+        "attackEffectiveness": 0.46748180164197706
+      }
+    },
+    {
+      "timestamp": 1620,
+      "normalActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 2,
+        "reputationChange": 0.7076629697829996
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 16,
+        "votesCasted": 10,
+        "reputationChange": 2.270438678710037,
+        "attackEffectiveness": 0.484085326866602
+      }
+    },
+    {
+      "timestamp": 1680,
+      "normalActivity": {
+        "reportsSubmitted": 4,
+        "votesCasted": 2,
+        "reputationChange": 0.4308395671014814
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 1,
+        "votesCasted": 10,
+        "reputationChange": 1.5526216416476575,
+        "attackEffectiveness": 0.5053100043191517
+      }
+    },
+    {
+      "timestamp": 1740,
+      "normalActivity": {
+        "reportsSubmitted": 0,
+        "votesCasted": 1,
+        "reputationChange": -0.2376581855434846
+      },
+      "sybilActivity": {
+        "reportsSubmitted": 13,
+        "votesCasted": 10,
+        "reputationChange": 3.377136079399097,
+        "attackEffectiveness": 0.5303096730879364
+      }
+    }
+  ],
+  "analysis": {
+    "totalNormalActivity": 57,
+    "totalSybilActivity": 256,
+    "avgAttackEffectiveness": 0.6016909602215877,
+    "sybilAmplification": 4.491228070175438,
+    "defenseEffectiveness": 0.39830903977841225
+  },
+  "networkState": {
+    "totalNodes": 250,
+    "sybilRatio": 0.2,
+    "sybilController": {
+      "id": "sybil_controller",
+      "baseWallet": {
+        "provider": null,
+        "address": "0x0b1b4cD27f44741c13C7346dF5B3f5d94E0bD465",
+        "publicKey": "0x0211ac3c747ac790cf446a2d8a45c550932fd59584527816ba2f416992165f1f8c",
+        "fingerprint": "0x92bd4f5e",
+        "parentFingerprint": "0xaf80772c",
+        "mnemonic": {
+          "phrase": "alone glass ride school please crystal eagle slogan analyst home pony general",
+          "password": "",
+          "wordlist": {
+            "locale": "en"
+          },
+          "entropy": "0x06ec5ee5e06a666a91465f084da29fb0"
+        },
+        "chainCode": "0x01f341b686e73b3cb89d2c2af912d28cfe43d5539dba7bbd83310f86d31285ed",
+        "path": "m/44'/60'/0'/0/0",
+        "index": 0,
+        "depth": 5
+      },
+      "controlledNodes": [
+        "sybil_0",
+        "sybil_1",
+        "sybil_2",
+        "sybil_3",
+        "sybil_4",
+        "sybil_5",
+        "sybil_6",
+        "sybil_7",
+        "sybil_8",
+        "sybil_9",
+        "sybil_10",
+        "sybil_11",
+        "sybil_12",
+        "sybil_13",
+        "sybil_14",
+        "sybil_15",
+        "sybil_16",
+        "sybil_17",
+        "sybil_18",
+        "sybil_19",
+        "sybil_20",
+        "sybil_21",
+        "sybil_22",
+        "sybil_23",
+        "sybil_24",
+        "sybil_25",
+        "sybil_26",
+        "sybil_27",
+        "sybil_28",
+        "sybil_29",
+        "sybil_30",
+        "sybil_31",
+        "sybil_32",
+        "sybil_33",
+        "sybil_34",
+        "sybil_35",
+        "sybil_36",
+        "sybil_37",
+        "sybil_38",
+        "sybil_39",
+        "sybil_40",
+        "sybil_41",
+        "sybil_42",
+        "sybil_43",
+        "sybil_44",
+        "sybil_45",
+        "sybil_46",
+        "sybil_47",
+        "sybil_48",
+        "sybil_49"
+      ]
+    }
+  }
+}
