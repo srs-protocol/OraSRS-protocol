@@ -281,6 +281,12 @@ class ThreatDetection {
   }
 
   async reportThreat(threatData) {
+    // 检查是否为保留地址，避免上报保留地址
+    if (this.isReservedAddress(threatData.ip)) {
+      console.log(`跳过保留地址: ${threatData.ip} - ${threatData.threatType}`);
+      return; // 不记录保留地址的威胁
+    }
+    
     // 将威胁数据添加到本地威胁列表
     this.threats.push(threatData);
     console.log(`威胁已记录: ${threatData.ip} - ${threatData.threatType}`);
@@ -301,6 +307,33 @@ class ThreatDetection {
         // 不抛出错误，仅记录
       }
     }
+  }
+
+  // 检查是否为保留地址
+  isReservedAddress(ip) {
+    // 定义保留地址范围
+    const reservedRanges = [
+      // 回环地址
+      /^127\./,
+      // 本地链接地址
+      /^169\.254\./,
+      // 私有网络地址
+      /^10\./,
+      /^192\.168\./,
+      /^172\.(1[6-9]|2[0-9]|3[01])\./,
+      // 多播地址
+      /^22[4-9]\./,
+      /^23[0-9]\./,
+      // 保留地址
+      /^0\./,
+      /^255\.255\.255\.255$/,
+      // 测试网络
+      /^192\.0\.2\./,
+      /^198\.51\.100\./,
+      /^203\.0\.113\./
+    ];
+    
+    return reservedRanges.some(range => range.test(ip));
   }
 
   // 获取检测到的威胁列表

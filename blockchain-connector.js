@@ -108,6 +108,12 @@ class BlockchainConnector {
   }
 
   async getThreatData(ipAddress) {
+    // 检查是否为保留地址，如果是则直接返回无威胁
+    if (this.isReservedAddress(ipAddress)) {
+      console.log(`保留地址查询，直接返回无威胁: ${ipAddress}`);
+      return this.getNoDataFoundResponse(ipAddress);
+    }
+    
     // 检查缓存
     const cacheKey = `threat_${ipAddress}`;
     const now = Date.now();
@@ -211,6 +217,33 @@ class BlockchainConnector {
       this.cacheTimestamp.set(cacheKey, now);
       return errorResponse; // 连接失败时返回离线状态
     }
+  }
+
+  // 检查是否为保留地址
+  isReservedAddress(ip) {
+    // 定义保留地址范围
+    const reservedRanges = [
+      // 回环地址
+      /^127\./,
+      // 本地链接地址
+      /^169\.254\./,
+      // 私有网络地址
+      /^10\./,
+      /^192\.168\./,
+      /^172\.(1[6-9]|2[0-9]|3[01])\./,
+      // 多播地址
+      /^22[4-9]\./,
+      /^23[0-9]\./,
+      // 保留地址
+      /^0\./,
+      /^255\.255\.255\.255$/,
+      // 测试网络
+      /^192\.0\.2\./,
+      /^198\.51\.100\./,
+      /^203\.0\.113\./
+    ];
+    
+    return reservedRanges.some(range => range.test(ip));
   }
 
   async submitThreatReport(reportData) {
