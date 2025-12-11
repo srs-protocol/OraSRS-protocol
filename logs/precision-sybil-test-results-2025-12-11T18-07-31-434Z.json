@@ -1,0 +1,31 @@
+{
+  "testRun": "2025-12-11T18:07:31.434Z",
+  "precisionRecallTest": {
+    "totalEvents": 10000,
+    "truePositives": 1316,
+    "trueNegatives": 8136,
+    "falsePositives": 420,
+    "falseNegatives": 128,
+    "precision": 0.7580645161290323,
+    "recall": 0.9113573407202216,
+    "f1Score": 0.8276729559748428,
+    "specificity": 0.9509116409537167,
+    "accuracy": 0.9452,
+    "falsePositiveRate": 0.04908835904628331,
+    "falseNegativeRate": 0.0886426592797784
+  },
+  "sybilResistanceTest": {
+    "totalRounds": 10,
+    "finalHonestReputation": 0.9825444444444499,
+    "finalSybilReputation": 0.0015,
+    "sybilSuppressionRate": 0.9984733515023352,
+    "sybilDetectionRate": 1,
+    "overallResistanceScore": 0.9989313460516347
+  },
+  "summary": {
+    "precision": 0.7580645161290323,
+    "recall": 0.9113573407202216,
+    "falsePositiveRate": 0.04908835904628331,
+    "sybilSuppressionRate": 0.9984733515023352
+  }
+}
