@@ -3,8 +3,11 @@
 // 10k IP Threat Intelligence Processing Benchmark
 // Tests the performance of processing 10,000 IP addresses for threat intelligence
 
-const axios = require('axios');
-const fs = require('fs');
+import axios from 'axios';
+import fs from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
+import { existsSync } from 'fs';
+import path from 'path';
 
 async function benchmark10kIPs() {
     console.log('Starting 10k IP threat intelligence benchmark...');
@@ -72,28 +75,33 @@ async function benchmark10kIPs() {
     
     // Save results to log file
     const resultsDir = './logs/hybrid-cloud-test-results';
-    if (!fs.existsSync(resultsDir)) {
-        fs.mkdirSync(resultsDir, { recursive: true });
+    if (!existsSync(resultsDir)) {
+        mkdirSync(resultsDir, { recursive: true });
     }
     
     const resultsFile = `${resultsDir}/10k-ip-benchmark-${new Date().toISOString().split('T')[0]}.json`;
-    fs.writeFileSync(resultsFile, JSON.stringify(results, null, 2));
+    writeFileSync(resultsFile, JSON.stringify(results, null, 2));
     console.log(`\nResults saved to: ${resultsFile}`);
     
     return results;
 }
 
 // Run benchmark if called directly
-if (require.main === module) {
-    benchmark10kIPs()
-        .then(results => {
-            console.log('\nBenchmark completed successfully!');
-            process.exit(0);
-        })
-        .catch(error => {
-            console.error('Benchmark failed:', error);
-            process.exit(1);
-        });
+if (import.meta.url === `file://${process.argv[1]}`) {
+    // For Node.js environment, we use this alternative check
+    const { argv } = process;
+    const scriptPath = new URL(import.meta.url).pathname;
+    if (argv[1] && argv[1].endsWith('10k-ip-test.js')) {
+        benchmark10kIPs()
+            .then(results => {
+                console.log('\nBenchmark completed successfully!');
+                process.exit(0);
+            })
+            .catch(error => {
+                console.error('Benchmark failed:', error);
+                process.exit(1);
+            });
+    }
 }
 
-module.exports = benchmark10kIPs;
+export default benchmark10kIPs;

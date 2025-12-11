@@ -15,7 +15,8 @@ class BlockchainConnector {
       contractAddress: config.contractAddress || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
       maxRetries: config.maxRetries || 3,
       retryDelay: config.retryDelay || 1000,
-      timeout: config.timeout || 10000,
+      timeout: config.timeout || 5000, // 减少超时时间以提高响应速度
+      cacheTTL: config.cacheTTL || 300000, // 5分钟缓存
       ...config
     };
     
@@ -25,6 +26,10 @@ class BlockchainConnector {
     this.isConnected = false;
     this.lastConnectionAttempt = null;
     this.retryCount = 0;
+    
+    // 添加缓存机制
+    this.cache = new Map();
+    this.cacheTimestamp = new Map();
   }
 
   async connect() {
@@ -103,6 +108,22 @@ class BlockchainConnector {
   }
 
   async getThreatData(ipAddress) {
+    // 检查缓存
+    const cacheKey = `threat_${ipAddress}`;
+    const now = Date.now();
+    
+    if (this.cache.has(cacheKey)) {
+      const cachedTime = this.cacheTimestamp.get(cacheKey);
+      if (now - cachedTime < this.config.cacheTTL) {
+        console.log(`缓存命中 for IP: ${ipAddress}`);
+        return this.cache.get(cacheKey);
+      } else {
+        // 缓存过期，删除它
+        this.cache.delete(cacheKey);
+        this.cacheTimestamp.delete(cacheKey);
+      }
+    }
+    
     try {
       // 现在我们首先尝试连接区块链并获取数据
       if (!this.isConnected) {
@@ -111,6 +132,7 @@ class BlockchainConnector {
       
       // 使用web3与智能合约交互
       // 使用axios调用区块链RPC API查询合约数据
+      const startTime = Date.now();
       const rpcResponse = await axios.post(this.currentEndpoint, {
         jsonrpc: "2.0",
         method: "eth_call",
@@ -126,6 +148,9 @@ class BlockchainConnector {
         timeout: this.config.timeout
       });
       
+      const callDuration = Date.now() - startTime;
+      console.log(`区块链调用耗时: ${callDuration}ms for IP: ${ipAddress}`);
+      
       // 检查响应
       if (rpcResponse.data && rpcResponse.data.result !== undefined) {
         const rawData = rpcResponse.data.result;
@@ -133,25 +158,39 @@ class BlockchainConnector {
         // 检查是否是空结果（表示没有找到数据）
         if (rawData === '0x' || rawData === '0x0000000000000000000000000000000000000000000000000000000000000000' || !rawData) {
           console.log(`未在区块链上找到IP ${ipAddress} 的威胁数据`);
-          // 返回"未找到数据"的响应而不是模拟数据
-          return this.getNoDataFoundResponse(ipAddress);
+          // 创建并缓存"未找到数据"的响应
+          const noDataResponse = this.getNoDataFoundResponse(ipAddress);
+          this.cache.set(cacheKey, noDataResponse);
+          this.cacheTimestamp.set(cacheKey, now);
+          return noDataResponse;
         }
         
         console.log(`从区块链获取的原始数据: ${rawData}`);
         // 如果获取到实际数据，则处理并返回
-        return this.processThreatDataFromContract(rawData, ipAddress);
+        const processedData = this.processThreatDataFromContract(rawData, ipAddress);
+        // 缓存处理后的数据
+        this.cache.set(cacheKey, processedData);
+        this.cacheTimestamp.set(cacheKey, now);
+        return processedData;
       } else {
         // 如果RPC返回错误，检查连接状态
         console.log(`⚠️  无法从区块链获取数据: ${ipAddress}`);
         if (rpcResponse.data && rpcResponse.data.error) {
           console.error(`区块链错误:`, rpcResponse.data.error);
         }
-        return this.getNoDataFoundResponse(ipAddress);
+        // 缓存错误响应以避免重复查询
+        const errorResponse = this.getNoDataFoundResponse(ipAddress);
+        this.cache.set(cacheKey, errorResponse);
+        this.cacheTimestamp.set(cacheKey, now);
+        return errorResponse;
       }
     } catch (error) {
       console.error(`❌ 从区块链获取威胁数据失败:`, error.message);
-      // 连接失败时返回离线状态
-      return this.getOfflineResponse(ipAddress);
+      // 缓存错误响应以避免重复查询
+      const errorResponse = this.getNoDataFoundResponse(ipAddress);
+      this.cache.set(cacheKey, errorResponse);
+      this.cacheTimestamp.set(cacheKey, now);
+      return errorResponse; // 连接失败时返回离线状态
     }
   }
 
@@ -428,8 +467,26 @@ class BlockchainConnector {
       chainId: this.config.chainId,
       lastConnectionAttempt: this.lastConnectionAttempt,
       retryCount: this.retryCount,
-      maxRetries: this.config.maxRetries
+      maxRetries: this.config.maxRetries,
+      cacheSize: this.cache.size
     };
+  }
+  
+  // 清除过期缓存
+  cleanupCache() {
+    const now = Date.now();
+    for (const [key, timestamp] of this.cacheTimestamp.entries()) {
+      if (now - timestamp >= this.config.cacheTTL) {
+        this.cache.delete(key);
+        this.cacheTimestamp.delete(key);
+      }
+    }
+  }
+  
+  // 清除所有缓存
+  clearCache() {
+    this.cache.clear();
+    this.cacheTimestamp.clear();
   }
 }
 
