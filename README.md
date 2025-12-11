@@ -4,6 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Discussions](https://img.shields.io/github/discussions/SRS协议/SRA-protocol)](https://github.com/SRS协议/SRA-protocol/discussions)
+[![Lite Client Branch](https://img.shields.io/badge/branch-lite--client-blue)](https://github.com/SRS协议/SRA-protocol/tree/lite-client) 用于代码审查和审稿人查看
 
 ## 🔍 什么是 SecurityRiskAssessment？ / What is SecurityRiskAssessment?
 SecurityRiskAssessment 是一种轻量、去中心化的安全决策协议。它允许网络设备在面临未知流量时，通过查询权威服务获取风险评估建议，辅助本地策略执行。
@@ -24,15 +25,15 @@ SecurityRiskAssessment is a lightweight, decentralized security decision protoco
 
 ## 📚 协议规范 / Protocol Specifications
 - [v0.1 规范文档 / v0.1 Specification Document](SRS_PROTOCOL_SPEC.md)（中文/英文 / Chinese/English）
-- [SecurityRiskAssessment v2.0 威胁情报协议 / SecurityRiskAssessment v2.0 Threat Intelligence Protocol](SecurityRiskAssessment_v2.0_Threat_Intelligence_Protocol.md)（中英双语 / Chinese-English）
+- [SecurityRiskAssessment v2.0 威胁情报协议 / SecurityRiskAssessment v2.0 Threat Intelligence Protocol](OraSRS_v2.0_Threat_Intelligence_Protocol.md)（中英双语 / Chinese-English）
 - [共识参数白皮书 / Consensus Parameters Whitepaper](CONSENSUS_PARAMETERS_WHITEPAPER.md)
 - [国密算法集成指南 / SM Cryptography Integration Guide](SM_CRYPTO_INTEGRATION.md)
-- [设计哲学 / Design Philosophy](docs/design.md)
+- [设计哲学 / Design Philosophy](OraSRS_v2.0_Framework_Design.md)
 - [应用指南 / Application Guide](APPLICATION_GUIDE.md)
 - [API 接口 / API Interface](api.md)
 
 ## 🧩 智能合约 / Smart Contracts
-- [威胁情报协调合约 / Threat Intelligence Coordination Contract](contracts/ThreatIntelligenceCoordination.sol)
+- [威胁情报协调合约 / Threat Intelligence Coordination Contract](contracts/ThreatIntelligenceCoordinationSecure.sol)
 - [OraSRS治理合约 / OraSRS Governance Contract](contracts/OraSRSGovernance.sol)
 
 ## 🔒 安全测试 / Security Testing
@@ -57,10 +58,10 @@ SecurityRiskAssessment is a lightweight, decentralized security decision protoco
 - [构建测试脚本 / Build and Test Script](build-and-test.sh)
 
 ## 🤖 SecurityRiskAssessment Agent
-- [Agent 架构设计 / Agent Architecture Design](SRA-agent/agent-architecture.md)
-- [使用指南 / Usage Guide](SRA-agent/USAGE.md)
-- [源代码 / Source Code](SRA-agent/src/)
-- [配置示例 / Configuration Examples](SRA-agent/config.example.toml)
+- [Agent 架构设计 / Agent Architecture Design](orasrs-agent/agent-architecture.md)
+- [使用指南 / Usage Guide](orasrs-agent/USAGE.md)
+- [源代码 / Source Code](orasrs-agent/src/)
+- [配置示例 / Configuration Examples](orasrs-agent/config.example.toml)
 
 ## 🧩 客户端库 / Client Libraries
 - [客户端实现指南 / Client Implementation Guide](CLIENT_IMPLEMENTATION_GUIDE.md)
@@ -84,6 +85,7 @@ SecurityRiskAssessment is a lightweight, decentralized security decision protoco
 - 数据不出境（中国大陆）/ Data Does Not Leave (Mainland China)
 
 ## 🤝 贡献与社区 / Contribution and Community
+- 代码查看 (Lite Client): [Lite Client Branch](https://github.com/SRS协议/SRA-protocol/tree/lite-client)
 - 提问或建议：[GitHub Discussions](https://github.com/SRS协议/SRA-protocol/discussions)
 - Ask questions or make suggestions: [GitHub Discussions](https://github.com/SRS协议/SRA-protocol/discussions)
 

@@ -385,15 +385,15 @@ function testHybridEncryption() {
 ```solidity
 function testGmAlgorithmIntegration() public {
   // 测试国密算法库函数
-  bytes32 hashResult = GmSupport.sm3("test data");
+  bytes32 hashResult = performSm3Hash("test data");  // 使用内部实现或预编译合约
   assertTrue(hashResult != bytes32(0));
   
   // 测试营业执照验证
-  assertTrue(GmSupport.validateBusinessLicense("91110000000000000X"));
-  assertFalse(GmSupport.validateBusinessLicense("invalid"));
+  assertTrue(validateBusinessLicense("91110000000000000X"));  // 使用内部验证函数
+  assertFalse(validateBusinessLicense("invalid"));  // 使用内部验证函数
   
   // 测试备案号验证
-  assertTrue(GmSupport.validateFilingNumber("京网信备123456789012345678号"));
+  assertTrue(validateFilingNumber("京网信备123456789012345678号"));  // 使用内部验证函数
 }
 
 ### 抗量子算法集成测试

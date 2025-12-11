@@ -101,18 +101,18 @@ function sm3HashIP(string memory ip, string memory salt) internal pure returns (
 // 国密算法功能集成在合约内部或通过外部库实现
 
 contract MyContract {
-    using GmSupport for bytes32;
+    // 国密算法功能通过内部函数或预编译合约实现
     
     function verifySignature(
         bytes32 message,
         bytes memory signature,
         bytes memory publicKey
     ) public pure returns (bool) {
-        return GmSupport.verifySm2(message, signature, publicKey);
+        return performSm2Verification(message, signature, publicKey);  // 内部实现或预编译合约
     }
     
     function calculateHash(bytes memory data) public pure returns (bytes32) {
-        return GmSupport.sm3(data);
+        return performSm3Hash(data);  // 内部实现或预编译合约
     }
 }
 ```

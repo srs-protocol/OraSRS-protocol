@@ -3,7 +3,8 @@ pragma solidity ^0.8.0;
 
 import "./libs/StringsLib.sol";
 import "./EnhancedThreatVerification.sol";
-import "./libs/GmSupport.sol";
+// 国密算法功能通过内部实现或链上预编译合约实现
+// import "./libs/GmSupport.sol"; // 使用内部或预编译合约替代
 
 /**
  * @title OraSRS 隐私保护与数据可用性合约
