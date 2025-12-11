@@ -1,7 +1,7 @@
 # OraSRS (Oracle Security Root Service) - 最新版本
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
-注：客户端默认执行拦截，本地黑名单功能还在测试环节。客户端容易误报（正在优化）
+注：客户端默认[可以自行修改辅助现有的安全软件配置]执行拦截，本地黑名单功能还在测试环节。客户端容易误报（正在优化）
 ## 项目概述
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
@@ -130,7 +130,7 @@ curl http://localhost:3006/orasrs/v2/threat-list
 为了安全考虑，系统实施了以下保护措施：
 - **速率限制**: 每个IP每秒最多20个请求 (`limit_req_zone $binary_remote_addr zone=rpc_limit:10m rate=20r/s;`)
 - **连接限制**: 每个IP最多10个并发连接 (`limit_conn_zone $binary_remote_addr zone=addr_limit:10m;`)
-- **日志脱敏**: 所有日志中的敏感数据都已删除，确保不会泄露任何隐私信息
+-**注**：日志里使用的都是模拟ip，云测试日志因为网络宽带，反代限制，WAF等的问题可能有一些偏差。
 
 ## 📊 测试日志 / Test Logs
 标准的测试日志已保存在 `logs/` 目录中，供审稿人审查：
