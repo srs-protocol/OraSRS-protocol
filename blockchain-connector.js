@@ -10,7 +10,7 @@ import axios from 'axios';
 class BlockchainConnector {
   constructor(config = {}) {
     this.config = {
-      endpoint: config.endpoint || 'https://api.orasrs.net',
+      endpoints: config.endpoints || [config.endpoint || 'https://api.orasrs.net'],
       chainId: config.chainId || 8888,
       contractAddress: config.contractAddress || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
       maxRetries: config.maxRetries || 3,
@@ -19,64 +19,59 @@ class BlockchainConnector {
       ...config
     };
     
+    // 使用第一个端点作为主要端点
+    this.currentEndpoint = this.config.endpoints[0];
+    
     this.isConnected = false;
     this.lastConnectionAttempt = null;
     this.retryCount = 0;
   }
 
   async connect() {
-    try {
-      console.log(`🔗 尝试连接到OraSRS区块链: ${this.config.endpoint}`);
-      
-      // 只尝试RPC端点连接（区块链节点）
-      const response = await axios.post(this.config.endpoint, {
-        jsonrpc: "2.0",
-        method: "eth_blockNumber",
-        params: [],
-        id: 1
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: this.config.timeout
-      });
-      
-      if (response.data && response.data.result) {
-        this.isConnected = true;
-        this.lastConnectionAttempt = new Date();
-        this.retryCount = 0;
+    // 遍历所有配置的端点，尝试连接到第一个可用的
+    for (const endpoint of this.config.endpoints) {
+      try {
+        console.log(`🔗 尝试连接到OraSRS区块链: ${endpoint}`);
         
-        console.log(`✅ 成功连接到OraSRS区块链: ${this.config.endpoint}`);
-        console.log(`📋 区块链信息:`, {
-          endpoint: this.config.endpoint,
-          chainId: this.config.chainId,
-          blockNumber: response.data.result
+        // 尝试RPC端点连接
+        const response = await axios.post(endpoint, {
+          jsonrpc: "2.0",
+          method: "eth_blockNumber",
+          params: [],
+          id: 1
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: this.config.timeout
         });
         
-        return true;
-      } else {
-        throw new Error('Invalid response from blockchain endpoint');
+        if (response.data && response.data.result) {
+          this.currentEndpoint = endpoint; // 设置当前使用的端点
+          this.isConnected = true;
+          this.lastConnectionAttempt = new Date();
+          this.retryCount = 0;
+          
+          console.log(`✅ 成功连接到OraSRS区块链: ${endpoint}`);
+          console.log(`📋 区块链信息:`, {
+            endpoint: endpoint,
+            chainId: this.config.chainId,
+            blockNumber: response.data.result
+          });
+          
+          return true;
+        }
+      } catch (error) {
+        console.error(`❌ 连接OraSRS区块链失败 (${endpoint}):`, error.message);
       }
-    } catch (error) {
-      this.isConnected = false;
-      this.lastConnectionAttempt = new Date();
-      
-      console.error(`❌ 连接OraSRS区块链失败:`, error.message);
-      
-      // 如果还有重试次数，进行重试
-      if (this.retryCount < this.config.maxRetries) {
-        this.retryCount++;
-        console.log(`🔄 重试连接 (#${this.retryCount}/${this.config.maxRetries})...`);
-        
-        // 等待一段时间后重试
-        await this.delay(this.config.retryDelay * this.retryCount);
-        return this.connect();
-      }
-      
-      // 不抛出错误，而是记录错误并返回false
-      console.error(`❌ 无法连接到OraSRS区块链: ${error.message}`);
-      return false;
     }
+    
+    // 如果所有端点都失败
+    this.isConnected = false;
+    this.lastConnectionAttempt = new Date();
+    console.error(`❌ 无法连接到任何OraSRS区块链端点`);
+    
+    return false;
   }
 
   async makeRequest(requestConfig) {
@@ -116,7 +111,7 @@ class BlockchainConnector {
       
       // 使用web3与智能合约交互
       // 使用axios调用区块链RPC API查询合约数据
-      const rpcResponse = await axios.post(this.config.endpoint, {
+      const rpcResponse = await axios.post(this.currentEndpoint, {
         jsonrpc: "2.0",
         method: "eth_call",
         params: [{
@@ -158,7 +153,7 @@ class BlockchainConnector {
   async submitThreatReport(reportData) {
     try {
       // 通过区块链合约提交威胁报告，而不是API
-      const response = await axios.post(this.config.endpoint, {
+      const response = await axios.post(this.currentEndpoint, {
         jsonrpc: "2.0",
         method: "eth_sendTransaction",  // 或其他适当的RPC方法
         params: [{
@@ -194,7 +189,7 @@ class BlockchainConnector {
   async getGlobalThreatList() {
     try {
       // 通过区块链合约获取威胁列表
-      const response = await axios.post(this.config.endpoint, {
+      const response = await axios.post(this.currentEndpoint, {
         jsonrpc: "2.0",
         method: "eth_call",
         params: [{
@@ -223,32 +218,24 @@ class BlockchainConnector {
   }
 
   getMockThreatData(ipAddress) {
-    // 返回模拟威胁数据以确保服务在区块链连接失败时仍可用
+    // 当区块链连接失败时，返回一个标准的无威胁数据响应
     return {
       query: { ip: ipAddress },
       response: {
-        risk_score: Math.random() * 0.3, // 随机低风险评分
-        confidence: 'low',
-        risk_level: 'low',
-        evidence: [
-          {
-            type: 'mock_data',
-            detail: 'Mock threat data for service availability',
-            source: 'mock_generator',
-            timestamp: new Date().toISOString(),
-            confidence: 0.3
-          }
-        ],
+        risk_score: 0.0, // 无威胁评分
+        confidence: '无数据',
+        risk_level: '无数据',
+        evidence: [],
         recommendations: {
-          default: 'allow',
-          public_services: 'allow',
-          banking: 'allow_with_verification'
+          default: '允许',
+          public_services: '允许',
+          banking: '允许'
         },
         appeal_url: `https://api.orasrs.net/appeal?ip=${ipAddress}`,
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         timestamp: new Date().toISOString(),
-        disclaimer: 'This is mock data for service availability during blockchain connection issues.',
-        version: '2.0-mock'
+        disclaimer: '在区块链上未找到该IP的威胁数据。',
+        version: '2.0-no-data'
       }
     };
   }
@@ -441,7 +428,7 @@ class BlockchainConnector {
   getStatus() {
     return {
       isConnected: this.isConnected,
-      endpoint: this.config.endpoint,
+      endpoint: this.currentEndpoint,
       chainId: this.config.chainId,
       lastConnectionAttempt: this.lastConnectionAttempt,
       retryCount: this.retryCount,
