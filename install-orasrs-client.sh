@@ -104,7 +104,16 @@ clone_orasrs() {
     if [[ -d "/opt/orasrs" ]]; then
         print_warning "/opt/orasrs 已存在，正在更新..."
         cd /opt/orasrs
-        git pull
+        # 保存当前工作区更改
+        git stash
+        # 切换到lite-client分支
+        git checkout lite-client
+        # 拉取最新更新
+        git pull origin lite-client
+        # 如果有之前保存的更改，尝试重新应用
+        if git stash list | grep -q "stash"; then
+            git stash pop || true
+        fi
     else
         git clone https://github.com/srs-protocol/OraSRS-protocol.git /opt/orasrs
         cd /opt/orasrs
