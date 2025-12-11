@@ -145,8 +145,8 @@ install_node_dependencies() {
 setup_service() {
     print_info "配置系统服务..."
     
-    # 检查系统是否支持systemd
-    if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    # 检查系统是否支持systemd (通过检查init进程是否是systemd)
+    if [ -d /run/systemd/system ] || [ -e /run/systemd/private ]; then
         # 创建systemd服务文件
         cat > /etc/systemd/system/orasrs-client.service << EOF
 [Unit]
@@ -171,10 +171,10 @@ WantedBy=multi-user.target
 EOF
 
         # 重载systemd配置
-        systemctl daemon-reload
+        systemctl daemon-reload 2>/dev/null || true
         
         # 启用服务自启动
-        systemctl enable orasrs-client
+        systemctl enable orasrs-client 2>/dev/null || true
         
         print_success "systemd服务配置完成"
     else
@@ -210,20 +210,31 @@ setup_firewall() {
 start_service() {
     print_info "启动OraSRS客户端服务..."
     
-    # 检查系统是否支持systemd
-    if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
-        systemctl start orasrs-client
+    # 检查系统是否支持systemd (通过检查init进程是否是systemd)
+    if [ -d /run/systemd/system ] || [ -e /run/systemd/private ]; then
+        systemctl start orasrs-client 2>/dev/null || true
         
         # 等待服务启动
         sleep 5
         
         # 检查服务状态
-        if systemctl is-active --quiet orasrs-client; then
+        if systemctl is-active --quiet orasrs-client 2>/dev/null; then
             print_success "OraSRS客户端服务启动成功"
         else
-            print_error "OraSRS客户端服务启动失败"
-            systemctl status orasrs-client
-            exit 1
+            print_warning "systemd服务可能未启动，尝试手动启动..."
+            cd /opt/orasrs
+            # 在后台启动服务并输出到日志
+            nohup node orasrs-simple-client.js > orasrs-client.log 2>&1 &
+            sleep 5
+            
+            # 检查进程是否启动
+            if pgrep -f "node.*orasrs-simple-client" > /dev/null; then
+                print_success "OraSRS客户端服务已手动启动"
+                echo "PID: $(pgrep -f 'node.*orasrs-simple-client')"
+            else
+                print_error "OraSRS客户端服务启动失败"
+                exit 1
+            fi
         fi
     else
         print_warning "系统不支持systemd，尝试手动启动服务..."
