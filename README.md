@@ -1,5 +1,5 @@
 # OraSRS Protocol (Oracle Security Root Service) / OraSRS 协议 (Oracle Security Root Service)
-> 一种隐私优先、联邦学习驱动、三层共识架构的安全决策协议。
+> 一种隐私优先、三层共识架构的安全决策协议。
 > A privacy-first, federated learning-driven, three-layer consensus architecture security decision protocol.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
