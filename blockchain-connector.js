@@ -212,6 +212,12 @@ class BlockchainConnector {
         }
       });
       
+      // 检查response是否为null
+      if (response === null || response === undefined) {
+        console.error('提交威胁报告失败: 无法连接到区块链API');
+        throw new Error('无法连接到区块链API');
+      }
+      
       return response.data;
     } catch (error) {
       console.error(`❌ 提交威胁报告失败:`, error.message);
