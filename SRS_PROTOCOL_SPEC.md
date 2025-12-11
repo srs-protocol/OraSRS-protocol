@@ -45,15 +45,7 @@ SecurityRiskAssessment v2.0 通过威胁情报功能对协议进行重大增强�
    - Multi-party consensus through ChainMaker technology
    - Support for Chinese national cryptographic algorithms (SM2/SM3/SM4)
 
-5. **联邦学习 (Federated Learning)**:
-   - 分布式威胁情报共享
-   - 隐私保护的威胁模型训练
-   - 威胁情报聚合和去中心化分析
-   - Distributed threat intelligence sharing
-   - Privacy-preserving threat model training
-   - Threat intelligence aggregation and decentralized analysis
-
-3. **Real-time Global Threat Synchronization (实时全球威胁同步)**:
+4. **Real-time Global Threat Synchronization (实时全球威胁同步)**:
    - Instant threat intelligence sharing across global nodes
    - Decentralized threat evidence storage
    - Immutable on-chain evidence of attacks
@@ -61,7 +53,7 @@ SecurityRiskAssessment v2.0 通过威胁情报功能对协议进行重大增强�
    - 去中心化的威胁证据存储
    - 不可篡改的链上攻击证据
 
-4. **Compliance Standards (合规标准)**:
+5. **Compliance Standards (合规标准)**:
    - GDPR/CCPA compliance
    - ISO27001 compliance
    - China Cybersecurity Law (等保2.0) compliance
