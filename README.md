@@ -124,6 +124,7 @@ curl http://localhost:3006/orasrs/v2/threat-list
 - [一键性能测试脚本 / One-Click Performance Test Script](run-performance-test.sh)
 - [IP性能测试脚本 / IP Performance Test Script](test-ip-performance-advanced.js)
 - [精度和抗女巫测试脚本 / Precision and Sybil Resistance Test Script](precision-sybil-test.js) - 精度/召回率和抗女巫攻击能力测试
+- [经济模型仿真脚本 / Economic Model Simulation Script](economic-simulation.js) - 代币经济学和攻击成本收益分析
 - [性能测试报告 / Performance Test Report](oraSRS-client-performance-report.json)
 - [性能测试指南 / Performance Test Guide](PERFORMANCE_TEST_GUIDE.md)
 
