@@ -145,8 +145,10 @@ install_node_dependencies() {
 setup_service() {
     print_info "配置系统服务..."
     
-    # 创建systemd服务文件
-    cat > /etc/systemd/system/orasrs-client.service << EOF
+    # 检查系统是否支持systemd
+    if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+        # 创建systemd服务文件
+        cat > /etc/systemd/system/orasrs-client.service << EOF
 [Unit]
 Description=OraSRS Client Service
 After=network.target
@@ -168,13 +170,17 @@ Environment=ORASRS_CHAIN_ID=8888
 WantedBy=multi-user.target
 EOF
 
-    # 重载systemd配置
-    systemctl daemon-reload
-    
-    # 启用服务自启动
-    systemctl enable orasrs-client
-    
-    print_success "系统服务配置完成"
+        # 重载systemd配置
+        systemctl daemon-reload
+        
+        # 启用服务自启动
+        systemctl enable orasrs-client
+        
+        print_success "systemd服务配置完成"
+    else
+        print_warning "系统不支持systemd，跳过服务配置"
+        print_info "可以手动启动服务: cd /opt/orasrs && node orasrs-simple-client.js &"
+    fi
 }
 
 # 配置防火墙
@@ -204,18 +210,36 @@ setup_firewall() {
 start_service() {
     print_info "启动OraSRS客户端服务..."
     
-    systemctl start orasrs-client
-    
-    # 等待服务启动
-    sleep 5
-    
-    # 检查服务状态
-    if systemctl is-active --quiet orasrs-client; then
-        print_success "OraSRS客户端服务启动成功"
+    # 检查系统是否支持systemd
+    if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+        systemctl start orasrs-client
+        
+        # 等待服务启动
+        sleep 5
+        
+        # 检查服务状态
+        if systemctl is-active --quiet orasrs-client; then
+            print_success "OraSRS客户端服务启动成功"
+        else
+            print_error "OraSRS客户端服务启动失败"
+            systemctl status orasrs-client
+            exit 1
+        fi
     else
-        print_error "OraSRS客户端服务启动失败"
-        systemctl status orasrs-client
-        exit 1
+        print_warning "系统不支持systemd，尝试手动启动服务..."
+        cd /opt/orasrs
+        # 在后台启动服务并输出到日志
+        nohup node orasrs-simple-client.js > orasrs-client.log 2>&1 &
+        sleep 5
+        
+        # 检查进程是否启动
+        if pgrep -f "node.*orasrs-simple-client" > /dev/null; then
+            print_success "OraSRS客户端服务已手动启动"
+            echo "PID: $(pgrep -f 'node.*orasrs-simple-client')"
+        else
+            print_error "OraSRS客户端服务启动失败"
+            exit 1
+        fi
     fi
 }
 
