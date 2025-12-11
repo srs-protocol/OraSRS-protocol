@@ -767,6 +767,11 @@ try {
     userConfig = JSON.parse(fs.readFileSync('./user-config.json', 'utf8'));
   } else if (fs.existsSync('/home/Great/SRS-Protocol/user-config.json')) {
     userConfig = JSON.parse(fs.readFileSync('/home/Great/SRS-Protocol/user-config.json', 'utf8'));
+  } else if (fs.existsSync('./local-config.json')) {
+    // 检查是否在本地开发环境中，使用本地配置
+    userConfig = JSON.parse(fs.readFileSync('./local-config.json', 'utf8'));
+  } else if (fs.existsSync('/home/Great/SRS-Protocol/local-config.json')) {
+    userConfig = JSON.parse(fs.readFileSync('/home/Great/SRS-Protocol/local-config.json', 'utf8'));
   }
   
   // 读取安全配置文件
@@ -791,12 +796,12 @@ const config = {
     endpoints: process.env.ORASRS_BLOCKCHAIN_ENDPOINT ? [process.env.ORASRS_BLOCKCHAIN_ENDPOINT] : 
                userConfig.network?.blockchainEndpoint ? [userConfig.network.blockchainEndpoint] : 
                securityConfig.security?.blockchainConnection?.endpoints || 
-               ['http://127.0.0.1:8545', 'https://api.orasrs.net'], // 优先使用本地Hardhat节点
-    chainId: process.env.ORASRS_CHAIN_ID || userConfig.network?.chainId || securityConfig.network?.chainId || 31337, // Hardhat默认chainId是31337
+               ['https://api.orasrs.net', 'https://backup.orasrs.net'],
+    chainId: process.env.ORASRS_CHAIN_ID || userConfig.network?.chainId || securityConfig.network?.chainId || 8888,
     contractAddress: process.env.ORASRS_CONTRACT_ADDRESS || userConfig.network?.contractAddress || securityConfig.network?.contractAddress || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-    timeout: securityConfig.security?.blockchainConnection?.timeout || 30000,
-    retries: securityConfig.security?.blockchainConnection?.retries || 3,
-    retryDelay: securityConfig.security?.blockchainConnection?.retryDelay || 1000
+    timeout: securityConfig.security?.blockchainConnection?.timeout || 30000, // 增加超时时间以支持公网连接
+    retries: securityConfig.security?.blockchainConnection?.retries || 5, // 增加重试次数以支持公网连接
+    retryDelay: securityConfig.security?.blockchainConnection?.retryDelay || 2000 // 增加重试延迟以支持公网连接
   },
   cache: userConfig.cache || securityConfig.cache || {
     enable: true,
