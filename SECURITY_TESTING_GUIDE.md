@@ -48,19 +48,19 @@
 slither . --filter-paths "node_modules|test|script"
 
 # 详细报告
-slither contracts/SRA-staking-gm.sol --print human-summary
+slither contracts/OraSRSGovernance.sol --print human-summary
 
 # 检查特定问题
-slither-check-upgradeability contracts/SRA-staking-gm.sol
+slither-check-upgradeability contracts/OraSRSGovernance.sol
 ```
 
 #### Mythril
 ```bash
 # 符号执行分析
-myth analyze contracts/SRA-staking-gm.sol --max-depth 15
+myth analyze contracts/OraSRSGovernance.sol --max-depth 15
 
 # 生成交互式图形
-myth analyze contracts/SRA-staking-gm.sol --graph /tmp/graph.html
+myth analyze contracts/OraSRSGovernance.sol --graph /tmp/graph.html
 ```
 
 #### Solhint
@@ -112,7 +112,7 @@ foundryup
 ```solidity
 // test/SRA-security.t.sol
 import "forge-std/Test.sol";
-import "../contracts/SRA-staking-gm.sol";
+import "../contracts/OraSRSGovernance.sol";
 
 contract OrasrsSecurityTest is Test {
     OrasrsStakingGmContract public stakingContract;
