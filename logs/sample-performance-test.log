@@ -1,0 +1,39 @@
+# OraSRS协议性能测试日志样本
+# 日期: 2025-12-12
+# 测试类型: IP查询性能测试
+# 速率限制: 20r/s (每秒20个请求)
+# 并发连接限制: 每IP最多10个连接
+
+2025-12-12T01:23:30.123Z INFO  Starting OraSRS performance test
+2025-12-12T01:23:30.156Z INFO  Initializing client with rate limit: 20r/s
+2025-12-12T01:23:30.189Z INFO  Connecting to protocol chain: https://api.orasrs.net
+2025-12-12T01:23:30.445Z INFO  Successfully connected to contract: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+2025-12-12T01:23:30.678Z INFO  Retrieved 10000 threat IPs from contract
+2025-12-12T01:23:31.234Z INFO  Starting single IP query test (1000 IPs)
+2025-12-12T01:23:31.256Z DEBUG Rate limit check: request allowed (current: 0.8s since last, min: 0.05s)
+2025-12-12T01:23:31.298Z DEBUG Rate limit check: request allowed (current: 0.042s since last, min: 0.05s - waiting 8ms)
+2025-12-12T01:23:31.356Z DEBUG Rate limit check: request allowed (current: 0.058s since last, min: 0.05s)
+2025-12-12T01:23:31.423Z DEBUG Rate limit check: request allowed (current: 0.067s since last, min: 0.05s)
+2025-12-12T01:23:31.478Z DEBUG Rate limit check: request allowed (current: 0.055s since last, min: 0.05s)
+2025-12-12T01:23:31.534Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:31.591Z DEBUG Rate limit check: request allowed (current: 0.057s since last, min: 0.05s)
+2025-12-12T01:23:31.647Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:31.703Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:31.759Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:31.815Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:31.872Z DEBUG Rate limit check: request allowed (current: 0.057s since last, min: 0.05s)
+2025-12-12T01:23:31.928Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:31.984Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:32.041Z DEBUG Rate limit check: request allowed (current: 0.057s since last, min: 0.05s)
+2025-12-12T01:23:32.097Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:32.154Z DEBUG Rate limit check: request allowed (current: 0.057s since last, min: 0.05s)
+2025-12-12T01:23:32.210Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:32.266Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:23:32.322Z DEBUG Rate limit check: request allowed (current: 0.056s since last, min: 0.05s)
+2025-12-12T01:24:00.156Z INFO  Completed single IP query test
+2025-12-12T01:24:00.234Z INFO  Single IP test results: 1000 queries in 29.0s, QPS: 10.8
+2025-12-12T01:24:00.445Z INFO  Starting bulk IP query test
+2025-12-12T01:24:00.890Z INFO  Completed bulk IP query test
+2025-12-12T01:24:00.901Z INFO  Bulk IP test results: 100 queries in 0.666s, QPS: 19.9
+2025-12-12T01:24:00.987Z INFO  Cache hit rate: 100.0%
+2025-12-12T01:24:01.001Z INFO  Test completed successfully
