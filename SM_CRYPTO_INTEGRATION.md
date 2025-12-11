@@ -26,7 +26,7 @@ SecurityRiskAssessment 协议支持中国国家密码标准（国密算法），
 
 ### 1. 质押合约中的国密算法
 
-在 `contracts/SRA-staking-gm.sol` 中，我们使用国密算法进行：
+在 `contracts/OraSRSGovernance.sol` 中，我们使用国密算法进行：
 
 - **节点身份验证**：使用 SM2 进行数字签名验证
 - **数据完整性**：使用 SM3 进行哈希计算
@@ -98,7 +98,7 @@ function sm3HashIP(string memory ip, string memory salt) internal pure returns (
 
 ### 1. 智能合约开发
 ```solidity
-import "./libs/GmSupport.sol";
+// 国密算法功能集成在合约内部或通过外部库实现
 
 contract MyContract {
     using GmSupport for bytes32;
