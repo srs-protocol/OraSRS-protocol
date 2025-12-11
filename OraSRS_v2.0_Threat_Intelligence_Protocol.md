@@ -491,13 +491,19 @@ OraSRS协议v2.0实现了混合L2架构，结合了国内私有OP Stack和海外
 ### 性能测试
 
 - **One-Click Test Script**: `run-performance-test.sh` for easy test execution
+- **Separated Latency Test**: `latency-test-separated.js` for measuring local hit, regional chain query, and cross-continent chain query latencies separately
 - **Rate Limit Verification**: Tests client compliance with 20r/s rate limit
 - **Protocol Chain Connectivity**: Validates connection to OraSRS protocol chain
-- **Performance Metrics**: QPS, response time, cache hit rate measurements
+- **Precision/Recall Testing**: Validates threat detection accuracy on public IDS datasets
+- **Sybil Attack Resistance**: Tests system's resistance to Sybil attacks
+- **Performance Metrics**: QPS, response time, cache hit rate, precision, recall, false positive rate measurements
 - **一键测试脚本**: `run-performance-test.sh` 便于测试执行
+- **分离延迟测试**: `latency-test-separated.js` 分别测量本地命中、同区域链查、跨洲链查延迟
 - **速率限制验证**: 测试客户端是否符合20r/s速率限制
 - **协议链接连性**: 验证与OraSRS协议链的连接
-- **性能指标**: QPS、响应时间、缓存命中率测量
+- **精度/召回率测试**: 在公开IDS数据集上验证威胁检测准确性
+- **抗女巫攻击测试**: 验证系统对女巫攻击的抵抗能力
+- **性能指标**: QPS、响应时间、缓存命中率、精确率、召回率、误报率等测量
 
 ### Logging and Audit Trail
 ### 日志记录和审计轨迹

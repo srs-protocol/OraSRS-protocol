@@ -123,6 +123,7 @@ curl http://localhost:3006/orasrs/v2/threat-list
 ## 🧪 性能测试 / Performance Testing
 - [一键性能测试脚本 / One-Click Performance Test Script](run-performance-test.sh)
 - [IP性能测试脚本 / IP Performance Test Script](test-ip-performance-advanced.js)
+- [分离延迟测试脚本 / Separated Latency Test Script](latency-test-separated.js) - 本地命中/同区域链查/跨洲链查延迟分离测试
 - [性能测试报告 / Performance Test Report](oraSRS-client-performance-report.json)
 - [性能测试指南 / Performance Test Guide](PERFORMANCE_TEST_GUIDE.md)
 
