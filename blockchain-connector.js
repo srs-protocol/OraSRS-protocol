@@ -127,20 +127,25 @@ class BlockchainConnector {
       });
       
       // 检查响应
-      if (rpcResponse.data && rpcResponse.data.result) {
+      if (rpcResponse.data && rpcResponse.data.result !== undefined) {
         const rawData = rpcResponse.data.result;
         
         // 检查是否是空结果（表示没有找到数据）
-        if (rawData === '0x' || rawData === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+        if (rawData === '0x' || rawData === '0x0000000000000000000000000000000000000000000000000000000000000000' || !rawData) {
+          console.log(`未在区块链上找到IP ${ipAddress} 的威胁数据`);
           // 返回"未找到数据"的响应而不是模拟数据
           return this.getNoDataFoundResponse(ipAddress);
         }
         
+        console.log(`从区块链获取的原始数据: ${rawData}`);
         // 如果获取到实际数据，则处理并返回
         return this.processThreatDataFromContract(rawData, ipAddress);
       } else {
         // 如果RPC返回错误，检查连接状态
         console.log(`⚠️  无法从区块链获取数据: ${ipAddress}`);
+        if (rpcResponse.data && rpcResponse.data.error) {
+          console.error(`区块链错误:`, rpcResponse.data.error);
+        }
         return this.getNoDataFoundResponse(ipAddress);
       }
     } catch (error) {
@@ -311,41 +316,32 @@ class BlockchainConnector {
   processThreatDataFromContract(rawData, ipAddress) {
     // 这里是模拟处理从合约返回的原始数据
     // 在实际实现中，需要根据合约ABI和返回格式进行解析
-    console.log(`从合约获取的数据: ${rawData}`);
+    console.log(`从合约获取的原始数据: ${rawData}`);
     
-    // 如果rawData是有效的十六进制数据，尝试解析
-    if (rawData && rawData !== '0x' && rawData.length > 2) {
-      // 这里应根据实际合约返回格式进行解析
-      // 临时返回一个包含中文翻译的数据结构
-      return {
-        query: { ip: ipAddress },
-        response: {
-          risk_score: 0.2, // 示例风险评分
-          confidence: '中等',
-          risk_level: '中等',
-          evidence: [
-            {
-              type: '合约数据',
-              detail: `从区块链合约获取的威胁数据`,
-              source: '区块链合约',
-              timestamp: new Date().toISOString(),
-              confidence: 0.7
-            }
-          ],
-          recommendations: {
-            default: '监控',
-            public_services: '监控',
-            banking: '增强验证'
-          },
-          appeal_url: `https://api.orasrs.net/appeal?ip=${ipAddress}`,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          timestamp: new Date().toISOString(),
-          disclaimer: '此数据来自OraSRS协议链。',
-          version: '2.0-contract'
-        }
-      };
-    } else {
-      // 如果合约中没有该IP的威胁数据，返回无数据响应
+    // 简单解析十六进制数据
+    try {
+      // 检查返回数据是否为空或无效
+      if (!rawData || rawData === '0x') {
+        console.log(`合约返回空数据 for IP: ${ipAddress}`);
+        return this.getNoDataFoundResponse(ipAddress);
+      }
+      
+      // 检查是否是纯零数据（表示未找到该IP信息）
+      if (rawData.startsWith('0x0000000000000000000000000000000000000000000000000000000000000000')) {
+        console.log(`合约返回零数据 for IP: ${ipAddress}`);
+        return this.getNoDataFoundResponse(ipAddress);
+      }
+      
+      // 这里应该根据实际合约的返回格式进行解析
+      // 目前我们假设合约返回一个结构化数据，需要根据实际ABI来解析
+      // 为了演示目的，返回一个标准的无威胁数据响应
+      console.log(`合约返回有效数据，但需要根据实际ABI解析: ${rawData.substring(0, 20)}...`);
+      
+      // 对于不存在于区块链上的IP，返回无数据响应
+      return this.getNoDataFoundResponse(ipAddress);
+    } catch (error) {
+      console.error(`解析合约数据时出错:`, error.message);
+      // 发生错误时返回无数据响应而不是模拟数据
       return this.getNoDataFoundResponse(ipAddress);
     }
   }
