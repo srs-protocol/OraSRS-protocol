@@ -74,3 +74,6 @@ node_modules/
 
 # SRS specific
 srs-protocol-source.zip
+
+# LaTeX directory to protect thesis/paper files
+LaTeX/
