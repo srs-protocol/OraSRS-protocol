@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-12-11T22:02:32.259Z",
+  "testType": "OraSRS Protocol Full Test",
+  "metrics": {
+    "totalIPsAdded": 10000,
+    "totalTimeForAddition": 85332,
+    "avgTimePerIP": 8.5332,
+    "totalQueries": 1000,
+    "totalTimeForQueries": 2183,
+    "avgQueryTime": 2.183,
+    "throughputRPS": "117.19",
+    "contractSize": 4984
+  },
+  "results": {
+    "sampleScore": "85",
+    "sampleIsThreat": true,
+    "finalTestIPScore": "98",
+    "finalTestIsThreat": true
+  }
+}

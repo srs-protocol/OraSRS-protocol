@@ -1,0 +1,64 @@
+{
+  "test_run": "2025-12-11T17:30:02.919Z",
+  "test_type": "OraSRS Client IP Query Performance Test",
+  "config": {
+    "endpoints": {
+      "query": "/SRA/v1/query",
+      "bulkQuery": "/SRA/v1/bulk-query",
+      "threatList": "/SRA/v2/threat-list",
+      "threatReport": "/SRA/v2/threat-report"
+    },
+    "cache": {
+      "maxSize": 10000,
+      "ttl": 3600000,
+      "enabled": true
+    },
+    "performance": {
+      "localIPCount": 10000,
+      "chainIPCount": 1000,
+      "batchSize": 100
+    },
+    "thresholds": {
+      "low": 0.3,
+      "medium": 0.6,
+      "high": 0.8
+    }
+  },
+  "results": {
+    "single_query": {
+      "ip_count": 1000,
+      "total_time_ms": 91305,
+      "average_time_per_ip": "91.3050",
+      "qps": "10.95",
+      "stats": {
+        "totalQueries": 1100,
+        "cacheHits": 1100,
+        "cacheMisses": 0,
+        "totalTime": 20,
+        "average_query_time": "0.0182",
+        "cache_hit_rate": "100.00"
+      }
+    },
+    "bulk_query": {
+      "ip_count": 100,
+      "total_time_ms": 5022,
+      "average_time_per_ip": 50.21,
+      "qps": "19.91"
+    },
+    "threat_list": {
+      "high_risk_count": 243,
+      "medium_risk_count": 156,
+      "low_risk_count": 592,
+      "total_threats": 243
+    }
+  },
+  "summary": {
+    "overall_performance": "Processed 1000 IPs in 91305ms (10.95 QPS)",
+    "cache_efficiency": "100.00% hit rate",
+    "data_distribution": {
+      "local_ips": 10000,
+      "chain_ips": 1000,
+      "cache_size": 10000
+    }
+  }
+}

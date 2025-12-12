@@ -1,0 +1,27 @@
+{
+  "test_run": "2025-12-11T22:07:11.561Z",
+  "test_type": "OraSRS Client IP Query Performance Test with Local Contract Data",
+  "results": {
+    "single_query": {
+      "ip_count": 1000,
+      "total_time_ms": 9,
+      "average_time_per_ip": "0.0090",
+      "qps": "111111.11",
+      "stats": {
+        "totalQueries": 1000,
+        "cacheHits": 0,
+        "cacheMisses": 1000,
+        "totalTime": 5,
+        "average_query_time": "0.0050",
+        "cache_hit_rate": "0.00"
+      }
+    },
+    "contract_data": {
+      "contract_ip_count": 2000
+    }
+  },
+  "summary": {
+    "overall_performance": "Processed 1000 IPs in 9ms (111111.11 QPS)",
+    "cache_efficiency": "0.00% hit rate"
+  }
+}

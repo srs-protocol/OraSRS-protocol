@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-12-12T06:08:55.046072",
+  "tokenomics_parameters": {
+    "parameter": [
+      "Total Token Supply",
+      "Initial Staking Ratio",
+      "Base Reward per Report",
+      "Reward Decay Rate",
+      "Slashing Penalty",
+      "Minimum Stake Amount",
+      "Blocks per Year",
+      "Base Attack Cost",
+      "Cost per Sybil Node"
+    ],
+    "value": [
+      "1,000,000,000",
+      "30.0%",
+      "0.1 tokens",
+      "5.0%",
+      "10.0%",
+      "100 tokens",
+      "2,628,000",
+      "$1000",
+      "$50"
+    ],
+    "description": [
+      "Total ORA tokens in circulation",
+      "Percentage of tokens initially staked by validators",
+      "Base reward for valid threat reports",
+      "Annual decay rate of rewards",
+      "Penalty for malicious behavior",
+      "Minimum stake required to become validator",
+      "Number of blocks per year",
+      "Base cost to perform an attack",
+      "Additional cost per sybil node created"
+    ]
+  },
+  "attack_simulation": {
+    "sybil_node_counts": 

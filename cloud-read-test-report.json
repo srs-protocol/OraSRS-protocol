@@ -1,0 +1,23 @@
+{
+  "test_run": "2025-12-11T16:14:26.912Z",
+  "test_type": "Protocol Chain Cloud Read Test",
+  "contract_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "results": {
+    "read_test": {
+      "ip_count": 1000,
+      "total_time_ms": 14557,
+      "average_time_per_read": "14.5570",
+      "qps": "68.70",
+      "threat_sources_found": 0
+    },
+    "detailed_info_test": {
+      "attempts": 50,
+      "successful_fetches": 0
+    }
+  },
+  "summary": {
+    "overall_performance": "Read 1000 IPs in 14557ms (68.70 QPS)",
+    "threat_detection": "0 threat sources found in 100 sample IPs",
+    "detailed_info": "0 detailed threat info fetched"
+  }
+}
