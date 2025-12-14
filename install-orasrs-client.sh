@@ -143,7 +143,9 @@ setup_service() {
         # 检查服务文件是否存在
         if [[ -f "/etc/systemd/system/orasrs-client.service" ]]; then
             print_warning "服务文件已存在，跳过覆盖以保留自定义配置。"
-            print_info "如需重置配置，请删除 /etc/systemd/system/orasrs-client.service 后重试。"
+            print_info "更新 ORASRS_HOST 为 127.0.0.1 以限制本地访问..."
+            sed -i 's/Environment=ORASRS_HOST=0.0.0.0/Environment=ORASRS_HOST=127.0.0.1/' /etc/systemd/system/orasrs-client.service
+            systemctl daemon-reload 2>/dev/null || true
         else
             # 创建systemd服务文件
             cat > /etc/systemd/system/orasrs-client.service << EOF
@@ -160,7 +162,7 @@ Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=ORASRS_PORT=3006
-Environment=ORASRS_HOST=0.0.0.0
+Environment=ORASRS_HOST=127.0.0.1
 Environment=ORASRS_BLOCKCHAIN_ENDPOINT=https://api.orasrs.net
 Environment=ORASRS_CHAIN_ID=8888
 Environment=ORASRS_REGISTRY_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3

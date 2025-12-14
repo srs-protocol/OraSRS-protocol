@@ -787,7 +787,7 @@ try {
 // 从环境变量或用户配置或默认值获取配置
 const config = {
   port: process.env.ORASRS_PORT || userConfig.server?.port || 3006,
-  host: process.env.ORASRS_HOST || userConfig.server?.host || '0.0.0.0',
+  host: process.env.ORASRS_HOST || userConfig.server?.host || '127.0.0.1',
   enableLogging: process.env.ORASRS_ENABLE_LOGGING !== 'false' && (userConfig.server?.enableLogging ?? true),
   logFile: process.env.ORASRS_LOG_FILE || userConfig.server?.logFile || securityConfig.logging?.file?.path || './logs/orasrs-service.log',
   rateLimit: userConfig.server?.rateLimit || { windowMs: 900000, max: 100 },
