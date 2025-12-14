@@ -113,6 +113,17 @@ curl http://localhost:3006/orasrs/v2/threat-list
 - [ChainMaker 迁移指南 / ChainMaker Migration Guide](CHAINMAKER_MIGRATION_GUIDE.md)
 - [ChainMaker 安全测试 / ChainMaker Security Testing](CHAINMAKER_SECURITY_TESTING.md)
 
+### 方式 1: 一键安装/更新 (推荐)
+
+我们提供了一个一键安装脚本，支持 Ubuntu/Debian/CentOS 等主流 Linux 发行版。该脚本会自动安装依赖、配置服务并启动客户端。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
+```
+
+此命令也用于**更新客户端**。如果客户端已安装，运行此命令将自动拉取最新代码并重启服务。
+
+### 方式 2: 手动安装 (Docker)
 ## 🔐 ChainMaker 合约 / ChainMaker Contract
 - [ChainMaker 合约代码 / ChainMaker Contract Code](chainmaker-contract/sracontract/sracontract.go)
 - [威胁情报扩展 / Threat Intelligence Extensions](chainmaker-contract/sracontract/extra_methods.go)

@@ -104,16 +104,9 @@ clone_orasrs() {
     if [[ -d "/opt/orasrs" ]]; then
         print_warning "/opt/orasrs 已存在，正在更新..."
         cd /opt/orasrs
-        # 保存当前工作区更改
-        git stash
-        # 切换到lite-client分支
-        git checkout lite-client
-        # 拉取最新更新
-        git pull origin lite-client
-        # 如果有之前保存的更改，尝试重新应用
-        if git stash list | grep -q "stash"; then
-            git stash pop || true
-        fi
+        # 强制更新到最新版本，丢弃本地更改
+        git fetch origin lite-client
+        git reset --hard origin/lite-client
     else
         git clone https://github.com/srs-protocol/OraSRS-protocol.git /opt/orasrs
         cd /opt/orasrs
@@ -147,8 +140,13 @@ setup_service() {
     
     # 检查系统是否支持systemd (通过检查init进程是否是systemd)
     if [ -d /run/systemd/system ] || [ -e /run/systemd/private ]; then
-        # 创建systemd服务文件
-        cat > /etc/systemd/system/orasrs-client.service << EOF
+        # 检查服务文件是否存在
+        if [[ -f "/etc/systemd/system/orasrs-client.service" ]]; then
+            print_warning "服务文件已存在，跳过覆盖以保留自定义配置。"
+            print_info "如需重置配置，请删除 /etc/systemd/system/orasrs-client.service 后重试。"
+        else
+            # 创建systemd服务文件
+            cat > /etc/systemd/system/orasrs-client.service << EOF
 [Unit]
 Description=OraSRS Client Service
 After=network.target
@@ -165,18 +163,20 @@ Environment=ORASRS_PORT=3006
 Environment=ORASRS_HOST=0.0.0.0
 Environment=ORASRS_BLOCKCHAIN_ENDPOINT=https://api.orasrs.net
 Environment=ORASRS_CHAIN_ID=8888
+Environment=ORASRS_REGISTRY_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-        # 重载systemd配置
-        systemctl daemon-reload 2>/dev/null || true
-        
-        # 启用服务自启动
-        systemctl enable orasrs-client 2>/dev/null || true
-        
-        print_success "systemd服务配置完成"
+            # 重载systemd配置
+            systemctl daemon-reload 2>/dev/null || true
+            
+            # 启用服务自启动
+            systemctl enable orasrs-client 2>/dev/null || true
+            
+            print_success "systemd服务配置完成"
+        fi
     else
         print_warning "系统不支持systemd，跳过服务配置"
         print_info "可以手动启动服务: cd /opt/orasrs && node orasrs-simple-client.js &"
