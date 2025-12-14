@@ -1,7 +1,9 @@
 # OraSRS (Oracle Security Root Service) - 最新版本
 
+> ⚠️ **测试阶段声明**: 本项目处于 Beta 测试阶段，部分功能（如出站审查）默认为监控模式。详见 [免责声明](#-测试阶段免责声明)。
+
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
-注：客户端默认[可以自行修改辅助现有的安全软件判断]执行拦截，本地黑名单功能还在测试环节。客户端容易误报（正在优化）。对于这个项目刚刚起步可能有很多缺点，我都在优化
+
 ## 项目概述
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
@@ -401,6 +403,58 @@ Chain ID: 8888
   1. 启动本地节点: `npx hardhat node`
   2. 部署合约: `npx hardhat run deploy/deploy-registry-and-all.js --network localhost`
   3. 客户端自动通过注册表解析合约地址，无需手动配置。
+
+## ⚠️ 测试阶段免责声明
+
+**OraSRS 协议及其客户端目前处于 Beta 测试阶段。**
+
+### 功能限制
+- **出站审查模块** (Egress Inspection) 默认运行在"监控模式 (Monitor Mode)"
+- 不会实际阻断网络连接，除非用户手动在配置中开启"强制模式 (Enforce Mode)"
+- 详细设计请参阅 [出站保护设计文档](EGRESS_PROTECTION_DESIGN.md)
+
+### 风险提示
+开启内核级熔断 (eBPF) 可能会在特定的内核版本或网络环境下导致：
+- 系统不稳定
+- 网络延迟增加
+- 业务中断
+- 误拦截合法流量
+
+### 责任豁免
+开发者不对因使用本软件（包括但不限于误拦截、系统崩溃、数据丢失）造成的任何直接或间接损失承担责任。
+
+**用户应在非生产环境中充分测试后再行部署。**
+
+### 治理权
+在测试期间，为了维护网络安全，开发者保留以下权利：
+
+#### 日常维护权限（24 小时时间锁）
+- 修改评分算法参数
+- 升级合约逻辑
+- 移除误报的风控 IP
+- 版本迭代
+
+#### 紧急权限（立即生效）
+- 暂停协议运行
+- 冻结特定功能
+- 紧急数据恢复
+
+**所有开发者操作均记录在链上，可公开审计。**
+
+### 测试期配置
+```yaml
+# 默认配置
+egress_protection:
+  enabled: true
+  mode: "monitor"  # 仅记录，不阻断
+  max_block_duration: 3600  # 最长封禁 1 小时
+```
+
+### 如何参与测试
+1. 在非生产环境部署
+2. 启用审计日志记录
+3. 报告误报和 Bug 到 [GitHub Issues](https://github.com/srs-protocol/OraSRS-protocol/issues)
+4. 参与社区讨论和改进建议
 
 ## 📄 许可证 / License
 本项目采用 [Apache License 2.0](LICENSE) 开源。
