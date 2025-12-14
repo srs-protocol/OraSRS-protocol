@@ -603,16 +603,36 @@ class BlockchainConnector {
         return this.getNoDataFoundResponse(ipAddress);
       }
 
-      // 这里应该根据实际合约的返回格式进行解析
-      // 目前我们假设合约返回一个结构化数据，需要根据实际ABI来解析
-      // 为了演示目的，返回一个标准的无威胁数据响应
-      console.log(`合约返回有效数据，但需要根据实际ABI解析: ${rawData.substring(0, 20)}...`);
+      // 解析 getThreatScore 返回的 uint256 (32 bytes)
+      const scoreHex = rawData.startsWith('0x') ? rawData.slice(2) : rawData;
+      const score = parseInt(scoreHex, 16);
 
-      // 对于不存在于区块链上的IP，返回无数据响应
-      return this.getNoDataFoundResponse(ipAddress);
+      console.log(`从合约获取的威胁评分: ${score} for IP: ${ipAddress}`);
+
+      if (score === 0) {
+        return this.getNoDataFoundResponse(ipAddress);
+      }
+
+      return {
+        query: { ip: ipAddress },
+        response: {
+          risk_score: score,
+          confidence: '高',
+          risk_level: score >= 80 ? '严重' : (score >= 40 ? '高' : '中'),
+          evidence: [{
+            type: 'blockchain_score',
+            score: score,
+            timestamp: new Date().toISOString()
+          }],
+          recommendations: {
+            default: score >= 80 ? '拦截' : '警告',
+          },
+          timestamp: new Date().toISOString(),
+          version: '2.0-blockchain'
+        }
+      };
     } catch (error) {
       console.error(`解析合约数据时出错:`, error.message);
-      // 发生错误时返回无数据响应而不是模拟数据
       return this.getNoDataFoundResponse(ipAddress);
     }
   }
@@ -623,9 +643,8 @@ class BlockchainConnector {
     // 如果合约没有特定方法，使用一个通用的数据查询方法
     // 这里使用一个假定的函数选择器，实际部署时需要根据真实的合约ABI来确定
 
-    // 假设合约有一个 queryThreatData(string) 方法，其函数选择器是 0x... 
-    // 由于我们不知道实际合约的方法，使用一个通用的方法或返回一个空调用
-    const functionSelector = '620a9830'; // 假设的queryThreatData函数选择器
+    // 使用 getThreatScore(string) 方法，其函数选择器是 0xd163533c
+    const functionSelector = 'd163533c';
 
     // 正确的ABI编码，对于字符串参数
     // 首先编码字符串长度
