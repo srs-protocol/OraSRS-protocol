@@ -2,6 +2,8 @@
 
 > ⚠️ **测试阶段声明**: 本项目处于 Beta 测试阶段，部分功能（如出站审查）默认为监控模式。详见 [免责声明](#-测试阶段免责声明)。
 
+> 🌐 **测试节点地域政策**: OraSRS Alpha 测试目前仅面向中国大陆以外的节点开放。中国开发者可部署私有网络。详见 [Alpha 测试政策](ALPHA_TESTING.md)。
+
 > 📄 **学术关联**: 本 Alpha 实现基于论文 [*OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement*](LaTeX/orasrs-paper-final-fixed.tex) 中的协议设计。**注意**: 代码中的部分实验性功能（如 eBPF 出站过滤、HVAP 框架、IoT Shield）可能领先于当前论文描述，属于协议的扩展研究。
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
