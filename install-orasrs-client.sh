@@ -212,7 +212,7 @@ start_service() {
     
     # 检查系统是否支持systemd (通过检查init进程是否是systemd)
     if [ -d /run/systemd/system ] || [ -e /run/systemd/private ]; then
-        systemctl start orasrs-client 2>/dev/null || true
+        systemctl restart orasrs-client 2>/dev/null || true
         
         # 等待服务启动
         sleep 5
