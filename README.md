@@ -2,6 +2,8 @@
 
 > ⚠️ **测试阶段声明**: 本项目处于 Beta 测试阶段，部分功能（如出站审查）默认为监控模式。详见 [免责声明](#-测试阶段免责声明)。
 
+> 📄 **学术关联**: 本 Alpha 实现基于论文 [*OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement*](LaTeX/orasrs-paper-final-fixed.tex) 中的协议设计。**注意**: 代码中的部分实验性功能（如 eBPF 出站过滤、HVAP 框架、IoT Shield）可能领先于当前论文描述，属于协议的扩展研究。
+
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
 
 ## 项目概述
@@ -62,6 +64,36 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
    - 首次实现时间：2025-12-14
 
 **详细声明请参阅 [NOTICE](NOTICE) 文件。**
+
+## 📚 学术出版物 / Academic Publications
+
+本项目的核心协议设计已发表于学术论文：
+
+**论文标题**: *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement*
+
+**作者**: Luo ZiQian
+
+**摘要**: 本文提出了一种轻量级去中心化威胁情报协议，通过"先风控后查询"机制、动态封禁叠加和本地-链上协同决策，实现了对零日攻击的主动防御。协议采用三层架构（边缘层、共识层、智能层），支持国密算法，满足 GDPR/CCPA/等保 2.0 合规要求。
+
+**论文位置**: [LaTeX/orasrs-paper-final-fixed.tex](LaTeX/orasrs-paper-final-fixed.tex)
+
+**实验性扩展**: 本代码库包含以下超出论文范围的实验性功能：
+- eBPF 出站流量审查 (Egress Protection)
+- 高价值资产保护框架 (HVAP)
+- 物联网护盾 (IoT Shield)
+- Wazuh 安全平台集成
+
+这些扩展功能基于论文的核心设计原则，但属于协议的前沿研究方向。
+
+**引用格式** (BibTeX):
+```bibtex
+@article{luo2025orasrs,
+  title={OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement},
+  author={Luo, ZiQian},
+  year={2025},
+  note={Available at: https://github.com/srs-protocol/OraSRS-protocol}
+}
+```
 
 ## 一键安装 (Linux)
 
