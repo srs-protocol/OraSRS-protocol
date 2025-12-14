@@ -360,6 +360,37 @@ class SimpleOraSRSService {
       }
     });
 
+    // Nginx auth_request 专用检查接口
+    this.app.get('/orasrs/v1/check', async (req, res) => {
+      const ip = req.query.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+      if (!ip) return res.status(400).send('IP required');
+
+      try {
+        // 1. Check Whitelist
+        const isWhitelisted = await this.blockchainConnector.checkWhitelist(ip);
+        if (isWhitelisted) {
+          return res.status(200).send('OK');
+        }
+
+        // 2. Check Risk Score
+        const threatData = await this.blockchainConnector.getThreatData(ip);
+        const score = threatData.response.risk_score || 0;
+
+        if (score >= 80) {
+          console.log(`IoT Shield Blocked: ${ip} (Score: ${score})`);
+          return res.status(403).send('Forbidden');
+        }
+
+        res.status(200).send('OK');
+      } catch (error) {
+        console.error('Check error:', error);
+        // Fail open or closed? For IoT Shield, maybe fail open if error to avoid lockout?
+        // Or fail closed for security. Let's return 200 to avoid breaking service on error, but log it.
+        res.status(200).send('OK (Error Fallback)');
+      }
+    });
+
     // 威胁检测相关端点
     // 获取检测到的威胁列表
     this.app.get('/orasrs/v1/threats/detected', (req, res) => {

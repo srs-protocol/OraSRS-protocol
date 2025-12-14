@@ -178,6 +178,13 @@ curl -X POST http://127.0.0.1:3006/orasrs/v1/whitelist/temp \
 ```
 此操作将允许该 IP 在 5 分钟内绕过 HVAP 拦截。
 
+### 🛡️ OraSRS IoT Shield (物联网护盾)
+
+对于无法修改固件的摄像头、传感器等设备，OraSRS 提供“透明清洗层”方案：
+- **原理**: 在网关部署 OraSRS + Nginx，实行“先查询后放行”。
+- **效果**: 隐藏服务入口，利用全球威胁情报保护哑终端。
+- **文档**: [查看详细配置指南](IOT_SHIELD.md)
+
 ### 方式 3: 手动安装 (Docker)
 ## 🔐 ChainMaker 合约 / ChainMaker Contract
 - [ChainMaker 合约代码 / ChainMaker Contract Code](chainmaker-contract/sracontract/sracontract.go)
