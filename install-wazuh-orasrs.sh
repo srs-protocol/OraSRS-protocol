@@ -37,6 +37,12 @@ cp /opt/orasrs/wazuh-integration/orasrs_rules.xml /var/ossec/etc/rules/orasrs_ru
 chown wazuh:wazuh /var/ossec/etc/rules/orasrs_rules.xml
 chmod 640 /var/ossec/etc/rules/orasrs_rules.xml
 
+# 4. Install PAM Module (HVAP)
+print_info "Installing PAM Module for HVAP..."
+mkdir -p /opt/orasrs/pam
+cp /home/Great/SRS-Protocol/pam/pam_orasrs.py /opt/orasrs/pam/pam_orasrs.py
+chmod 755 /opt/orasrs/pam/pam_orasrs.py
+
 # Update ossec.conf
 if ! grep -q "custom-orasrs" /var/ossec/etc/ossec.conf; then
     print_info "Appending configuration to ossec.conf..."

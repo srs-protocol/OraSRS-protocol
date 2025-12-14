@@ -137,6 +137,18 @@ curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-c
 2. 安装 Wazuh Agent。
 3. 配置自动联动：Wazuh 发现威胁 -> 查询 OraSRS -> 若为高危 -> 自动封禁 IP。
 
+### 🛡️ 高价值资产保护 (HVAP) 配置
+
+针对 SSH/MySQL 等关键服务，启用基于 OraSRS 评分的动态访问控制：
+
+1. **安装 PAM 模块** (已包含在上述脚本中)
+2. **启用 SSH 保护**:
+   编辑 `/etc/pam.d/sshd`，在文件顶部添加：
+   ```bash
+   auth required pam_exec.so /opt/orasrs/pam/pam_orasrs.py
+   ```
+   这将拦截高风险 IP (Score >= 80) 的登录尝试。
+
 ### 方式 3: 手动安装 (Docker)
 ## 🔐 ChainMaker 合约 / ChainMaker Contract
 - [ChainMaker 合约代码 / ChainMaker Contract Code](chainmaker-contract/sracontract/sracontract.go)

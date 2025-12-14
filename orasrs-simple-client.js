@@ -397,6 +397,19 @@ class SimpleOraSRSService {
     });
 
 
+    // 临时白名单 (人工确认放行)
+    this.app.post('/orasrs/v1/whitelist/temp', (req, res) => {
+      const { ip, duration } = req.body;
+      if (!ip) return res.status(400).json({ error: 'IP is required' });
+
+      const durationMs = (duration || 300) * 1000; // Default 5 minutes
+
+      this.threatDetection.addTempWhitelist(ip, durationMs);
+
+      console.log(`人工确认: IP ${ip} 已临时放行 ${durationMs / 1000}秒`);
+      res.status(200).json({ success: true, message: `IP ${ip} temporarily whitelisted`, duration: durationMs / 1000 });
+    });
+
     // 处理威胁并分配动态风控 (Wazuh 集成专用)
     this.app.post('/orasrs/v1/threats/process', async (req, res) => {
       const { ip, threatType, threatLevel, context, evidence } = req.body;
