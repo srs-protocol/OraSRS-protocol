@@ -1,297 +1,326 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.20;
 
 /**
- * @title OraSRSGovernance
- * @dev OraSRS协议治理合约，用于管理协议参数和关键决策
+ * @title OraSRS Governance Contract
+ * @notice Implements decentralized governance with timelock and appeal mechanisms
+ * @dev Supports developer governance, community voting, and emergency controls
  */
-contract OraSRSGovernance is Ownable, ReentrancyGuard {
-    // 提案状态
-    enum ProposalState { 
-        Pending,     // 待处理
-        Active,      // 激活（正在投票）
-        Canceled,    // 已取消
-        Defeated,    // 已否决
-        Succeeded,   // 已通过
-        Queued,      // 已排队
-        Executed     // 已执行
-    }
+contract OraSRSGovernance {
+    // ============ State Variables ============
     
-    // 提案类型
-    enum ProposalType {
-        ParameterUpdate,     // 参数更新
-        ContractUpgrade,     // 合约升级
-        EmergencyAction,     // 紧急操作
-        NodeManagement,      // 节点管理
-        ThreatIntelSync,     // 威胁情报同步
-        TreasuryManagement   // 财政管理
-    }
-
-    // 提案结构
-    struct Proposal {
-        uint256 id;
-        address proposer;
-        uint256 startTime;
-        uint256 endTime;
-        uint256 votesFor;
-        uint256 votesAgainst;
-        uint256 votesAbstain;
-        uint256 requiredQuorum;
-        string description;
-        ProposalType proposalType;
-        ProposalState state;
-        address[] targets;
-        uint256[] values;
-        bytes[] calldatas;
+    address public developer;
+    uint256 public constant TIMELOCK_DELAY = 24 hours;
+    uint256 public constant EMERGENCY_DELAY = 0;
+    
+    bool public paused;
+    
+    // Appeal structure
+    struct Appeal {
+        address appellant;
+        string targetIP;
+        string evidenceHash;  // IPFS hash
+        uint256 timestamp;
+        uint256 supportVotes;
+        uint256 rejectVotes;
+        bool resolved;
+        bool approved;
         mapping(address => bool) hasVoted;
     }
-
-    // 投票结构
-    struct Vote {
-        bool hasVoted;
-        uint8 support;  // 0=Against, 1=For, 2=Abstain
-        uint256 votes;
-    }
-
-    // 存储变量
-    uint256 public proposalCount;
-    mapping(uint256 => Proposal) public proposals;
-    mapping(uint256 => mapping(address => Vote)) public votes;
     
-    // 治理相关地址
-    address public timelock;
-    address public threatIntelligenceCoordination;
+    // Proposed action structure (for timelock)
+    struct ProposedAction {
+        bytes32 actionHash;
+        uint256 executeTime;
+        bool executed;
+        bool cancelled;
+        string description;
+    }
     
-    // 治理参数
-    uint256 public votingPeriod;  // 投票期（秒）
-    uint256 public proposalThreshold;  // 提案门槛（代币数量）
-    uint256 public quorumPercentage;   // 法定人数百分比（百万分之一）
+    // Node qualification structure
+    struct NodeQualification {
+        uint256 riskScore;      // 0-100, lower is better
+        uint256 uptime;         // seconds
+        uint256 reputation;     // 0-100
+        bool qualified;
+    }
     
-    // 事件
-    event ProposalCreated(
-        uint256 indexed id,
-        address indexed proposer,
-        string description,
-        ProposalType indexed proposalType
-    );
-    event VoteCast(
-        uint256 indexed proposalId,
-        address indexed voter,
-        uint8 support,
-        uint256 votes
-    );
-    event ProposalExecuted(uint256 indexed id);
-    event GovernanceParameterUpdated(string parameter, uint256 value);
-    event GovernanceAddressUpdated(string contractName, address oldAddress, address newAddress);
-
-    /**
-     * @dev 构造函数
-     * @param _timelock timelock合约地址
-     * @param _threatIntelligenceCoordination 威胁情报协调合约地址
-     */
-    constructor(address _timelock, address _threatIntelligenceCoordination) Ownable(msg.sender) {
-        timelock = _timelock;
-        threatIntelligenceCoordination = _threatIntelligenceCoordination;
-        
-        // 设置默认治理参数
-        votingPeriod = 7 days;  // 7天投票期
-        proposalThreshold = 10000 * 10**18;  // 10,000 ORA代币门槛
-        quorumPercentage = 100000;  // 10% 法定人数（百万分之一）
+    // ============ Mappings ============
+    
+    mapping(uint256 => Appeal) public appeals;
+    mapping(bytes32 => ProposedAction) public proposedActions;
+    mapping(address => NodeQualification) public nodes;
+    
+    uint256 public appealCount;
+    
+    // ============ Events ============
+    
+    event AppealSubmitted(uint256 indexed appealID, address indexed appellant, string targetIP, string evidenceHash);
+    event VoteCast(uint256 indexed appealID, address indexed voter, bool support);
+    event AppealResolved(uint256 indexed appealID, bool approved);
+    event ActionProposed(bytes32 indexed actionHash, uint256 executeTime, string description);
+    event ActionExecuted(bytes32 indexed actionHash);
+    event ActionCancelled(bytes32 indexed actionHash);
+    event EmergencyPause(address indexed by);
+    event EmergencyUnpause(address indexed by);
+    event NodeQualified(address indexed node);
+    event NodeDisqualified(address indexed node);
+    
+    // ============ Modifiers ============
+    
+    modifier onlyDeveloper() {
+        require(msg.sender == developer, "Only developer");
+        _;
     }
-
-    /**
-     * @dev 创建提案
-     */
-    function createProposal(
-        string memory description,
-        ProposalType proposalType,
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas
-    ) external returns (uint256) {
-        // TODO: 检查提案者是否有足够投票权
-        require(bytes(description).length > 0, "Description cannot be empty");
-        require(targets.length == values.length && targets.length == calldatas.length, 
-                "Array lengths must match");
-
-        uint256 newProposalId = ++proposalCount;
-        
-        Proposal storage newProposal = proposals[newProposalId];
-        newProposal.id = newProposalId;
-        newProposal.proposer = msg.sender;
-        newProposal.startTime = block.timestamp;
-        newProposal.endTime = block.timestamp + votingPeriod;
-        newProposal.votesFor = 0;
-        newProposal.votesAgainst = 0;
-        newProposal.votesAbstain = 0;
-        newProposal.requiredQuorum = quorumPercentage;
-        newProposal.description = description;
-        newProposal.proposalType = proposalType;
-        newProposal.state = ProposalState.Pending;
-        newProposal.targets = targets;
-        newProposal.values = values;
-        newProposal.calldatas = calldatas;
-
-        // 根据提案类型设置初始状态
-        newProposal.state = ProposalState.Active;
-
-        emit ProposalCreated(newProposalId, msg.sender, description, proposalType);
-
-        return newProposalId;
+    
+    modifier whenNotPaused() {
+        require(!paused, "Contract is paused");
+        _;
     }
-
-    /**
-     * @dev 投票
-     */
-    function castVote(uint256 proposalId, uint8 support) external nonReentrant {
-        require(proposalId > 0 && proposalId <= proposalCount, "Invalid proposal id");
-        require(support <= 2, "Invalid vote support value");
-        
-        Proposal storage proposal = proposals[proposalId];
-        require(proposal.state == ProposalState.Active, "Proposal is not active");
-        require(block.timestamp <= proposal.endTime, "Voting period has ended");
-        require(!proposal.hasVoted[msg.sender], "Already voted");
-
-        // 标记已投票
-        proposal.hasVoted[msg.sender] = true;
-        
-        // 记录投票（简化：使用固定权重）
-        Vote storage vote = votes[proposalId][msg.sender];
-        vote.hasVoted = true;
-        vote.support = support;
-        vote.votes = 100; // 简化：固定票数
-
-        // 更新计票
-        if (support == 1) {
-            proposal.votesFor += 100;
-        } else if (support == 0) {
-            proposal.votesAgainst += 100;
-        } else if (support == 2) {
-            proposal.votesAbstain += 100;
-        }
-
-        emit VoteCast(proposalId, msg.sender, support, 100);
+    
+    modifier onlyQualifiedNode() {
+        require(nodes[msg.sender].qualified, "Node not qualified");
+        _;
     }
-
+    
+    // ============ Constructor ============
+    
+    constructor() {
+        developer = msg.sender;
+        paused = false;
+    }
+    
+    // ============ Appeal Functions ============
+    
     /**
-     * @dev 获取提案详情
+     * @notice Submit an appeal for a high-risk IP
+     * @param targetIP The IP address being appealed
+     * @param evidenceHash IPFS hash of evidence
      */
-    function getProposalDetails(uint256 proposalId) 
+    function submitAppeal(string memory targetIP, string memory evidenceHash) 
         external 
-        view 
-        returns (
-            address,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            string memory,
-            ProposalType,
-            ProposalState
-        ) 
+        whenNotPaused 
+        returns (uint256) 
     {
-        Proposal storage proposal = proposals[proposalId];
+        appealCount++;
+        Appeal storage appeal = appeals[appealCount];
+        appeal.appellant = msg.sender;
+        appeal.targetIP = targetIP;
+        appeal.evidenceHash = evidenceHash;
+        appeal.timestamp = block.timestamp;
+        appeal.resolved = false;
+        appeal.approved = false;
+        
+        emit AppealSubmitted(appealCount, msg.sender, targetIP, evidenceHash);
+        return appealCount;
+    }
+    
+    /**
+     * @notice Cast a vote on an appeal (only qualified nodes)
+     * @param appealID The ID of the appeal
+     * @param support True to support, false to reject
+     */
+    function castVote(uint256 appealID, bool support) 
+        external 
+        whenNotPaused 
+        onlyQualifiedNode 
+    {
+        Appeal storage appeal = appeals[appealID];
+        require(!appeal.resolved, "Appeal already resolved");
+        require(!appeal.hasVoted[msg.sender], "Already voted");
+        
+        appeal.hasVoted[msg.sender] = true;
+        
+        if (support) {
+            appeal.supportVotes++;
+        } else {
+            appeal.rejectVotes++;
+        }
+        
+        emit VoteCast(appealID, msg.sender, support);
+        
+        // Auto-resolve if threshold reached (e.g., 3 votes)
+        if (appeal.supportVotes + appeal.rejectVotes >= 3) {
+            _resolveAppeal(appealID);
+        }
+    }
+    
+    /**
+     * @notice Resolve an appeal based on votes
+     * @param appealID The ID of the appeal
+     */
+    function _resolveAppeal(uint256 appealID) internal {
+        Appeal storage appeal = appeals[appealID];
+        require(!appeal.resolved, "Appeal already resolved");
+        
+        appeal.resolved = true;
+        appeal.approved = appeal.supportVotes > appeal.rejectVotes;
+        
+        emit AppealResolved(appealID, appeal.approved);
+    }
+    
+    /**
+     * @notice Manually resolve an appeal (developer only)
+     * @param appealID The ID of the appeal
+     */
+    function resolveAppeal(uint256 appealID) external onlyDeveloper {
+        _resolveAppeal(appealID);
+    }
+    
+    // ============ Timelock Functions ============
+    
+    /**
+     * @notice Propose an action with timelock
+     * @param action The action data
+     * @param description Description of the action
+     */
+    function proposeAction(bytes memory action, string memory description) 
+        external 
+        onlyDeveloper 
+        returns (bytes32) 
+    {
+        bytes32 actionHash = keccak256(action);
+        require(proposedActions[actionHash].executeTime == 0, "Action already proposed");
+        
+        ProposedAction storage proposal = proposedActions[actionHash];
+        proposal.actionHash = actionHash;
+        proposal.executeTime = block.timestamp + TIMELOCK_DELAY;
+        proposal.executed = false;
+        proposal.cancelled = false;
+        proposal.description = description;
+        
+        emit ActionProposed(actionHash, proposal.executeTime, description);
+        return actionHash;
+    }
+    
+    /**
+     * @notice Execute a proposed action after timelock
+     * @param action The action data
+     */
+    function executeAction(bytes memory action) external onlyDeveloper {
+        bytes32 actionHash = keccak256(action);
+        ProposedAction storage proposal = proposedActions[actionHash];
+        
+        require(proposal.executeTime > 0, "Action not proposed");
+        require(block.timestamp >= proposal.executeTime, "Timelock not expired");
+        require(!proposal.executed, "Action already executed");
+        require(!proposal.cancelled, "Action cancelled");
+        
+        proposal.executed = true;
+        
+        // Execute the action (simplified - in production, decode and execute)
+        // (bool success,) = address(this).call(action);
+        // require(success, "Action execution failed");
+        
+        emit ActionExecuted(actionHash);
+    }
+    
+    /**
+     * @notice Cancel a proposed action
+     * @param actionHash The hash of the action
+     */
+    function cancelAction(bytes32 actionHash) external onlyDeveloper {
+        ProposedAction storage proposal = proposedActions[actionHash];
+        require(proposal.executeTime > 0, "Action not proposed");
+        require(!proposal.executed, "Action already executed");
+        
+        proposal.cancelled = true;
+        emit ActionCancelled(actionHash);
+    }
+    
+    // ============ Emergency Functions ============
+    
+    /**
+     * @notice Emergency pause (immediate effect)
+     */
+    function emergencyPause() external onlyDeveloper {
+        paused = true;
+        emit EmergencyPause(msg.sender);
+    }
+    
+    /**
+     * @notice Emergency unpause
+     */
+    function emergencyUnpause() external onlyDeveloper {
+        paused = false;
+        emit EmergencyUnpause(msg.sender);
+    }
+    
+    // ============ Node Qualification Functions ============
+    
+    /**
+     * @notice Update node qualification
+     * @param node The node address
+     * @param riskScore Risk score (0-100, lower is better)
+     * @param uptime Uptime in seconds
+     * @param reputation Reputation score (0-100)
+     */
+    function updateNodeQualification(
+        address node,
+        uint256 riskScore,
+        uint256 uptime,
+        uint256 reputation
+    ) external onlyDeveloper {
+        NodeQualification storage qual = nodes[node];
+        qual.riskScore = riskScore;
+        qual.uptime = uptime;
+        qual.reputation = reputation;
+        
+        // Qualification criteria:
+        // - Risk score < 10
+        // - Uptime >= 72 hours (259200 seconds)
+        // - Reputation >= 60
+        bool wasQualified = qual.qualified;
+        qual.qualified = (riskScore < 10 && uptime >= 259200 && reputation >= 60);
+        
+        if (qual.qualified && !wasQualified) {
+            emit NodeQualified(node);
+        } else if (!qual.qualified && wasQualified) {
+            emit NodeDisqualified(node);
+        }
+    }
+    
+    /**
+     * @notice Check if a node is qualified
+     * @param node The node address
+     */
+    function isNodeQualified(address node) external view returns (bool) {
+        return nodes[node].qualified;
+    }
+    
+    /**
+     * @notice Get appeal details
+     * @param appealID The ID of the appeal
+     */
+    function getAppeal(uint256 appealID) external view returns (
+        address appellant,
+        string memory targetIP,
+        string memory evidenceHash,
+        uint256 timestamp,
+        uint256 supportVotes,
+        uint256 rejectVotes,
+        bool resolved,
+        bool approved
+    ) {
+        Appeal storage appeal = appeals[appealID];
         return (
-            proposal.proposer,
-            proposal.startTime,
-            proposal.endTime,
-            proposal.votesFor,
-            proposal.votesAgainst,
-            proposal.votesAbstain,
-            proposal.requiredQuorum,
-            proposal.description,
-            proposal.proposalType,
-            proposal.state
+            appeal.appellant,
+            appeal.targetIP,
+            appeal.evidenceHash,
+            appeal.timestamp,
+            appeal.supportVotes,
+            appeal.rejectVotes,
+            appeal.resolved,
+            appeal.approved
         );
     }
-
-    /**
-     * @dev 获取提案状态
-     */
-    function state(uint256 proposalId) external view returns (ProposalState) {
-        require(proposalId > 0 && proposalId <= proposalCount, "Invalid proposal id");
-        
-        Proposal storage proposal = proposals[proposalId];
-        
-        if (proposal.endTime < block.timestamp) {
-            // 检查是否通过
-            if (proposal.votesFor > proposal.votesAgainst && 
-                (proposal.votesFor + proposal.votesAgainst) >= proposal.requiredQuorum) {
-                return ProposalState.Succeeded;
-            } else {
-                return ProposalState.Defeated;
-            }
-        }
-        
-        return proposal.state;
-    }
-
-    /**
-     * @dev 更新timelock合约地址
-     */
-    function updateTimelock(address _newTimelock) external onlyOwner {
-        require(_newTimelock != address(0), "Invalid timelock address");
-        address oldTimelock = timelock;
-        timelock = _newTimelock;
-        emit GovernanceAddressUpdated("Timelock", oldTimelock, _newTimelock);
-    }
-
-    /**
-     * @dev 更新威胁情报协调合约地址
-     */
-    function updateThreatIntelligenceCoordination(address _newContract) external onlyOwner {
-        require(_newContract != address(0), "Invalid contract address");
-        address oldContract = threatIntelligenceCoordination;
-        threatIntelligenceCoordination = _newContract;
-        emit GovernanceAddressUpdated("ThreatIntelligenceCoordination", oldContract, _newContract);
-    }
-
-    /**
-     * @dev 更新投票期
-     */
-    function updateVotingPeriod(uint256 _newVotingPeriod) external onlyOwner {
-        require(_newVotingPeriod > 0, "Voting period must be greater than 0");
-        votingPeriod = _newVotingPeriod;
-        emit GovernanceParameterUpdated("VotingPeriod", _newVotingPeriod);
-    }
-
-    /**
-     * @dev 更新提案门槛
-     */
-    function updateProposalThreshold(uint256 _newThreshold) external onlyOwner {
-        proposalThreshold = _newThreshold;
-        emit GovernanceParameterUpdated("ProposalThreshold", _newThreshold);
-    }
-
-    /**
-     * @dev 更新法定人数百分比
-     */
-    function updateQuorumPercentage(uint256 _newQuorumPercentage) external onlyOwner {
-        require(_newQuorumPercentage <= 1000000, "Quorum cannot exceed 100%");
-        quorumPercentage = _newQuorumPercentage;
-        emit GovernanceParameterUpdated("QuorumPercentage", _newQuorumPercentage);
-    }
     
     /**
-     * @dev 销毁合约（仅所有者）
-     * 这将把合约余额发送到指定地址并删除合约
+     * @notice Check if an address has voted on an appeal
+     * @param appealID The ID of the appeal
+     * @param voter The voter address
      */
-    function destroy() external onlyOwner {
-        emit ProposalExecuted(block.timestamp); // 记录最后操作
-        selfdestruct(payable(owner()));
-    }
-    
-    /**
-     * @dev 销毁合约并发送余额到指定地址（仅所有者）
-     */
-    function destroyAndSendTo(address payable _recipient) external onlyOwner {
-        require(_recipient != address(0), "Invalid recipient address");
-        emit ProposalExecuted(block.timestamp); // 记录最后操作
-        selfdestruct(_recipient);
+    function hasVoted(uint256 appealID, address voter) external view returns (bool) {
+        return appeals[appealID].hasVoted[voter];
     }
 }

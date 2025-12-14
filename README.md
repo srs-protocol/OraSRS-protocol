@@ -4,7 +4,7 @@
 
 > 🌐 **测试节点地域政策**: OraSRS Alpha 测试目前仅面向中国大陆以外的节点开放。中国开发者可部署私有网络。详见 [Alpha 测试政策](ALPHA_TESTING.md)。
 
-> 📄 **学术关联**: 本 Alpha 实现基于论文 [*OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement*](LaTeX/orasrs-paper-final-fixed.tex) 中的协议设计。**注意**: 代码中的部分实验性功能（如 eBPF 出站过滤、HVAP 框架、IoT Shield）可能领先于当前论文描述，属于协议的扩展研究。
+> 📄 **学术关联**: 本 Alpha 实现基于论文 *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement* 中的协议设计（**论文审核中，地址待更新**）。**注意**: 代码库中包含若干**实验性扩展模块**（如 eBPF 出站过滤、HVAP 框架、IoT Shield），其设计与实现**超前于当前论文版本**，属于协议 v3.0 的探索性研究，**尚未纳入正式规范**。
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
 
@@ -69,31 +69,33 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 
 ## 📚 学术出版物 / Academic Publications
 
-本项目的核心协议设计已发表于学术论文：
+本项目的核心协议设计基于学术论文（**审核中**）：
 
 **论文标题**: *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement*
 
 **作者**: Luo ZiQian
 
+**状态**: 论文审核中，正式发表地址将在审核通过后更新
+
 **摘要**: 本文提出了一种轻量级去中心化威胁情报协议，通过"先风控后查询"机制、动态封禁叠加和本地-链上协同决策，实现了对零日攻击的主动防御。协议采用三层架构（边缘层、共识层、智能层），支持国密算法，满足 GDPR/CCPA/等保 2.0 合规要求。
 
-**论文位置**: [LaTeX/orasrs-paper-final-fixed.tex](LaTeX/orasrs-paper-final-fixed.tex)
-
-**实验性扩展**: 本代码库包含以下超出论文范围的实验性功能：
+**实验性扩展** (v3.0 探索性研究，超出论文范围):
 - eBPF 出站流量审查 (Egress Protection)
 - 高价值资产保护框架 (HVAP)
 - 物联网护盾 (IoT Shield)
 - Wazuh 安全平台集成
+- 去中心化治理机制
+- 客户端投票系统
 
-这些扩展功能基于论文的核心设计原则，但属于协议的前沿研究方向。
+这些扩展功能基于论文的核心设计原则，但属于协议 v3.0 的前沿研究方向，尚未纳入正式规范。
 
-**引用格式** (BibTeX):
+**引用格式** (BibTeX - 待论文发表后更新):
 ```bibtex
 @article{luo2025orasrs,
   title={OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement},
   author={Luo, ZiQian},
   year={2025},
-  note={Available at: https://github.com/srs-protocol/OraSRS-protocol}
+  note={Under review. Code available at: https://github.com/srs-protocol/OraSRS-protocol}
 }
 ```
 
