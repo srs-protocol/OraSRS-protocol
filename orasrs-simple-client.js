@@ -30,7 +30,7 @@ class SimpleOraSRSService {
 
     // 简化的Express应用
     this.app = express();
-    
+
     // 基本中间件
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
@@ -65,13 +65,13 @@ class SimpleOraSRSService {
     this.app.use((req, res, next) => {
       const origin = req.headers.origin;
       const allowedOrigins = config.security.corsOrigin === '*' ? [origin] : config.security.corsOrigin;
-      
+
       if (config.security.enableCORS) {
         res.header('Access-Control-Allow-Origin', config.security.corsOrigin);
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
       }
-      
+
       if (req.method === 'OPTIONS') {
         res.sendStatus(200);
       } else {
@@ -141,10 +141,10 @@ class SimpleOraSRSService {
       try {
         // 从区块链获取威胁数据
         let threatData = await this.blockchainConnector.getThreatData(ip || domain);
-        
+
         // 将数据翻译成中文（无论是否来自区块链或模拟数据）
         threatData = this.translateToChinese(threatData);
-        
+
         res.json(threatData);
       } catch (error) {
         console.error('Error fetching threat data:', error);
@@ -181,10 +181,10 @@ class SimpleOraSRSService {
       try {
         // 从区块链获取全局威胁列表
         let threatList = await this.blockchainConnector.getGlobalThreatList();
-        
+
         // 将威胁列表翻译成中文
         threatList = this.translateThreatListToChinese(threatList);
-        
+
         res.json({
           ...threatList,
           blockchain_status: this.blockchainConnector.getStatus()
@@ -267,7 +267,7 @@ class SimpleOraSRSService {
           reason: reason || 'appeal_request',
           type: 'appeal'
         });
-        
+
         res.status(201).json({
           ...appealResult,
           blockchain_status: this.blockchainConnector.getStatus()
@@ -276,7 +276,7 @@ class SimpleOraSRSService {
         console.error('Error submitting appeal:', error);
         // 如果区块链连接失败，创建本地申诉记录
         const appealId = `appeal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-        
+
         res.status(201).json({
           appeal_id: appealId,
           status: 'received',
@@ -305,7 +305,7 @@ class SimpleOraSRSService {
 
       try {
         console.log(`Gas补贴请求: ${userAddress} from IP: ${ip || req.ip}`);
-        
+
         // 这里应该是调用后端服务来处理Gas补贴请求
         // 为了演示，我们返回一个模拟成功的响应
         // 实际部署时，这里应该调用治理服务器的API
@@ -559,7 +559,7 @@ class SimpleOraSRSService {
           'alert': '告警',
           'investigate': '调查'
         };
-        
+
         Object.keys(rec).forEach(key => {
           if (translations[rec[key].toLowerCase()]) {
             rec[key] = translations[rec[key].toLowerCase()];
@@ -605,7 +605,7 @@ class SimpleOraSRSService {
     if (translatedList.threat_list && Array.isArray(translatedList.threat_list)) {
       translatedList.threat_list = translatedList.threat_list.map(threat => {
         const translatedThreat = { ...threat };
-        
+
         // 翻译威胁等级
         if (translatedThreat.threat_level) {
           switch (translatedThreat.threat_level.toLowerCase()) {
@@ -723,9 +723,9 @@ class SimpleOraSRSService {
   async start() {
     return new Promise((resolve, reject) => {
       this.server = this.app.listen(
-        { 
-          port: this.config.port, 
-          host: this.config.host 
+        {
+          port: this.config.port,
+          host: this.config.host
         },
         () => {
           console.log(`OraSRS Service listening on ${this.config.host}:${this.config.port}`);
@@ -761,7 +761,7 @@ let securityConfig = {};
 
 try {
   const fs = require('fs');
-  
+
   // 读取用户配置文件
   if (fs.existsSync('./user-config.json')) {
     userConfig = JSON.parse(fs.readFileSync('./user-config.json', 'utf8'));
@@ -773,7 +773,7 @@ try {
   } else if (fs.existsSync('/home/Great/SRS-Protocol/local-config.json')) {
     userConfig = JSON.parse(fs.readFileSync('/home/Great/SRS-Protocol/local-config.json', 'utf8'));
   }
-  
+
   // 读取安全配置文件
   if (fs.existsSync('./security-config.json')) {
     securityConfig = JSON.parse(fs.readFileSync('./security-config.json', 'utf8'));
@@ -793,11 +793,12 @@ const config = {
   rateLimit: userConfig.server?.rateLimit || { windowMs: 900000, max: 100 },
   // OraSRS协议链连接配置
   blockchain: {
-    endpoints: process.env.ORASRS_BLOCKCHAIN_ENDPOINT ? [process.env.ORASRS_BLOCKCHAIN_ENDPOINT] : 
-               userConfig.network?.blockchainEndpoint ? [userConfig.network.blockchainEndpoint] : 
-               securityConfig.security?.blockchainConnection?.endpoints || 
-               ['https://api.orasrs.net', 'https://backup.orasrs.net'],
+    endpoints: process.env.ORASRS_BLOCKCHAIN_ENDPOINT ? [process.env.ORASRS_BLOCKCHAIN_ENDPOINT] :
+      userConfig.network?.blockchainEndpoint ? [userConfig.network.blockchainEndpoint] :
+        securityConfig.security?.blockchainConnection?.endpoints ||
+        ['https://api.orasrs.net', 'https://backup.orasrs.net'],
     chainId: process.env.ORASRS_CHAIN_ID || userConfig.network?.chainId || securityConfig.network?.chainId || 8888,
+    registryAddress: process.env.ORASRS_REGISTRY_ADDRESS || userConfig.network?.registryAddress || securityConfig.network?.registryAddress || '0x5FbDB2315678afecb367f032d93F642f64180aa3',
     contractAddress: process.env.ORASRS_CONTRACT_ADDRESS || userConfig.network?.contractAddress || securityConfig.network?.contractAddress || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
     timeout: securityConfig.security?.blockchainConnection?.timeout || 30000, // 增加超时时间以支持公网连接
     retries: securityConfig.security?.blockchainConnection?.retries || 5, // 增加重试次数以支持公网连接
@@ -852,9 +853,9 @@ async function startService() {
     } catch (error) {
       console.warn('⚠️  无法连接到区块链，服务将以降级模式运行:', error.message);
     }
-    
+
     await orasrsService.start();
-    
+
     // 启动威胁检测功能
     console.log('🔍 启动威胁检测模块...');
     try {
@@ -865,7 +866,7 @@ async function startService() {
     } catch (error) {
       console.warn('⚠️  启动威胁检测模块时出现问题:', error.message);
     }
-    
+
     console.log('\n✅ OraSRS 服务启动成功!');
     console.log(`🌐 服务地址: http://${config.host}:${config.port}`);
     console.log('📋 API 端点:');
@@ -880,7 +881,7 @@ async function startService() {
     console.log(`   - 健康检查: http://${config.host}:${config.port}/health`);
     console.log('\n⚠️  重要提醒: 此服务提供咨询建议，最终决策由客户端做出');
     console.log('🔗 区块链连接状态:', orasrsService.blockchainConnector.getStatus());
-    
+
     // 定期输出服务信息
     setInterval(() => {
       const blockchainStatus = orasrsService.blockchainConnector.getStatus();
@@ -891,7 +892,7 @@ async function startService() {
       console.log(`   检测到威胁: ${threatStats.total} (总数)`);
       console.log(`   重试次数: ${blockchainStatus.retryCount}/${blockchainStatus.maxRetries}`);
     }, 5 * 60 * 1000); // 5分钟
-    
+
   } catch (error) {
     console.error('❌ 启动 OraSRS 服务失败:', error);
     process.exit(1);

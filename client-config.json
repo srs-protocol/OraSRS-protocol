@@ -1,8 +1,7 @@
 {
-  "name": "orasrs-client",
-  "version": "2.0.0",
-  "description": "OraSRS (Oracle Security Root Service) - 咨询式风险评分服务客户端",
-  "main": "orasrs-client.js",
+  "name": "orasrs-simple-client",
+  "version": "2.0.2",
+  "description": "Simplified OraSRS Client",(Oracle Security Root Service) - 咨询式风险评分服务客户端","main": "orasrs-client.js",
   "bin": "orasrs-client.js",
   "pkg": {
     "assets": [

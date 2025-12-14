@@ -283,6 +283,15 @@ Chain ID: 8888
   - **SimpleSecurityActionContract**: `0x59b670e9fA9D0A427751Af201D676719a970857b`
 - 开发者可以使用标准以太坊工具与该链交互
 
+### 合约注册表 (Contract Registry)
+为了解决开发过程中合约地址频繁变化的问题，我们引入了 **Contract Registry**。
+- **固定地址**: `0x5FbDB2315678afecb367f032d93F642f64180aa3` (本地测试Hardhat环境)
+- **功能**: 客户端只需连接此固定地址，即可查询所有其他合约的最新地址。
+- **使用方法**:
+  1. 启动本地节点: `npx hardhat node`
+  2. 部署合约: `npx hardhat run deploy/deploy-registry-and-all.js --network localhost`
+  3. 客户端自动通过注册表解析合约地址，无需手动配置。
+
 ## 📄 许可证 / License
 本项目采用 [Apache License 2.0](LICENSE) 开源。
 This project is open source under the [Apache License 2.0](LICENSE).

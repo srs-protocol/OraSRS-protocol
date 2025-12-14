@@ -5,7 +5,7 @@
  * OraSRS 是信用评分机构（如 FICO），不是法院。客户端自己决定是否采取行动。
  */
 
-import FederatedLearning from './src/federated-learning.js';
+
 import ConsensusMechanism from './src/consensus-mechanism.js';
 import GovernanceCommittee from './src/governance-committee.js';
 import SecurityCompliance from './src/security-compliance.js';
@@ -24,8 +24,7 @@ class SRSEngine {
     this.nodeId = options.nodeId || 'default-node'; // 节点ID
     this.maxCacheSize = options.maxCacheSize || 10000; // 最大缓存大小
     
-    // 初始化联邦学习模块
-    this.federatedLearning = new FederatedLearning(options.federatedLearning || {});
+
     
     // 新增：共识与质押机制
     this.consensusMechanism = new ConsensusMechanism(options.consensus || {});
@@ -754,47 +753,7 @@ class SRSEngine {
     return await this.getRiskAssessment(ip, domain);
   }
 
-  /**
-   * 联邦学习：注册到联邦网络
-   */
-  registerToFederation(nodeId, config) {
-    return this.federatedLearning.registerNode(nodeId, config);
-  }
 
-  /**
-   * 联邦学习：提交本地模型更新
-   */
-  async submitLocalUpdate(localUpdates) {
-    return await this.federatedLearning.collectLocalUpdates(this.nodeId, localUpdates);
-  }
-
-  /**
-   * 联邦学习：执行联邦学习轮次
-   */
-  async performFederatedRound() {
-    return await this.federatedLearning.federatedRound();
-  }
-
-  /**
-   * 联邦学习：获取联邦状态
-   */
-  getFederationStatus() {
-    return this.federatedLearning.getStatus();
-  }
-
-  /**
-   * 更新风险评估模型（从联邦学习中）
-   */
-  updateModelFromFederation() {
-    // 从聚合模型中获取更新并应用到本地模型
-    const aggregatedModel = this.federatedLearning.aggregatedModel;
-    
-    if (aggregatedModel.size > 0) {
-      // 这里可以应用聚合模型来更新本地风险评估逻辑
-      console.log('从联邦模型更新本地风险评估参数');
-      // 实现具体的模型更新逻辑
-    }
-  }
 
   /**
    * 节点质押

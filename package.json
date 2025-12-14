@@ -1,7 +1,7 @@
 {
   "name": "orasrs-protocol",
-  "version": "2.0.1",
-  "description": "OraSRS (Oracle Security Root Service) - 咨询式风险评分服务",
+  "version": "2.0.2",
+  "description": "OraSRS Protocol - Decentralized Threat Intelligence",
   "main": "srs-service.js",
   "type": "module",
   "scripts": {

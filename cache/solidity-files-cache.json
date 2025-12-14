@@ -883,6 +883,90 @@
       "artifacts": [
         "ThreatStats"
       ]
+    },
+    "/home/Great/SRS-Protocol/contracts/ContractRegistry.sol": {
+      "lastModificationDate": 1765675605680,
+      "contentHash": "6f2dfcfdc8c0b68e4609270fd3a5a0e4",
+      "sourceName": "contracts/ContractRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "metadata": {
+            "bytecodeHash": "none"
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "ContractRegistry"
+      ]
+    },
+    "/home/Great/SRS-Protocol/contracts/GlobalWhitelist.sol": {
+      "lastModificationDate": 1765676521872,
+      "contentHash": "67cd5aa11de5582ec4a67c47f4f1131c",
+      "sourceName": "contracts/GlobalWhitelist.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "metadata": {
+            "bytecodeHash": "none"
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "GlobalWhitelist"
+      ]
     }
   }
 }
