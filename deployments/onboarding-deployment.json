@@ -1,0 +1,21 @@
+{
+  "network": "localhost",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "timestamp": "2025-12-14T23:23:17.136Z",
+  "contracts": {
+    "GasSubsidy": {
+      "address": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+      "subsidyAmount": "1 ORA",
+      "initialBalance": "100.0"
+    },
+    "TokenFaucet": {
+      "address": "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
+      "faucetAmount": "1000 ORA",
+      "totalSupply": "1000000.0"
+    },
+    "NodeRegistry": {
+      "address": "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
+      "totalNodes": "0"
+    }
+  }
+}

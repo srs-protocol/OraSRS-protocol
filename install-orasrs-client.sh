@@ -131,6 +131,16 @@ install_node_dependencies() {
         exit 1
     fi
     
+    # 安装CLI工具
+    print_info "安装OraSRS CLI工具..."
+    chmod +x /opt/orasrs/orasrs-cli.js
+    
+    # 创建符号链接到 /usr/local/bin
+    if [ -f /opt/orasrs/orasrs-cli.js ]; then
+        ln -sf /opt/orasrs/orasrs-cli.js /usr/local/bin/orasrs-cli
+        print_success "CLI工具已安装: orasrs-cli"
+    fi
+    
     print_success "Node.js依赖安装完成"
 }
 
@@ -260,6 +270,15 @@ start_service() {
 show_completion_info() {
     print_success "OraSRS客户端安装完成！"
     echo
+    echo -e "${GREEN}CLI命令 (推荐):${NC}"
+    echo "  查看状态: orasrs-cli status"
+    echo "  查询IP: orasrs-cli query <ip>"
+    echo "  初始化: orasrs-cli init"
+    echo "  统计信息: orasrs-cli stats"
+    echo "  查看配置: orasrs-cli config"
+    echo "  查看日志: orasrs-cli logs"
+    echo "  运行测试: orasrs-cli test"
+    echo
     echo -e "${GREEN}服务管理命令:${NC}"
     echo "  启动服务: sudo systemctl start orasrs-client"
     echo "  停止服务: sudo systemctl stop orasrs-client"
@@ -274,15 +293,7 @@ show_completion_info() {
     echo "  健康检查: http://localhost:3006/health"
     echo "  风险查询: http://localhost:3006/orasrs/v1/query?ip=1.2.3.4"
     echo "  威胁检测: http://localhost:3006/orasrs/v1/threats/detected"
-    echo "  Gas补贴请求: http://localhost:3006/orasrs/v1/gas-subsidy/request"
-    echo "  Gas补贴状态: http://localhost:3006/orasrs/v1/gas-subsidy/status/{address}"
-    echo "  检测威胁: http://localhost:3006/orasrs/v1/threats/detected"
     echo "  威胁统计: http://localhost:3006/orasrs/v1/threats/stats"
-    echo "  提交威胁: http://localhost:3006/orasrs/v1/threats/submit"
-    echo
-    echo -e "${GREEN}性能测试:${NC}"
-    echo "  运行10k IP测试: node /opt/orasrs/orasrs-lite-client/benchmarks/10k-ip-test.js"
-    echo "  运行延迟检查: bash /opt/orasrs/orasrs-lite-client/benchmarks/latency-check.sh"
     echo
     echo -e "${GREEN}重要提醒:${NC}"
     echo "  此服务提供咨询建议，最终决策由客户端做出"

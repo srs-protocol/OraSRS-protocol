@@ -120,6 +120,8 @@ class EgressFilter:
 
 def main():
     import argparse
+    import json
+    import select
     
     parser = argparse.ArgumentParser(description='OraSRS eBPF Egress Filter')
     parser.add_argument('--mode', choices=['disabled', 'monitor', 'enforce'], 
@@ -136,8 +138,34 @@ def main():
         
         if args.daemon:
             print("[OraSRS] Running in daemon mode. Press Ctrl+C to stop.")
+            print("[OraSRS] Listening for commands on stdin...")
+            
             while True:
-                time.sleep(10)
+                # Check for stdin input (non-blocking)
+                if select.select([sys.stdin], [], [], 1)[0]:
+                    try:
+                        line = sys.stdin.readline().strip()
+                        if line:
+                            command = json.loads(line)
+                            
+                            if command.get('action') == 'update':
+                                ip = command.get('ip')
+                                score = command.get('score', 0)
+                                is_blocked = command.get('isBlocked', False)
+                                ttl = command.get('ttl', 3600)
+                                
+                                filter.update_risk_cache(ip, score, is_blocked, ttl)
+                            
+                            elif command.get('action') == 'stats':
+                                filter.print_statistics()
+                    
+                    except json.JSONDecodeError:
+                        pass  # Ignore invalid JSON
+                    except Exception as e:
+                        print(f"[OraSRS] Command error: {e}")
+                
+                # Print stats every 60 seconds
+                time.sleep(60)
                 filter.print_statistics()
         else:
             print("[OraSRS] eBPF filter loaded. Run with --daemon to keep running.")

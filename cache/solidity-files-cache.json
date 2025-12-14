@@ -552,8 +552,8 @@
       ]
     },
     "/home/Great/SRS-Protocol/contracts/OraSRSGovernance.sol": {
-      "lastModificationDate": 1765203134130,
-      "contentHash": "e11c6a33e5fb818c1882f3f36e4a0e2b",
+      "lastModificationDate": 1765733408369,
+      "contentHash": "a9492e8dec63e5b18f3da578edc5958b",
       "sourceName": "contracts/OraSRSGovernance.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -583,12 +583,9 @@
           }
         }
       },
-      "imports": [
-        "@openzeppelin/contracts/access/Ownable.sol",
-        "@openzeppelin/contracts/utils/ReentrancyGuard.sol"
-      ],
+      "imports": [],
       "versionPragmas": [
-        "^0.8.24"
+        "^0.8.20"
       ],
       "artifacts": [
         "OraSRSGovernance"
@@ -966,6 +963,48 @@
       ],
       "artifacts": [
         "GlobalWhitelist"
+      ]
+    },
+    "/home/Great/SRS-Protocol/contracts/OnboardingContracts.sol": {
+      "lastModificationDate": 1765754586146,
+      "contentHash": "068b32b33247b5abe93935bacbb52a5b",
+      "sourceName": "contracts/OnboardingContracts.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "metadata": {
+            "bytecodeHash": "none"
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "GasSubsidy",
+        "NodeRegistry",
+        "TokenFaucet"
       ]
     }
   }

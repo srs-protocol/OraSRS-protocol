@@ -1,0 +1,11 @@
+{
+  "governanceAddress": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
+  "timelockDelay": 86400,
+  "emergencyDelay": 0,
+  "votingThreshold": 3,
+  "nodeQualificationCriteria": {
+    "maxRiskScore": 10,
+    "minUptime": 259200,
+    "minReputation": 60
+  }
+}
