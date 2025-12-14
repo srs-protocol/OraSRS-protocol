@@ -1,0 +1,24 @@
+<group name="orasrs,">
+  <rule id="100100" level="10">
+    <decoded_as>json</decoded_as>
+    <field name="orasrs.source">orasrs</field>
+    <description>OraSRS: High Risk IP Detected - $(orasrs.srcip)</description>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+  </rule>
+
+  <rule id="100101" level="12">
+    <if_sid>100100</if_sid>
+    <field name="orasrs.risk_level">严重</field>
+    <description>OraSRS: Critical Risk IP Detected - $(orasrs.srcip)</description>
+    <group>active_response,</group>
+  </rule>
+  
+  <rule id="100102" level="12">
+    <if_sid>100100</if_sid>
+    <field name="orasrs.risk_level">High</field>
+    <description>OraSRS: High Risk IP Detected - $(orasrs.srcip)</description>
+    <group>active_response,</group>
+  </rule>
+</group>

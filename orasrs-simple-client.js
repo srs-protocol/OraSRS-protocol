@@ -16,7 +16,7 @@ class SimpleOraSRSService {
   constructor(config = {}) {
     this.config = {
       port: config.port || 3006,
-      host: config.host || '0.0.0.0',
+      host: config.host || '127.0.0.1', // Limit to localhost for security
       enableLogging: config.enableLogging !== false,
       logFile: config.logFile || './logs/orasrs-service.log',
       ...config

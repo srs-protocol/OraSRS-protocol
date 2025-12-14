@@ -123,7 +123,21 @@ curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-c
 
 此命令也用于**更新客户端**。如果客户端已安装，运行此命令将自动拉取最新代码并重启服务。
 
-### 方式 2: 手动安装 (Docker)
+
+### 方式 2: Wazuh + OraSRS 集成安装 (高级安全)
+
+如果您希望将 OraSRS 集成到 Wazuh 安全平台，实现自动威胁阻断：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-wazuh-orasrs.sh | bash
+```
+
+此脚本将：
+1. 安装/更新 OraSRS 客户端（限制为本地访问）。
+2. 安装 Wazuh Agent。
+3. 配置自动联动：Wazuh 发现威胁 -> 查询 OraSRS -> 若为高危 -> 自动封禁 IP。
+
+### 方式 3: 手动安装 (Docker)
 ## 🔐 ChainMaker 合约 / ChainMaker Contract
 - [ChainMaker 合约代码 / ChainMaker Contract Code](chainmaker-contract/sracontract/sracontract.go)
 - [威胁情报扩展 / Threat Intelligence Extensions](chainmaker-contract/sracontract/extra_methods.go)
