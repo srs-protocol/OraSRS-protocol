@@ -6,29 +6,43 @@ import time
 import os
 
 # OraSRS Client API
-ORASRS_API = "http://127.0.0.1:3006/orasrs/v1/query"
+ORASRS_API_PROCESS = "http://127.0.0.1:3006/orasrs/v1/threats/process"
 LOG_FILE = "/var/ossec/logs/integrations.log"
 
 def log(msg):
     with open(LOG_FILE, "a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} custom-orasrs: {msg}\n")
 
-def query_orasrs(ip):
+def process_threat(ip, alert_data):
     try:
-        response = requests.get(f"{ORASRS_API}?ip={ip}", timeout=2)
+        payload = {
+            "ip": ip,
+            "threatType": "Wazuh Alert",
+            "threatLevel": "High", # Default to High for Wazuh alerts, or parse from alert_data
+            "context": json.dumps(alert_data.get("rule", {})),
+            "evidence": "Wazuh Active Response Trigger"
+        }
+        
+        # Extract level from alert if available
+        level = alert_data.get("rule", {}).get("level", 0)
+        if level >= 12:
+            payload["threatLevel"] = "Critical"
+        elif level >= 10:
+            payload["threatLevel"] = "High"
+        else:
+            payload["threatLevel"] = "Medium"
+
+        response = requests.post(ORASRS_API_PROCESS, json=payload, timeout=2)
         if response.status_code == 200:
             return response.json()
     except Exception as e:
-        log(f"Error querying OraSRS: {e}")
+        log(f"Error processing threat with OraSRS: {e}")
     return None
 
 def main():
     # Read configuration and alert file
     try:
         alert_file = sys.argv[1]
-        user = sys.argv[2]
-        hook_url = sys.argv[3]
-        api_key = sys.argv[4] if len(sys.argv) > 4 else None
     except IndexError:
         log("Missing arguments")
         sys.exit(1)
@@ -51,40 +65,36 @@ def main():
         log("No source IP found in alert")
         sys.exit(0)
 
-    # Query OraSRS
-    log(f"Querying OraSRS for IP: {srcip}")
-    result = query_orasrs(srcip)
+    # Process Threat with OraSRS
+    log(f"Processing IP with OraSRS: {srcip}")
+    result = process_threat(srcip, alert_json)
 
-    if result and result.get("response", {}).get("risk_level") in ["高", "严重", "High", "Critical"]:
-        # Threat Detected!
-        risk_score = result["response"].get("risk_score", 0)
-        risk_level = result["response"].get("risk_level", "Unknown")
+    if result and result.get("action") == "block":
+        duration = result.get("duration", 86400)
+        reason = result.get("reason", "Unknown")
         
-        log(f"Threat detected for {srcip}: {risk_level} (Score: {risk_score})")
+        log(f"OraSRS Decision: BLOCK {srcip} for {duration}s ({reason})")
         
-        # Generate Alert for Wazuh
+        # Generate Alert for Wazuh to trigger Active Response
         alert_output = {
             "orasrs": {
                 "source": "orasrs",
-                "risk_level": risk_level,
-                "risk_score": risk_score,
-                "description": f"OraSRS detected high risk IP: {srcip}",
+                "action": "block",
+                "duration": duration,
+                "reason": reason,
                 "srcip": srcip,
-                "evidence": result["response"].get("evidence", [])
+                "risk_score": result.get("risk_score", 0)
             },
             "integration": "custom-orasrs"
         }
         
-        # Send to Wazuh Manager (via socket or stdout? Integrations usually write to socket or make API call)
-        # But standard custom integrations in Wazuh usually just log or send to external.
-        # To feed BACK into Wazuh, we usually append to an active response log or use the Wazuh API.
-        # However, for simplicity, we can write to a specific log file that Wazuh monitors.
-        
         with open("/var/ossec/logs/orasrs-alerts.json", "a") as f:
             f.write(json.dumps(alert_output) + "\n")
             
+    elif result and result.get("action") == "allow":
+        log(f"OraSRS Decision: ALLOW {srcip} ({result.get('reason')})")
     else:
-        log(f"IP {srcip} is safe or low risk.")
+        log(f"OraSRS Decision: NO ACTION for {srcip}")
 
 if __name__ == "__main__":
     main()

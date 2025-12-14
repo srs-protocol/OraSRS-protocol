@@ -21,9 +21,26 @@
   <timeout_allowed>yes</timeout_allowed>
 </command>
 
+<!-- 24 Hours -->
 <active-response>
   <command>firewall-drop</command>
   <location>local</location>
-  <rules_id>100101,100102</rules_id>
-  <timeout>86400</timeout> <!-- Default 24 hours -->
+  <rules_id>100102</rules_id>
+  <timeout>86400</timeout>
+</active-response>
+
+<!-- 3 Days -->
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>100103</rules_id>
+  <timeout>259200</timeout>
+</active-response>
+
+<!-- 7 Days -->
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>100104</rules_id>
+  <timeout>604800</timeout>
 </active-response>

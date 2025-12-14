@@ -396,140 +396,385 @@ class SimpleOraSRSService {
       }
     });
 
-    // 手动提交威胁报告
-    this.app.post('/orasrs/v1/threats/submit', async (req, res) => {
-      const { ip, threatType, threatLevel, context, evidence } = req.body;
+  });
 
-      if (!ip || !threatType) {
-        return res.status(400).json({
-          error: 'IP and threatType are required',
-          code: 'MISSING_REQUIRED_FIELDS'
+    // 处理威胁并分配动态风控 (Wazuh 集成专用)
+    this.app.post('/orasrs/v1/threats/process', async (req, res) => {
+    const { ip, threatType, threatLevel, context, evidence } = req.body;
+
+    if (!ip) {
+      return res.status(400).json({ error: 'IP is required' });
+    }
+
+    try {
+      // 1. 检查白名单 (本地 + 合约)
+      const isWhitelisted = await this.blockchainConnector.checkWhitelist(ip);
+      if (isWhitelisted) {
+        return res.status(200).json({
+          action: 'allow',
+          reason: 'IP is whitelisted',
+          duration: 0
         });
       }
 
-      try {
+      // 2. 计算风险评分和封禁时长
+      let duration = 86400; // 默认 24小时
+      let score = 50;
+
+      // 根据威胁等级调整
+      if (threatLevel === 'High' || threatLevel === 'Critical' || threatLevel === '严重' || threatLevel === '高') {
+        score = 80;
+        duration = 259200; // 3天
+      }
+
+      // 如果是极高危 (Critical)，直接 7天
+      if (threatLevel === 'Critical' || threatLevel === '严重') {
+        score = 95;
+        duration = 604800; // 7天
+      }
+
+      // 3. 检查本地缓存
+      // 这里的 getThreats() 返回的是内存中的列表，可以视为本地缓存
+      const localThreats = this.threatDetection.getThreats();
+      const existingLocal = localThreats.find(t => t.ip === ip);
+
+      if (existingLocal) {
+        console.log(`本地缓存命中: ${ip}, 延长封禁时间`);
+        // 叠加封禁时间 (最高7天)
+        duration = Math.min(duration * 2, 604800);
+      }
+
+      // 4. 检查链上数据
+      let onChainData = null;
+      if (this.blockchainConnector.getStatus().isConnected) {
+        try {
+          const chainResponse = await this.blockchainConnector.getThreatData(ip);
+          if (chainResponse && chainResponse.response && chainResponse.response.risk_level !== '无数据' && chainResponse.response.risk_level !== '安全') {
+            onChainData = chainResponse;
+            console.log(`链上数据命中: ${ip}, 确认为全局威胁`);
+            // 确认为全局威胁，直接最大封禁
+            duration = 604800; // 7天
+          }
+        } catch (e) {
+          console.error('链上查询失败:', e.message);
+        }
+      }
+
+      // 5. 如果是新威胁 (本地和链上都没有)，写入本地并上报
+      if (!existingLocal && !onChainData) {
+        console.log(`新威胁发现: ${ip}, 写入本地缓存并上报`);
+
         const threatData = {
           ip: ip,
-          threatType: threatType,
+          threatType: threatType || 'Unknown',
           threatLevel: threatLevel || 'Medium',
-          context: context || 'Manual threat report',
-          evidence: evidence || 'Manual submission',
+          context: context || 'Wazuh Detected',
+          evidence: evidence || 'Dynamic Risk Control',
           timestamp: new Date().toISOString()
         };
 
-        // 记录威胁
+        // 写入本地
         await this.threatDetection.reportThreat(threatData);
 
-        // 尝试提交到区块链
-        let submitResult = {
-          success: true,
-          message: 'Threat report submitted successfully to local detection system',
-          threatId: `${ip}_${Date.now()}`,
-          blockchain_status: this.blockchainConnector.getStatus()
-        };
-
-        // 如果区块链连接正常，尝试提交到区块链
+        // 上报链上 (异步)
         if (this.blockchainConnector.getStatus().isConnected) {
-          try {
-            const blockchainResult = await this.blockchainConnector.submitThreatReport(threatData);
-            submitResult.blockchain_result = blockchainResult;
-            submitResult.message = 'Threat report submitted successfully to both local detection system and blockchain';
-          } catch (blockchainError) {
-            console.error('Failed to submit threat to blockchain:', blockchainError.message);
-            submitResult.message = 'Threat report submitted to local detection system, but failed to submit to blockchain';
-            submitResult.blockchain_error = blockchainError.message;
-          }
-        } else {
-          submitResult.message = 'Threat report submitted to local detection system, but blockchain is currently offline';
+          this.blockchainConnector.submitThreatReport(threatData).catch(e => console.error('异步上报失败:', e.message));
         }
-
-        res.status(201).json(submitResult);
-      } catch (error) {
-        console.error('Error submitting threat report:', error);
-        res.status(500).json({
-          error: 'Internal server error during threat submission',
-          code: 'THREAT_SUBMIT_ERROR'
-        });
       }
+
+      // 6. 返回决策
+      res.status(200).json({
+        action: 'block',
+        duration: duration,
+        risk_score: score,
+        reason: existingLocal ? 'Local Cache Hit (Extended)' : (onChainData ? 'Global Threat (Max Ban)' : 'New Threat (Dynamic Ban)')
+      });
+
+    } catch (error) {
+      console.error('Error processing threat:', error);
+      res.status(500).json({ error: 'Internal processing error' });
+    }
+  });
+
+// 手动提交威胁报告
+this.app.post('/orasrs/v1/threats/submit', async (req, res) => {
+  const { ip, threatType, threatLevel, context, evidence } = req.body;
+
+  if (!ip || !threatType) {
+    return res.status(400).json({
+      error: 'IP and threatType are required',
+      code: 'MISSING_REQUIRED_FIELDS'
     });
   }
 
-  // 将威胁数据翻译成中文
-  translateToChinese(threatData) {
-    if (!threatData || typeof threatData !== 'object') {
-      return threatData;
+  try {
+    const threatData = {
+      ip: ip,
+      threatType: threatType,
+      threatLevel: threatLevel || 'Medium',
+      context: context || 'Manual threat report',
+      evidence: evidence || 'Manual submission',
+      timestamp: new Date().toISOString()
+    };
+
+    // 记录威胁
+    await this.threatDetection.reportThreat(threatData);
+
+    // 尝试提交到区块链
+    let submitResult = {
+      success: true,
+      message: 'Threat report submitted successfully to local detection system',
+      threatId: `${ip}_${Date.now()}`,
+      blockchain_status: this.blockchainConnector.getStatus()
+    };
+
+    // 如果区块链连接正常，尝试提交到区块链
+    if (this.blockchainConnector.getStatus().isConnected) {
+      try {
+        const blockchainResult = await this.blockchainConnector.submitThreatReport(threatData);
+        submitResult.blockchain_result = blockchainResult;
+        submitResult.message = 'Threat report submitted successfully to both local detection system and blockchain';
+      } catch (blockchainError) {
+        console.error('Failed to submit threat to blockchain:', blockchainError.message);
+        submitResult.message = 'Threat report submitted to local detection system, but failed to submit to blockchain';
+        submitResult.blockchain_error = blockchainError.message;
+      }
+    } else {
+      submitResult.message = 'Threat report submitted to local detection system, but blockchain is currently offline';
     }
 
-    // 深拷贝原始数据
-    const translatedData = JSON.parse(JSON.stringify(threatData));
+    res.status(201).json(submitResult);
+  } catch (error) {
+    console.error('Error submitting threat report:', error);
+    res.status(500).json({
+      error: 'Internal server error during threat submission',
+      code: 'THREAT_SUBMIT_ERROR'
+    });
+  }
+});
+  }
 
+// 将威胁数据翻译成中文
+translateToChinese(threatData) {
+  if (!threatData || typeof threatData !== 'object') {
+    return threatData;
+  }
+
+  // 深拷贝原始数据
+  const translatedData = JSON.parse(JSON.stringify(threatData));
+
+  // 翻译风险等级
+  if (translatedData.response) {
     // 翻译风险等级
-    if (translatedData.response) {
-      // 翻译风险等级
-      if (translatedData.response.risk_level) {
-        switch (translatedData.response.risk_level.toLowerCase()) {
+    if (translatedData.response.risk_level) {
+      switch (translatedData.response.risk_level.toLowerCase()) {
+        case 'low':
+          translatedData.response.risk_level = '低';
+          break;
+        case 'medium':
+          translatedData.response.risk_level = '中';
+          break;
+        case 'high':
+          translatedData.response.risk_level = '高';
+          break;
+        case 'critical':
+          translatedData.response.risk_level = '严重';
+          break;
+      }
+    }
+
+    // 翻译置信度
+    if (translatedData.response.confidence) {
+      switch (translatedData.response.confidence.toLowerCase()) {
+        case 'low':
+          translatedData.response.confidence = '低';
+          break;
+        case 'medium':
+          translatedData.response.confidence = '中等';
+          break;
+        case 'high':
+          translatedData.response.confidence = '高';
+          break;
+      }
+    }
+
+    // 翻译证据类型
+    if (translatedData.response.evidence && Array.isArray(translatedData.response.evidence)) {
+      translatedData.response.evidence = translatedData.response.evidence.map(evidence => {
+        const translatedEvidence = { ...evidence };
+        if (translatedEvidence.type) {
+          switch (translatedEvidence.type.toLowerCase()) {
+            case 'mock_data':
+              translatedEvidence.type = '模拟数据';
+              break;
+            case 'contract_data':
+              translatedEvidence.type = '合约数据';
+              break;
+            case 'report':
+              translatedEvidence.type = '报告';
+              break;
+            case 'honeypot_hit':
+              translatedEvidence.type = '蜜罐命中';
+              break;
+            case 'log_analysis':
+              translatedEvidence.type = '日志分析';
+              break;
+            default:
+              translatedEvidence.type = translatedEvidence.type;
+          }
+        }
+        if (translatedEvidence.source) {
+          switch (translatedEvidence.source.toLowerCase()) {
+            case 'local_mock':
+              translatedEvidence.source = '本地模拟';
+              break;
+            case 'blockchain_contract':
+              translatedEvidence.source = '区块链合约';
+              break;
+            case 'log_parser':
+              translatedEvidence.source = '日志解析器';
+              break;
+            case 'honeypot':
+              translatedEvidence.source = '蜜罐';
+              break;
+            case 'dpi':
+              translatedEvidence.source = '深度包检测';
+              break;
+            default:
+              translatedEvidence.source = translatedEvidence.source;
+          }
+        }
+        return translatedEvidence;
+      });
+    }
+
+    // 翻译建议
+    if (translatedData.response.recommendations) {
+      const rec = translatedData.response.recommendations;
+      const translations = {
+        'allow': '允许',
+        'monitor': '监控',
+        'allow_with_verification': '允许但需验证',
+        'block': '阻止',
+        'alert': '告警',
+        'investigate': '调查'
+      };
+
+      Object.keys(rec).forEach(key => {
+        if (translations[rec[key].toLowerCase()]) {
+          rec[key] = translations[rec[key].toLowerCase()];
+        }
+      });
+    }
+
+    // 翻译版本信息
+    if (translatedData.response.version) {
+      switch (translatedData.response.version.toLowerCase()) {
+        case '2.0-mock':
+          translatedData.response.version = '2.0-模拟';
+          break;
+        case '2.0-contract':
+          translatedData.response.version = '2.0-合约';
+          break;
+      }
+    }
+
+    // 更新免责声明
+    if (translatedData.response.disclaimer) {
+      if (translatedData.response.disclaimer.includes('mock data')) {
+        translatedData.response.disclaimer = '这是区块链连接问题期间的服务可用性模拟数据。';
+      } else if (translatedData.response.disclaimer.includes('from OraSRS protocol chain')) {
+        translatedData.response.disclaimer = '此数据来自OraSRS协议链。';
+      }
+    }
+  }
+
+  return translatedData;
+}
+
+// 将威胁列表翻译成中文
+translateThreatListToChinese(threatList) {
+  if (!threatList || typeof threatList !== 'object') {
+    return threatList;
+  }
+
+  // 深拷贝原始数据
+  const translatedList = JSON.parse(JSON.stringify(threatList));
+
+  // 翻译威胁列表中的每一项
+  if (translatedList.threat_list && Array.isArray(translatedList.threat_list)) {
+    translatedList.threat_list = translatedList.threat_list.map(threat => {
+      const translatedThreat = { ...threat };
+
+      // 翻译威胁等级
+      if (translatedThreat.threat_level) {
+        switch (translatedThreat.threat_level.toLowerCase()) {
           case 'low':
-            translatedData.response.risk_level = '低';
+            translatedThreat.threat_level = '低';
             break;
           case 'medium':
-            translatedData.response.risk_level = '中';
+            translatedThreat.threat_level = '中';
             break;
           case 'high':
-            translatedData.response.risk_level = '高';
+            translatedThreat.threat_level = '高';
             break;
           case 'critical':
-            translatedData.response.risk_level = '严重';
+            translatedThreat.threat_level = '严重';
             break;
         }
       }
 
-      // 翻译置信度
-      if (translatedData.response.confidence) {
-        switch (translatedData.response.confidence.toLowerCase()) {
-          case 'low':
-            translatedData.response.confidence = '低';
+      // 翻译主要威胁类型
+      if (translatedThreat.primary_threat_type) {
+        switch (translatedThreat.primary_threat_type.toLowerCase()) {
+          case 'suspicious_activity':
+            translatedThreat.primary_threat_type = '可疑活动';
             break;
-          case 'medium':
-            translatedData.response.confidence = '中等';
+          case 'port_scanning':
+            translatedThreat.primary_threat_type = '端口扫描';
             break;
-          case 'high':
-            translatedData.response.confidence = '高';
+          case 'brute_force':
+            translatedThreat.primary_threat_type = '暴力破解';
+            break;
+          case 'ddos':
+            translatedThreat.primary_threat_type = 'DDoS攻击';
+            break;
+          case 'malware':
+            translatedThreat.primary_threat_type = '恶意软件';
+            break;
+          case 'sql_injection':
+            translatedThreat.primary_threat_type = 'SQL注入';
+            break;
+          case 'xss':
+            translatedThreat.primary_threat_type = '跨站脚本';
+            break;
+          case 'phishing':
+            translatedThreat.primary_threat_type = '网络钓鱼';
             break;
         }
       }
 
-      // 翻译证据类型
-      if (translatedData.response.evidence && Array.isArray(translatedData.response.evidence)) {
-        translatedData.response.evidence = translatedData.response.evidence.map(evidence => {
+      // 翻译证据
+      if (translatedThreat.evidence && Array.isArray(translatedThreat.evidence)) {
+        translatedThreat.evidence = translatedThreat.evidence.map(evidence => {
           const translatedEvidence = { ...evidence };
           if (translatedEvidence.type) {
             switch (translatedEvidence.type.toLowerCase()) {
-              case 'mock_data':
-                translatedEvidence.type = '模拟数据';
+              case 'behavior':
+                translatedEvidence.type = '行为';
                 break;
-              case 'contract_data':
-                translatedEvidence.type = '合约数据';
+              case 'scanning':
+                translatedEvidence.type = '扫描';
                 break;
-              case 'report':
-                translatedEvidence.type = '报告';
+              case 'attack':
+                translatedEvidence.type = '攻击';
                 break;
-              case 'honeypot_hit':
-                translatedEvidence.type = '蜜罐命中';
-                break;
-              case 'log_analysis':
-                translatedEvidence.type = '日志分析';
-                break;
-              default:
-                translatedEvidence.type = translatedEvidence.type;
             }
           }
           if (translatedEvidence.source) {
             switch (translatedEvidence.source.toLowerCase()) {
-              case 'local_mock':
-                translatedEvidence.source = '本地模拟';
-                break;
-              case 'blockchain_contract':
-                translatedEvidence.source = '区块链合约';
+              case 'ai_analyzer':
+                translatedEvidence.source = 'AI分析器';
                 break;
               case 'log_parser':
                 translatedEvidence.source = '日志解析器';
@@ -537,222 +782,77 @@ class SimpleOraSRSService {
               case 'honeypot':
                 translatedEvidence.source = '蜜罐';
                 break;
-              case 'dpi':
-                translatedEvidence.source = '深度包检测';
-                break;
-              default:
-                translatedEvidence.source = translatedEvidence.source;
             }
           }
           return translatedEvidence;
         });
       }
 
-      // 翻译建议
-      if (translatedData.response.recommendations) {
-        const rec = translatedData.response.recommendations;
-        const translations = {
-          'allow': '允许',
-          'monitor': '监控',
-          'allow_with_verification': '允许但需验证',
-          'block': '阻止',
-          'alert': '告警',
-          'investigate': '调查'
-        };
-
-        Object.keys(rec).forEach(key => {
-          if (translations[rec[key].toLowerCase()]) {
-            rec[key] = translations[rec[key].toLowerCase()];
-          }
-        });
-      }
-
-      // 翻译版本信息
-      if (translatedData.response.version) {
-        switch (translatedData.response.version.toLowerCase()) {
-          case '2.0-mock':
-            translatedData.response.version = '2.0-模拟';
-            break;
-          case '2.0-contract':
-            translatedData.response.version = '2.0-合约';
-            break;
-        }
-      }
-
-      // 更新免责声明
-      if (translatedData.response.disclaimer) {
-        if (translatedData.response.disclaimer.includes('mock data')) {
-          translatedData.response.disclaimer = '这是区块链连接问题期间的服务可用性模拟数据。';
-        } else if (translatedData.response.disclaimer.includes('from OraSRS protocol chain')) {
-          translatedData.response.disclaimer = '此数据来自OraSRS协议链。';
-        }
-      }
-    }
-
-    return translatedData;
-  }
-
-  // 将威胁列表翻译成中文
-  translateThreatListToChinese(threatList) {
-    if (!threatList || typeof threatList !== 'object') {
-      return threatList;
-    }
-
-    // 深拷贝原始数据
-    const translatedList = JSON.parse(JSON.stringify(threatList));
-
-    // 翻译威胁列表中的每一项
-    if (translatedList.threat_list && Array.isArray(translatedList.threat_list)) {
-      translatedList.threat_list = translatedList.threat_list.map(threat => {
-        const translatedThreat = { ...threat };
-
-        // 翻译威胁等级
-        if (translatedThreat.threat_level) {
-          switch (translatedThreat.threat_level.toLowerCase()) {
-            case 'low':
-              translatedThreat.threat_level = '低';
-              break;
-            case 'medium':
-              translatedThreat.threat_level = '中';
-              break;
-            case 'high':
-              translatedThreat.threat_level = '高';
-              break;
-            case 'critical':
-              translatedThreat.threat_level = '严重';
-              break;
-          }
-        }
-
-        // 翻译主要威胁类型
-        if (translatedThreat.primary_threat_type) {
-          switch (translatedThreat.primary_threat_type.toLowerCase()) {
-            case 'suspicious_activity':
-              translatedThreat.primary_threat_type = '可疑活动';
-              break;
-            case 'port_scanning':
-              translatedThreat.primary_threat_type = '端口扫描';
-              break;
-            case 'brute_force':
-              translatedThreat.primary_threat_type = '暴力破解';
-              break;
-            case 'ddos':
-              translatedThreat.primary_threat_type = 'DDoS攻击';
-              break;
-            case 'malware':
-              translatedThreat.primary_threat_type = '恶意软件';
-              break;
-            case 'sql_injection':
-              translatedThreat.primary_threat_type = 'SQL注入';
-              break;
-            case 'xss':
-              translatedThreat.primary_threat_type = '跨站脚本';
-              break;
-            case 'phishing':
-              translatedThreat.primary_threat_type = '网络钓鱼';
-              break;
-          }
-        }
-
-        // 翻译证据
-        if (translatedThreat.evidence && Array.isArray(translatedThreat.evidence)) {
-          translatedThreat.evidence = translatedThreat.evidence.map(evidence => {
-            const translatedEvidence = { ...evidence };
-            if (translatedEvidence.type) {
-              switch (translatedEvidence.type.toLowerCase()) {
-                case 'behavior':
-                  translatedEvidence.type = '行为';
-                  break;
-                case 'scanning':
-                  translatedEvidence.type = '扫描';
-                  break;
-                case 'attack':
-                  translatedEvidence.type = '攻击';
-                  break;
-              }
-            }
-            if (translatedEvidence.source) {
-              switch (translatedEvidence.source.toLowerCase()) {
-                case 'ai_analyzer':
-                  translatedEvidence.source = 'AI分析器';
-                  break;
-                case 'log_parser':
-                  translatedEvidence.source = '日志解析器';
-                  break;
-                case 'honeypot':
-                  translatedEvidence.source = '蜜罐';
-                  break;
-              }
-            }
-            return translatedEvidence;
-          });
-        }
-
-        return translatedThreat;
-      });
-    }
-
-    // 翻译最高威胁等级
-    if (translatedList.highest_threat_level) {
-      switch (translatedList.highest_threat_level.toLowerCase()) {
-        case 'low':
-          translatedList.highest_threat_level = '低';
-          break;
-        case 'medium':
-          translatedList.highest_threat_level = '中';
-          break;
-        case 'high':
-          translatedList.highest_threat_level = '高';
-          break;
-        case 'critical':
-          translatedList.highest_threat_level = '严重';
-          break;
-      }
-    }
-
-    // 翻译验证状态
-    if (translatedList.blockchain_verification) {
-      if (translatedList.blockchain_verification.verified_on === 'disconnected') {
-        translatedList.blockchain_verification.verified_on = '未连接';
-      }
-    }
-
-    return translatedList;
-  }
-
-  async start() {
-    return new Promise((resolve, reject) => {
-      this.server = this.app.listen(
-        {
-          port: this.config.port,
-          host: this.config.host
-        },
-        () => {
-          console.log(`OraSRS Service listening on ${this.config.host}:${this.config.port}`);
-          console.log('OraSRS (Oracle Security Root Service) - Advisory Risk Scoring Service is now running');
-          console.log('Important: This service provides advisory recommendations only, not direct blocking commands.');
-          console.log(`🔗 Connected to OraSRS blockchain: ${this.config.blockchain?.endpoint || 'https://api.orasrs.net'}`);
-          resolve();
-        }
-      );
-
-      this.server.on('error', (error) => {
-        console.error('Failed to start OraSRS Service:', error);
-        reject(error);
-      });
+      return translatedThreat;
     });
   }
 
-  async stop() {
-    if (this.server) {
-      return new Promise((resolve) => {
-        this.server.close(() => {
-          console.log('OraSRS Service stopped');
-          resolve();
-        });
-      });
+  // 翻译最高威胁等级
+  if (translatedList.highest_threat_level) {
+    switch (translatedList.highest_threat_level.toLowerCase()) {
+      case 'low':
+        translatedList.highest_threat_level = '低';
+        break;
+      case 'medium':
+        translatedList.highest_threat_level = '中';
+        break;
+      case 'high':
+        translatedList.highest_threat_level = '高';
+        break;
+      case 'critical':
+        translatedList.highest_threat_level = '严重';
+        break;
     }
   }
+
+  // 翻译验证状态
+  if (translatedList.blockchain_verification) {
+    if (translatedList.blockchain_verification.verified_on === 'disconnected') {
+      translatedList.blockchain_verification.verified_on = '未连接';
+    }
+  }
+
+  return translatedList;
+}
+
+  async start() {
+  return new Promise((resolve, reject) => {
+    this.server = this.app.listen(
+      {
+        port: this.config.port,
+        host: this.config.host
+      },
+      () => {
+        console.log(`OraSRS Service listening on ${this.config.host}:${this.config.port}`);
+        console.log('OraSRS (Oracle Security Root Service) - Advisory Risk Scoring Service is now running');
+        console.log('Important: This service provides advisory recommendations only, not direct blocking commands.');
+        console.log(`🔗 Connected to OraSRS blockchain: ${this.config.blockchain?.endpoint || 'https://api.orasrs.net'}`);
+        resolve();
+      }
+    );
+
+    this.server.on('error', (error) => {
+      console.error('Failed to start OraSRS Service:', error);
+      reject(error);
+    });
+  });
+}
+
+  async stop() {
+  if (this.server) {
+    return new Promise((resolve) => {
+      this.server.close(() => {
+        console.log('OraSRS Service stopped');
+        resolve();
+      });
+    });
+  }
+}
 }
 
 // 尝试读取用户配置文件，如果不存在则使用默认值

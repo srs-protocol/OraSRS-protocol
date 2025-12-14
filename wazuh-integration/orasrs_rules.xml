@@ -2,23 +2,38 @@
   <rule id="100100" level="10">
     <decoded_as>json</decoded_as>
     <field name="orasrs.source">orasrs</field>
-    <description>OraSRS: High Risk IP Detected - $(orasrs.srcip)</description>
-    <mitre>
-      <id>T1071</id>
-    </mitre>
+    <description>OraSRS: Threat Processed - $(orasrs.srcip)</description>
   </rule>
 
+  <!-- Block Rules -->
   <rule id="100101" level="12">
     <if_sid>100100</if_sid>
-    <field name="orasrs.risk_level">严重</field>
-    <description>OraSRS: Critical Risk IP Detected - $(orasrs.srcip)</description>
+    <field name="orasrs.action">block</field>
+    <description>OraSRS: Blocking IP - $(orasrs.srcip) for $(orasrs.duration)s</description>
     <group>active_response,</group>
   </rule>
+
+  <!-- Duration Specific Rules (Optional, if we want different ARs) -->
+  <!-- For now, we assume one AR that handles the duration or we just use default timeout -->
+  <!-- But user wants dynamic timeout. Wazuh AR usually takes timeout from ossec.conf -->
+  <!-- To support dynamic, we might need to pass duration as argument to a custom script -->
+  <!-- Or define multiple ARs with different timeouts and trigger different rules -->
   
   <rule id="100102" level="12">
-    <if_sid>100100</if_sid>
-    <field name="orasrs.risk_level">High</field>
-    <description>OraSRS: High Risk IP Detected - $(orasrs.srcip)</description>
-    <group>active_response,</group>
+    <if_sid>100101</if_sid>
+    <field name="orasrs.duration">86400</field>
+    <description>OraSRS: Blocking IP - $(orasrs.srcip) for 24h</description>
+  </rule>
+
+  <rule id="100103" level="12">
+    <if_sid>100101</if_sid>
+    <field name="orasrs.duration">259200</field>
+    <description>OraSRS: Blocking IP - $(orasrs.srcip) for 3 days</description>
+  </rule>
+
+  <rule id="100104" level="12">
+    <if_sid>100101</if_sid>
+    <field name="orasrs.duration">604800</field>
+    <description>OraSRS: Blocking IP - $(orasrs.srcip) for 7 days</description>
   </rule>
 </group>
