@@ -39,6 +39,39 @@ check_root() {
     fi
 }
 
+# 选择语言
+select_language() {
+    echo ""
+    echo "Please select language / 请选择语言:"
+    echo "  1) English"
+    echo "  2) 中文 (Chinese)"
+    echo ""
+    
+    # Try to read from /dev/tty if available (for piped execution)
+    if [ -t 0 ]; then
+        read -p "Select [1-2]: " lang_choice
+    else
+        read -p "Select [1-2]: " lang_choice < /dev/tty
+    fi
+    
+    mkdir -p /etc/orasrs
+    
+    case $lang_choice in
+        1)
+            echo '{"language": "en"}' > /etc/orasrs/cli-config.json
+            print_info "Language set to English"
+            ;;
+        2)
+            echo '{"language": "zh"}' > /etc/orasrs/cli-config.json
+            print_info "语言已设置为中文"
+            ;;
+        *)
+            echo '{"language": "en"}' > /etc/orasrs/cli-config.json
+            print_info "Invalid selection, defaulting to English"
+            ;;
+    esac
+}
+
 # 检查系统类型
 detect_os() {
     if [[ -f /etc/os-release ]]; then
@@ -307,6 +340,7 @@ main() {
     print_info "开始安装 OraSRS (Oracle Security Root Service) 客户端..."
     
     check_root
+    select_language
     detect_os
     check_dependencies
     clone_orasrs

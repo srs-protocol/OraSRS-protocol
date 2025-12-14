@@ -35,7 +35,8 @@ echo "  1) 我有 Wazuh Manager 服务器（推荐用于生产环境）"
 echo "  2) 独立模式 - 仅使用本地规则（适合测试/开发）"
 echo "  3) 跳过 Wazuh 配置（仅使用 OraSRS 客户端）"
 echo ""
-read -p "请选择 [1-3]: " choice
+# Ensure we read from terminal even if script is piped
+read -p "请选择 [1-3]: " choice < /dev/tty
 
 case $choice in
     1)

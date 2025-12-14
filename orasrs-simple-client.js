@@ -7,9 +7,16 @@
 // 导入区块链连接器
 import BlockchainConnector from './blockchain-connector.js';
 import ThreatDetection from './threat-detection.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const express = require('express');
+
+const CACHE_DIR = '/var/lib/orasrs';
+const CACHE_FILE = path.join(CACHE_DIR, 'cache.json');
 
 // 精简版OraSRS服务类，避免复杂依赖
 class SimpleOraSRSService {
@@ -79,8 +86,86 @@ class SimpleOraSRSService {
       }
     });
 
+    // 初始化本地缓存
+    this.cache = {
+      threats: {},
+      whitelist: [],
+      lastUpdate: null
+    };
+    this.loadCache();
+
+    // 启动定期缓存更新
+    this.startCacheUpdate();
+
     // 基本API端点
     this.setupRoutes();
+  }
+
+  loadCache() {
+    try {
+      if (fs.existsSync(CACHE_FILE)) {
+        const data = fs.readFileSync(CACHE_FILE, 'utf8');
+        this.cache = JSON.parse(data);
+        console.log(`已加载本地缓存: ${Object.keys(this.cache.threats).length} 条威胁记录, ${this.cache.whitelist.length} 条白名单`);
+      } else {
+        console.log('本地缓存不存在，将创建新缓存');
+        this.saveCache();
+      }
+    } catch (error) {
+      console.error('加载缓存失败:', error.message);
+    }
+  }
+
+  saveCache() {
+    try {
+      if (!fs.existsSync(CACHE_DIR)) {
+        fs.mkdirSync(CACHE_DIR, { recursive: true });
+      }
+      fs.writeFileSync(CACHE_FILE, JSON.stringify(this.cache, null, 2));
+    } catch (error) {
+      console.error('保存缓存失败:', error.message);
+    }
+  }
+
+  startCacheUpdate() {
+    // 每5分钟更新一次缓存
+    setInterval(async () => {
+      await this.updateCache();
+    }, 5 * 60 * 1000);
+
+    // 立即执行一次
+    this.updateCache();
+  }
+
+  async updateCache() {
+    try {
+      if (!this.blockchainConnector.getStatus().isConnected) {
+        return;
+      }
+
+      console.log('正在更新本地缓存...');
+
+      // 1. 更新白名单
+      const whitelist = await this.blockchainConnector.getGlobalWhitelist();
+      if (whitelist && Array.isArray(whitelist)) {
+        this.cache.whitelist = whitelist;
+      }
+
+      // 2. 增量更新威胁数据 (模拟逻辑，实际应基于事件日志)
+      // 这里我们简单地获取最新的威胁列表
+      const threatList = await this.blockchainConnector.getGlobalThreatList();
+      if (threatList && threatList.threat_list) {
+        threatList.threat_list.forEach(threat => {
+          this.cache.threats[threat.ip] = threat;
+        });
+      }
+
+      this.cache.lastUpdate = new Date().toISOString();
+      this.saveCache();
+      console.log('本地缓存更新完成');
+    } catch (error) {
+      console.error('更新缓存失败:', error.message);
+    }
   }
 
   setupRoutes() {
@@ -139,11 +224,60 @@ class SimpleOraSRSService {
       }
 
       try {
-        // 从区块链获取威胁数据
+        // 1. 检查本地白名单
+        if (this.cache.whitelist.includes(ip)) {
+          return res.json({
+            query: { ip, domain },
+            response: {
+              risk_score: 0,
+              risk_level: 'Safe',
+              action: 'Allow',
+              source: 'Local Whitelist',
+              cached: true,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+
+        // 2. 检查本地威胁缓存
+        if (ip && this.cache.threats[ip]) {
+          const cachedThreat = this.cache.threats[ip];
+          // 检查缓存是否过期 (例如 1小时)
+          const cacheTime = new Date(cachedThreat.last_seen).getTime();
+          if (Date.now() - cacheTime < 3600000) {
+            let response = this.translateToChinese({
+              query: { ip, domain },
+              response: {
+                risk_score: cachedThreat.risk_score || 80, // 默认高分
+                risk_level: cachedThreat.threat_level,
+                action: 'Block',
+                source: 'Local Cache',
+                cached: true,
+                threat_types: [cachedThreat.primary_threat_type],
+                timestamp: new Date().toISOString()
+              }
+            });
+            return res.json(response);
+          }
+        }
+
+        // 3. 从区块链获取威胁数据 (如果缓存未命中或过期)
         let threatData = await this.blockchainConnector.getThreatData(ip || domain);
 
         // 将数据翻译成中文（无论是否来自区块链或模拟数据）
         threatData = this.translateToChinese(threatData);
+
+        // 更新缓存
+        if (ip && threatData.response && threatData.response.risk_score > 50) {
+          this.cache.threats[ip] = {
+            ip: ip,
+            risk_score: threatData.response.risk_score,
+            threat_level: threatData.response.risk_level,
+            primary_threat_type: threatData.response.threat_types?.[0] || 'Unknown',
+            last_seen: new Date().toISOString()
+          };
+          this.saveCache();
+        }
 
         res.json(threatData);
       } catch (error) {
@@ -972,10 +1106,7 @@ console.log('🔧 配置:', {
 console.log('🔗 连接到OraSRS协议链: ' + config.blockchain.endpoints[0]);
 
 // 确保日志目录存在
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

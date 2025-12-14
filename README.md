@@ -113,7 +113,38 @@ curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-c
 wget -O - https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
 ```
 
-### 安装后管理命令
+### 管理命令 (使用 OraSRS CLI)
+
+我们推荐使用 `orasrs-cli` 工具来管理客户端：
+
+```bash
+# 查看客户端状态
+orasrs-cli status
+
+# 运行初始化向导
+orasrs-cli init
+
+# 查询 IP 风险评分
+orasrs-cli query 8.8.8.8
+
+# 查看统计信息
+orasrs-cli stats
+
+# 查看配置
+orasrs-cli config
+
+# 查看日志
+orasrs-cli logs
+
+# 运行系统测试
+orasrs-cli test
+
+# 管理白名单
+orasrs-cli whitelist add 1.2.3.4
+orasrs-cli whitelist remove 1.2.3.4
+```
+
+### 传统服务管理命令
 
 ```bash
 # 启动服务
@@ -127,24 +158,6 @@ sudo systemctl restart orasrs-client
 
 # 查看服务状态
 sudo systemctl status orasrs-client
-
-# 查看实时日志
-sudo journalctl -u orasrs-client -f
-
-# 健康检查
-curl http://localhost:3006/health
-
-# 风险查询示例
-curl 'http://localhost:3006/orasrs/v1/query?ip=8.8.8.8'
-
-# 威胁处理 (Wazuh集成)
-curl -X POST http://localhost:3006/orasrs/v1/threats/process -d '{"ip":"1.2.3.4", "threatLevel":"High"}'
-
-# 临时白名单 (人工确认)
-curl -X POST http://localhost:3006/orasrs/v1/whitelist/temp -d '{"ip":"1.2.3.4", "duration":300}'
-
-# 威胁列表
-curl http://localhost:3006/orasrs/v2/threat-list
 ```
 
 ## 浏览器扩展
