@@ -1,4 +1,4 @@
-# SecurityRiskAssessment (Oracle Security Root Service) 协议规范 - V2.0
+# SecurityRiskAssessment (Oracle Security Root Service) 协议规范 - V2.1
 
 ## 概述 / Overview
 
@@ -654,3 +654,203 @@ node latency-test-separated.js
   - 国内RPC: http://localhost:9545 (OP Stack)
   - 海外RPC: https://sepolia.optimism.io (OP Sepolia)
   - LayerZero端点: 配置跨链通信参数
+
+## 高价值资产保护 (HVAP) / High-Value Asset Protection
+
+### 概述
+HVAP 是 OraSRS v2.0 引入的高级安全框架，专门为 SSH、MySQL 等关键服务提供基于风险评分的动态访问控制。
+
+### 防御逻辑
+HVAP 实施三层防御机制：
+
+| 风险等级 | 评分范围 | 防御措施 | 实现方式 |
+|---------|---------|---------|---------|
+| L1 (低风险) | 0-39 | 正常放行 | 直接允许访问 |
+| L2 (中风险) | 40-79 | 警告/建议 MFA | 记录日志，可选 MFA |
+| L3 (高风险) | 80-100 | 直接拦截 | PAM 模块拒绝，返回 403 |
+
+### 实现方式
+
+#### 1. PAM 集成 (SSH/系统登录)
+```bash
+# /etc/pam.d/sshd
+auth required pam_exec.so /opt/orasrs/pam/pam_orasrs.py
+```
+
+PAM 模块工作流程：
+1. 获取连接 IP (`PAM_RHOST`)
+2. 查询 OraSRS 客户端 (`http://127.0.0.1:3006/orasrs/v1/query?ip=<IP>`)
+3. 根据评分决策：
+   - Score >= 80: 返回 Exit Code 1 (拒绝)
+   - Score < 80: 返回 Exit Code 0 (允许)
+
+#### 2. 应急白名单
+管理员可通过 API 临时放行被误拦的 IP：
+
+```bash
+POST /orasrs/v1/whitelist/temp
+{
+  "ip": "1.2.3.4",
+  "duration": 300  # 秒
+}
+```
+
+### 技术优势
+- **0-day 防护**: 基于信誉而非特征，可拦截未知攻击
+- **零侵入**: 无需修改应用代码
+- **应急机制**: 支持临时白名单，避免误拦
+
+## OraSRS IoT Shield (物联网护盾)
+
+### 概述
+OraSRS IoT Shield 为无法修改固件的 IoT 设备（摄像头、传感器、智能门锁等）提供"透明清洗层"保护方案。
+
+### 架构设计
+
+```
+[ 互联网 / 攻击者 ]
+       ↓
+[ 智能网关 ] (OraSRS 客户端 + Nginx)
+       ↓ (仅放行低风险流量)
+[ IoT 设备 ] (配置为仅接受网关 IP)
+```
+
+### 核心机制：先查询后放行
+
+#### Nginx auth_request 集成
+```nginx
+location / {
+    auth_request /auth_check;
+    proxy_pass http://192.168.1.100:80;  # IoT 设备内网 IP
+}
+
+location = /auth_check {
+    internal;
+    proxy_pass http://127.0.0.1:3006/orasrs/v1/check?ip=$remote_addr;
+}
+```
+
+#### API 端点规范
+```
+GET /orasrs/v1/check?ip={ip}
+```
+
+**响应**:
+- `200 OK`: 允许访问（白名单或低风险）
+- `403 Forbidden`: 拒绝访问（高风险，Score >= 80）
+
+**查询逻辑**:
+1. 检查临时白名单 → 200
+2. 检查全局白名单 → 200
+3. 查询风险评分：
+   - Score >= 80 → 403
+   - Score < 80 → 200
+
+### 三维降维打击
+
+#### 1. 从"基于特征"到"基于信誉"
+- **传统**: 依赖已知攻击特征码，对 0-day 无效
+- **OraSRS**: 依靠全网 IP 信誉，攻击者一旦表现恶意行为，立即被拒
+
+#### 2. 从"被动防御"到"隐身防御"
+- **传统**: 暴露登录页面，依赖强密码
+- **OraSRS**: 高风险 IP 无法探测到服务存在，攻击者"对着空气攻击"
+
+#### 3. 为"哑终端"赋予"群体智慧"
+- **现状**: IoT 设备算力弱，无法运行复杂防护
+- **OraSRS**: 通过网关共享全球威胁情报，美国节点发现的威胁，中国设备毫秒级免疫
+
+### 应用场景
+- 智能摄像头
+- 工业传感器
+- 智能门锁
+- 医疗设备
+- 任何无法修改固件的网络设备
+
+## Wazuh 集成 / Wazuh Integration
+
+### 概述
+OraSRS 与 Wazuh 的集成实现了"风险控制优先"的主动防御机制，将威胁情报转化为自动化响应。
+
+### 工作流程
+
+```
+Wazuh 检测威胁 → 调用 OraSRS → 动态风控决策 → Active Response
+```
+
+#### 详细步骤
+1. **Wazuh 触发**: 检测到可疑行为（暴力破解、扫描等）
+2. **OraSRS 查询**: 调用 `/orasrs/v1/threats/process` 端点
+3. **风控决策**:
+   - 检查白名单（临时 + 全局）
+   - 计算风险评分和封禁时长
+   - 查询本地缓存（叠加时长）
+   - 查询链上数据（全局威胁）
+   - 异步上报新威胁
+4. **Active Response**: Wazuh 执行 `firewall-drop`
+
+### API 端点规范
+
+```
+POST /orasrs/v1/threats/process
+{
+  "ip": "1.2.3.4",
+  "threatType": "SSH_BRUTE_FORCE",
+  "threatLevel": "High",
+  "context": "5 failed login attempts",
+  "evidence": "auth.log:line 1234"
+}
+```
+
+**响应**:
+```json
+{
+  "action": "block",
+  "duration": 259200,  // 3天 (秒)
+  "risk_score": 85,
+  "reason": "High risk IP with multiple threat reports"
+}
+```
+
+### 动态封禁时长
+
+| 威胁等级 | 评分 | 封禁时长 |
+|---------|------|---------|
+| 默认 | 50 | 24小时 |
+| High | 80 | 3天 |
+| Critical | 95 | 7天 |
+
+**叠加规则**:
+- 本地缓存命中: 延长 50%
+- 链上数据命中: 取最大值
+
+### 配置文件
+
+#### custom-orasrs.py
+Wazuh 集成脚本，负责调用 OraSRS API 并生成告警。
+
+#### orasrs_rules.xml
+Wazuh 规则，定义不同封禁时长的触发条件。
+
+#### ossec.conf.snippet
+Wazuh 配置片段，定义 Active Response 行为。
+
+### 安装
+```bash
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-wazuh-orasrs.sh | bash
+```
+
+## 版本历史 / Version History
+
+### v2.1 (2025-12-14)
+- 新增 HVAP (高价值资产保护) 框架
+- 新增 IoT Shield (物联网护盾) 方案
+- 新增 Wazuh 集成与动态风控
+- 新增临时白名单机制
+- 优化区块链查询性能 (使用 `getThreatScore`)
+
+### v2.0 (2025-11-01)
+- 引入威胁情报协调网络
+- 三层架构 (边缘/共识/智能)
+- 国密算法支持
+- 跨链威胁情报同步
