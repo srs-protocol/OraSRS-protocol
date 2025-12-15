@@ -924,8 +924,8 @@
       ]
     },
     "/home/Great/SRS-Protocol/contracts/GlobalWhitelist.sol": {
-      "lastModificationDate": 1765676521872,
-      "contentHash": "67cd5aa11de5582ec4a67c47f4f1131c",
+      "lastModificationDate": 1765766806013,
+      "contentHash": "0e7e779d0078a1a5460520d210130ae6",
       "sourceName": "contracts/GlobalWhitelist.sol",
       "solcConfig": {
         "version": "0.8.24",

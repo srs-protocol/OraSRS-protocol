@@ -12,7 +12,7 @@ contract GlobalWhitelist is Ownable {
     mapping(string => bool) public whitelist;
 
     // Event emitted when an IP is added to whitelist
-    event WhitelistAdded(string indexed ip);
+    event WhitelistAdded(string ip);
 
     // Event emitted when an IP is removed from whitelist
     event WhitelistRemoved(string indexed ip);

@@ -14,7 +14,7 @@ class BlockchainConnector {
       endpoints: config.endpoints || [config.endpoint || 'https://api.orasrs.net'],
       chainId: config.chainId || 8888,
       // Fixed Registry Address (Deterministic on local Hardhat)
-      registryAddress: config.registryAddress || '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+      registryAddress: config.registryAddress || '0xb9bEECD1A582768711dE1EE7B0A1d582D9d72a6C',
       contractAddress: config.contractAddress || '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E', // OptimizedThreatRegistry
       // Default contract names to look up
       contractNames: {
@@ -67,6 +67,9 @@ class BlockchainConnector {
           this.isConnected = true;
           this.lastConnectionAttempt = new Date();
           this.retryCount = 0;
+
+          // Initialize ethers provider
+          this.provider = new ethers.JsonRpcProvider(endpoint);
 
           console.log(`✅ 成功连接到OraSRS区块链: ${endpoint}`);
           console.log(`📋 区块链信息:`, {
@@ -727,7 +730,7 @@ class BlockchainConnector {
 
       // GlobalWhitelist ABI (just the events we need)
       const whitelistABI = [
-        "event WhitelistAdded(string indexed ip)",
+        "event WhitelistAdded(string ip)",
         "function isWhitelisted(string memory ip) public view returns (bool)"
       ];
 
@@ -740,10 +743,13 @@ class BlockchainConnector {
       // Extract IPs from events and verify they're still whitelisted
       const ips = [];
       for (const event of events) {
-        const ip = event.args.ip;
-        const isWhitelisted = await contract.isWhitelisted(ip);
-        if (isWhitelisted) {
-          ips.push(ip);
+        // console.log('Event:', event);
+        if (event.args) {
+          const ip = event.args[0]; // Access by index or name
+          const isWhitelisted = await contract.isWhitelisted(ip);
+          if (isWhitelisted) {
+            ips.push(ip);
+          }
         }
       }
 

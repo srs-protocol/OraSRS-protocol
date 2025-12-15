@@ -7,6 +7,7 @@
 // 导入区块链连接器
 import BlockchainConnector from './blockchain-connector.js';
 import ThreatDetection from './threat-detection.js';
+import ThreatDataLoader from './threat-data-loader.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -31,6 +32,12 @@ class SimpleOraSRSService {
 
     // 初始化区块链连接器
     this.blockchainConnector = new BlockchainConnector(this.config.blockchain);
+
+    // 初始化威胁数据加载器
+    this.threatDataLoader = new ThreatDataLoader({
+      dataDir: './oracle',
+      cdnUrl: this.config.cdnUrl || null
+    });
 
     // 初始化威胁检测器
     this.threatDetection = new ThreatDetection(this.blockchainConnector);

@@ -1,35 +1,6 @@
 {
-  "server": {
-    "port": 3006,
-    "host": "0.0.0.0",
-    "enableLogging": true,
-    "logFile": "./logs/orasrs-service.log",
-    "rateLimit": {
-      "windowMs": 900000,
-      "max": 100
-    }
-  },
   "network": {
-    "blockchainEndpoint": "https://api.orasrs.net",
-    "chainId": 8888,
-    "contractAddress": "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E"
-  },
-  "cache": {
-    "enable": true,
-    "maxSize": 10000,
-    "ttl": 3600000,
-    "evictionPolicy": "LRU"
-  },
-  "security": {
-    "enableRateLimiting": true,
-    "enableCORS": true,
-    "corsOrigin": "*",
-    "enableAPIKey": false,
-    "apiKeys": [],
-    "whitelist": [
-      "127.0.0.1",
-      "localhost",
-      "::1"
-    ]
+    "registryAddress": "0xb9bEECD1A582768711dE1EE7B0A1d582D9d72a6C",
+    "contractAddress": "0x40918Ba7f132E0aCba2CE4de4c4baF9BD2D7D849"
   }
 }
