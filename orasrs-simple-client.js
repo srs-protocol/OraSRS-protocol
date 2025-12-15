@@ -182,6 +182,26 @@ class SimpleOraSRSService {
 
     // 立即执行一次
     this.updateCache();
+
+    // 加载区块链白名单
+    this.loadWhitelistFromBlockchain();
+  }
+
+  async loadWhitelistFromBlockchain() {
+    try {
+      console.log('📋 正在从区块链加载白名单...');
+      const blockchainWhitelist = await this.blockchainConnector.getWhitelistedIPs();
+
+      if (blockchainWhitelist && blockchainWhitelist.length > 0) {
+        // 合并区块链白名单和本地白名单（去重）
+        const combinedWhitelist = [...new Set([...this.cache.whitelist, ...blockchainWhitelist])];
+        this.cache.whitelist = combinedWhitelist;
+        this.saveCache();
+        console.log(`✅ 白名单已更新: ${blockchainWhitelist.length} 个区块链IP, 总计 ${combinedWhitelist.length} 个IP`);
+      }
+    } catch (error) {
+      console.warn('⚠️  从区块链加载白名单失败:', error.message);
+    }
   }
 
   async updateCache() {

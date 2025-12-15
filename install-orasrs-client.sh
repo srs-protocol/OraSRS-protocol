@@ -228,6 +228,40 @@ EOF
     fi
 }
 
+# 下载威胁情报数据
+download_threat_intelligence() {
+    print_info "下载威胁情报数据..."
+    
+    # 创建oracle目录
+    mkdir -p /opt/orasrs/oracle
+    
+    # 尝试从CDN下载（如果配置了）
+    # 目前从GitHub下载
+    if cd /opt/orasrs && [ -d .git ]; then
+        # 如果是git仓库，直接pull
+        git pull origin lite-client 2>/dev/null || true
+    fi
+    
+    # 检查威胁情报文件是否存在
+    if [ -f /opt/orasrs/oracle/threats_compact.json ]; then
+        print_success "威胁情报数据已加载: $(du -h /opt/orasrs/oracle/threats_compact.json | cut -f1)"
+        
+        # 初始化客户端缓存
+        if [ -f /opt/orasrs/threat-data-loader.js ]; then
+            print_info "初始化威胁情报缓存..."
+            cd /opt/orasrs
+            node threat-data-loader.js > /dev/null 2>&1 || print_warning "威胁情报缓存初始化失败（服务启动时会自动重试）"
+        fi
+    else
+        print_warning "威胁情报数据文件不存在"
+        print_info "服务启动时将自动从区块链同步"
+    fi
+    
+    # 创建缓存目录
+    mkdir -p /var/lib/orasrs
+    chmod 755 /var/lib/orasrs
+}
+
 # 配置防火墙
 setup_firewall() {
     print_info "配置防火墙..."
@@ -346,6 +380,7 @@ main() {
     clone_orasrs
     install_node_dependencies
     setup_service
+    download_threat_intelligence
     setup_firewall
     start_service
     show_completion_info

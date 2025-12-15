@@ -710,6 +710,52 @@ class BlockchainConnector {
     }
   }
 
+  /**
+   * Get whitelisted IPs from GlobalWhitelist contract
+   */
+  async getWhitelistedIPs() {
+    try {
+      // Resolve GlobalWhitelist contract address
+      let whitelistAddress = await this.resolveContractAddress(this.config.contractNames.globalWhitelist);
+
+      if (!whitelistAddress) {
+        console.warn('GlobalWhitelist contract not found in registry');
+        return [];
+      }
+
+      console.log(`📋 Fetching whitelist from ${whitelistAddress}...`);
+
+      // GlobalWhitelist ABI (just the events we need)
+      const whitelistABI = [
+        "event WhitelistAdded(string indexed ip)",
+        "function isWhitelisted(string memory ip) public view returns (bool)"
+      ];
+
+      const contract = new ethers.Contract(whitelistAddress, whitelistABI, this.provider);
+
+      // Get all WhitelistAdded events
+      const filter = contract.filters.WhitelistAdded();
+      const events = await contract.queryFilter(filter);
+
+      // Extract IPs from events and verify they're still whitelisted
+      const ips = [];
+      for (const event of events) {
+        const ip = event.args.ip;
+        const isWhitelisted = await contract.isWhitelisted(ip);
+        if (isWhitelisted) {
+          ips.push(ip);
+        }
+      }
+
+      console.log(`✅ Loaded ${ips.length} whitelisted IPs from blockchain`);
+      return ips;
+
+    } catch (error) {
+      console.error('Failed to fetch whitelist:', error.message);
+      return [];
+    }
+  }
+
   // 编码字符串参数
   encodeStringParam(str) {
     const abiCoder = new ethers.AbiCoder();
