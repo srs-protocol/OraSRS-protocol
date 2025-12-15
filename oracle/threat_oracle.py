@@ -145,7 +145,7 @@ def update_merkle_root(w3, account, contract, root):
         'nonce': w3.eth.get_transaction_count(account.address),
     })
     signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     print(f"Merkle Root updated: {tx_hash.hex()}")
     # print("Merkle Root update sent (Simulated)")
 
@@ -157,7 +157,7 @@ def send_batch(w3, account, contract, ips, levels, masks, sources):
         'nonce': w3.eth.get_transaction_count(account.address),
     })
     signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     print(f"Transaction sent: {tx_hash.hex()}")
     # print("Batch sent (Simulated)")
 
