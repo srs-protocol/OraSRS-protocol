@@ -1214,6 +1214,46 @@
       "artifacts": [
         "OptimizedThreatRegistry"
       ]
+    },
+    "/home/Great/SRS-Protocol/contracts/ThreatReport.sol": {
+      "lastModificationDate": 1765769701218,
+      "contentHash": "ecf229eb6bbac2a955f332a1d3f6feeb",
+      "sourceName": "contracts/ThreatReport.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "metadata": {
+            "bytecodeHash": "none"
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "ThreatReport"
+      ]
     }
   }
 }

@@ -401,10 +401,11 @@
   },
   "31.24.81.0": {
     "sources": [
+      "Community",
       "Spamhaus"
     ],
     "priority": 3,
-    "risk_level": 3,
+    "risk_level": 4,
     "cidr": "31.24.81.0/24"
   },
   "31.40.204.0": {

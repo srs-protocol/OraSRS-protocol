@@ -284,6 +284,23 @@ async function removeFromWhitelist(ip) {
     }
 }
 
+async function listWhitelist() {
+    console.log(chalk.bold(`\n📋 Whitelist\n`));
+
+    try {
+        const result = await apiCall('/orasrs/v1/whitelist');
+        if (result.whitelist && result.whitelist.length > 0) {
+            console.log(chalk.bold(`Total: ${result.count}`));
+            result.whitelist.forEach(ip => console.log(`  - ${ip}`));
+        } else {
+            log.info('Whitelist is empty');
+        }
+    } catch (error) {
+        log.error(`Failed to list whitelist: ${error.message}`);
+        process.exit(1);
+    }
+}
+
 async function showConfig() {
     console.log(chalk.bold(`\n${t.config_title}\n`));
 
@@ -380,6 +397,11 @@ program
         program.createCommand('remove')
             .argument('<ip>', 'IP address to remove')
             .action(removeFromWhitelist)
+    )
+    .addCommand(
+        program.createCommand('list')
+            .description('List whitelisted IPs')
+            .action(listWhitelist)
     );
 
 program
@@ -393,8 +415,69 @@ program
     .action(showLogs);
 
 program
+    .command('report <ip>')
+    .description('Report a threat IP to the blockchain')
+    .requiredOption('-r, --reason <reason>', 'Reason for reporting')
+    .option('-k, --private-key <key>', 'Private key to sign transaction')
+    .action(reportThreat);
+
+program
     .command('test')
     .description('Run system tests')
     .action(runTests);
 
 program.parse();
+
+async function reportThreat(ip, options) {
+    const reason = options.reason;
+    const privateKey = options.privateKey || process.env.ORASRS_PRIVATE_KEY;
+
+    if (!privateKey) {
+        log.error("Private key is required. Use -k or set ORASRS_PRIVATE_KEY env var.");
+        process.exit(1);
+    }
+
+    console.log(chalk.bold(`\n🚨 Reporting Threat IP: ${ip}\n`));
+
+    try {
+        // Dynamic import ethers to avoid load issues if not needed
+        const { ethers } = await import('ethers');
+
+        // Read config to find RPC and Contract
+        let rpcUrl = "http://127.0.0.1:8545";
+        let threatReportAddress = "0xCA8c8688914e0F7096c920146cd0Ad85cD7Ae8b9"; // Default from latest deployment
+
+        if (fs.existsSync(CONFIG_PATH)) {
+            const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+            if (config.network?.blockchainEndpoint) rpcUrl = config.network.blockchainEndpoint;
+            if (config.network?.threatReportAddress) threatReportAddress = config.network.threatReportAddress;
+        }
+
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const wallet = new ethers.Wallet(privateKey, provider);
+
+        console.log(`Connecting to ${rpcUrl}...`);
+        console.log(`Reporter: ${wallet.address}`);
+
+        const abi = [
+            "function reportThreat(string memory ip, string memory reason, bytes memory signature) public"
+        ];
+
+        const contract = new ethers.Contract(threatReportAddress, abi, wallet);
+
+        console.log(`Submitting report to ${threatReportAddress}...`);
+        const tx = await contract.reportThreat(ip, reason, "0x");
+        console.log(`Transaction sent: ${tx.hash}`);
+
+        process.stdout.write("Waiting for confirmation...");
+        await tx.wait();
+        console.log(" Done!");
+
+        log.success("Threat reported successfully!");
+
+    } catch (error) {
+        log.error(`Failed to report threat: ${error.message}`);
+        if (error.reason) log.error(`Reason: ${error.reason}`);
+        process.exit(1);
+    }
+}

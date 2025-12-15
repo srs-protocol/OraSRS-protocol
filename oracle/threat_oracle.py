@@ -47,6 +47,50 @@ def is_public_ip(ip_str):
     except ValueError:
         return False
 
+def fetch_chain_reports(w3):
+    try:
+        with open('oracle/threat_report_address.txt', 'r') as f:
+            contract_address = f.read().strip()
+    except FileNotFoundError:
+        print("ThreatReport contract address not found.")
+        return {}
+
+    # ABI for ThreatReported event
+    abi = [{
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "internalType": "address", "name": "reporter", "type": "address"},
+            {"indexed": False, "internalType": "string", "name": "ip", "type": "string"},
+            {"indexed": False, "internalType": "string", "name": "reason", "type": "string"},
+            {"indexed": False, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+        ],
+        "name": "ThreatReported",
+        "type": "event"
+    }]
+
+    try:
+        contract = w3.eth.contract(address=contract_address, abi=abi)
+        print(f"  Querying events from {contract_address}...")
+        # In production, use fromBlock='latest' - N or track last block
+        events = contract.events.ThreatReported.get_logs(from_block=0)
+        print(f"  Raw events count: {len(events)}")
+        
+        reports = {} # ip -> set(reporters)
+        for event in events:
+            args = event['args']
+            ip = args['ip']
+            reporter = args['reporter']
+            
+            if ip not in reports:
+                reports[ip] = set()
+            reports[ip].add(reporter)
+            
+        print(f"  Fetched {len(events)} community reports")
+        return reports
+    except Exception as e:
+        print(f"  Error fetching chain events: {e}")
+        return {}
+
 def fetch_threats():
     threat_data = {}  # ip -> {'sources': set(), 'priority': int, 'cidr': str}
     
@@ -112,6 +156,18 @@ def fetch_threats():
         except Exception as e:
             print(f"Error processing {name}: {e}")
     
+    # Fetch Community Reports
+    print("Fetching Community Reports...")
+    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    if w3.is_connected():
+        chain_reports = fetch_chain_reports(w3)
+        for ip, reporters in chain_reports.items():
+            if len(reporters) >= 3: # Consensus threshold
+                if ip not in threat_data:
+                     threat_data[ip] = {'sources': set(), 'priority': 0, 'cidr': f"{ip}/32"}
+                threat_data[ip]['sources'].add("Community")
+                # Priority 1 (Low) but risk level will be adjusted
+    
     # Calculate risk levels based on source count and priority
     for ip, data in threat_data.items():
         source_count = len(data['sources'])
@@ -124,6 +180,8 @@ def fetch_threats():
             data['risk_level'] = 4  # Critical (Abuse.ch)
         elif priority >= 3:
             data['risk_level'] = 3  # High (Spamhaus)
+        elif "Community" in data['sources']:
+            data['risk_level'] = 2 # Medium (Community Consensus)
         else:
             data['risk_level'] = 2  # Medium
             

@@ -699,11 +699,52 @@ class SimpleOraSRSService {
       if (!ip) return res.status(400).json({ error: 'IP is required' });
 
       const durationMs = (duration || 300) * 1000; // Default 5 minutes
-
       this.threatDetection.addTempWhitelist(ip, durationMs);
 
       console.log(`人工确认: IP ${ip} 已临时放行 ${durationMs / 1000}秒`);
       res.status(200).json({ success: true, message: `IP ${ip} temporarily whitelisted`, duration: durationMs / 1000 });
+    });
+
+    // Whitelist Management Routes
+
+    // Add IP to whitelist
+    this.app.post('/orasrs/v1/whitelist/add', (req, res) => {
+      const { ip } = req.body;
+      if (!ip) return res.status(400).json({ error: 'IP is required' });
+
+      if (!this.cache.whitelist.includes(ip)) {
+        this.cache.whitelist.push(ip);
+        this.saveCache();
+        console.log(`[API] Added ${ip} to whitelist`);
+        res.json({ success: true, message: `IP ${ip} added to whitelist` });
+      } else {
+        res.json({ success: true, message: `IP ${ip} already in whitelist` });
+      }
+    });
+
+    // Remove IP from whitelist
+    this.app.post('/orasrs/v1/whitelist/remove', (req, res) => {
+      const { ip } = req.body;
+      if (!ip) return res.status(400).json({ error: 'IP is required' });
+
+      const index = this.cache.whitelist.indexOf(ip);
+      if (index > -1) {
+        this.cache.whitelist.splice(index, 1);
+        this.saveCache();
+        console.log(`[API] Removed ${ip} from whitelist`);
+        res.json({ success: true, message: `IP ${ip} removed from whitelist` });
+      } else {
+        res.status(404).json({ error: 'IP not found in whitelist' });
+      }
+    });
+
+    // Get whitelist
+    this.app.get('/orasrs/v1/whitelist', (req, res) => {
+      res.json({
+        success: true,
+        whitelist: this.cache.whitelist,
+        count: this.cache.whitelist.length
+      });
     });
 
     // 处理威胁并分配动态风控 (Wazuh 集成专用)
