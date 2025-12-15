@@ -19,6 +19,9 @@ import axios from 'axios';
 import fs from 'fs';
 import { execSync } from 'child_process';
 import chalk from 'chalk';
+import ThreatFormatter from './src/formatters/threat-formatter.js';
+
+const formatter = new ThreatFormatter();
 
 const ORASRS_ENDPOINT = process.env.ORASRS_ENDPOINT || 'http://127.0.0.1:3006';
 const CONFIG_PATH = '/etc/orasrs/node-config.json';
@@ -190,9 +193,7 @@ async function showStatus() {
     }
 }
 
-async function queryIP(ip) {
-    console.log(chalk.bold(`\n🔍 查询 IP: ${ip}\n`));
-
+async function queryIP(ip, options) {
     try {
         const result = await apiCall(`/orasrs/v1/query?ip=${ip}`);
 
@@ -201,43 +202,12 @@ async function queryIP(ip) {
             return;
         }
 
-        const r = result.response || {};
-        const riskScore = r.risk_score || 0;
-
-        // Determine Risk Level Text
-        let riskLevelText = '未知';
-        if (riskScore >= 90) riskLevelText = '严重 (Critical)';
-        else if (riskScore >= 70) riskLevelText = '高 (High)';
-        else if (riskScore >= 40) riskLevelText = '中 (Medium)';
-        else if (riskScore > 0) riskLevelText = '低 (Low)';
-        else riskLevelText = '安全 (Safe)';
-
-        // Format Threat Types
-        let threatTypes = '无';
-        if (r.threat_types && r.threat_types.length > 0) {
-            threatTypes = r.threat_types.join(', ');
+        // Use formatter based on format option
+        if (options.format === 'json') {
+            console.log(formatter.formatJSON(result));
+        } else {
+            console.log(formatter.formatPretty(result));
         }
-
-        // Format Sources
-        let sources = '无';
-        if (r.sources && r.sources.length > 0) {
-            sources = r.sources.join(', ');
-        } else if (r.source) {
-            sources = r.source;
-        }
-
-        console.log(chalk.bold('威胁情报:'));
-        console.log(`  风险评分: ${riskScore}/100`);
-        console.log(`  风险等级: ${riskLevelText}`);
-        console.log(`  威胁类型: ${threatTypes}`);
-        console.log(`  数据来源: ${sources}`);
-        // Mock fields for now if not in API
-        console.log(`  首次出现: ${r.first_seen || '未知'}`);
-        console.log(`  持续活跃: ${r.is_active ? 'Yes' : 'Unknown'}`);
-
-        console.log(`\n来源：测试协议链`);
-        console.log(`缓存：${r.cached ? '是' : '否'}`);
-        console.log(chalk.yellow('\n📌 注意: OraSRS 仅提供风险评估，是否阻断请结合业务策略决定。'));
 
     } catch (error) {
         log.error(`Query failed: ${error.message}`);
@@ -245,21 +215,60 @@ async function queryIP(ip) {
     }
 }
 
-async function syncThreats() {
-    console.log(chalk.bold(`\n🔄 Synchronizing Threat Intelligence...\n`));
+async function syncThreats(options) {
     try {
-        const result = await apiCall('/orasrs/v1/sync', 'POST');
-        if (result.success) {
-            log.success('Threat data synced successfully');
-            if (result.stats) {
-                console.log(`  Threats: ${result.stats.threats}`);
-                console.log(`  Safe IPs: ${result.stats.safeIPs}`);
-            }
-        } else {
-            log.error(`Sync failed: ${result.message || 'Unknown error'}`);
-        }
+        const endpoint = options.force ? '/orasrs/v1/sync?force=true' : '/orasrs/v1/sync';
+        const result = await apiCall(endpoint, 'POST');
+
+        console.log(formatter.formatSyncStatus(result));
+
     } catch (error) {
         log.error(`Sync failed: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+async function showCacheStatus() {
+    try {
+        const result = await apiCall('/orasrs/v1/cache/status');
+        console.log(formatter.formatCacheStatus(result));
+    } catch (error) {
+        log.error(`Failed to get cache status: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+async function clearCache() {
+    console.log(chalk.bold('\n🗑️  清空缓存\n'));
+
+    try {
+        const result = await apiCall('/orasrs/v1/cache/clear', 'POST');
+        if (result.success) {
+            log.success('缓存已清空');
+        } else {
+            log.error('清空缓存失败');
+        }
+    } catch (error) {
+        log.error(`Failed to clear cache: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+async function rebuildCache() {
+    console.log(chalk.bold('\n🔨 重建缓存\n'));
+
+    try {
+        log.info('正在清空旧缓存...');
+        await apiCall('/orasrs/v1/cache/clear', 'POST');
+
+        log.info('正在从区块链同步数据...');
+        const result = await apiCall('/orasrs/v1/sync?force=true', 'POST');
+
+        console.log(formatter.formatSyncStatus(result));
+        log.success('缓存重建完成');
+
+    } catch (error) {
+        log.error(`Failed to rebuild cache: ${error.message}`);
         process.exit(1);
     }
 }
@@ -421,6 +430,7 @@ program
 program
     .command('query <ip>')
     .description('Query IP risk score')
+    .option('-f, --format <type>', 'Output format: pretty (default) or json', 'pretty')
     .action(queryIP);
 
 program
@@ -472,7 +482,27 @@ program
 program
     .command('sync')
     .description('Manually download threat intelligence and update cache')
+    .option('--force', 'Force full sync (not incremental)')
     .action(syncThreats);
+
+program
+    .command('cache')
+    .description('Manage local cache')
+    .addCommand(
+        program.createCommand('status')
+            .description('Show cache status')
+            .action(showCacheStatus)
+    )
+    .addCommand(
+        program.createCommand('clear')
+            .description('Clear all cache')
+            .action(clearCache)
+    )
+    .addCommand(
+        program.createCommand('rebuild')
+            .description('Rebuild cache from blockchain')
+            .action(rebuildCache)
+    );
 
 program
     .command('test')

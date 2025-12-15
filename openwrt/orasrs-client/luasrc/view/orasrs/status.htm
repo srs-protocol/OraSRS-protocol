@@ -1,0 +1,146 @@
+<%+header%>
+
+<script type="text/javascript" src="<%=resource%>/cbi.js"></script>
+<script type="text/javascript">//<![CDATA[
+    function refreshStatus() {
+        XHR.get('<%=url("admin/services/orasrs/api/status")%>', null, function(x, data) {
+            var status = document.getElementById('service-status');
+            if (data && data.status === 'healthy') {
+                status.innerHTML = '<span style="color: green;">● Online</span>';
+                document.getElementById('uptime').textContent = Math.floor(data.uptime) + 's';
+                document.getElementById('version').textContent = data.version || 'N/A';
+            } else {
+                status.innerHTML = '<span style="color: red;">● Offline</span>';
+            }
+        });
+        
+        XHR.get('<%=url("admin/services/orasrs/api/stats")%>', null, function(x, data) {
+            if (data) {
+                document.getElementById('total-queries').textContent = data.totalQueries || 0;
+                document.getElementById('cache-hits').textContent = data.cacheHits || 0;
+                document.getElementById('block-count').textContent = data.blockCount || 0;
+                
+                var hitRate = data.totalQueries > 0 
+                    ? Math.round((data.cacheHits / data.totalQueries) * 100) 
+                    : 0;
+                document.getElementById('hit-rate').textContent = hitRate + '%';
+            }
+        });
+        
+        XHR.get('<%=url("admin/services/orasrs/api/threats")%>', null, function(x, data) {
+            var tbody = document.getElementById('threats-tbody');
+            tbody.innerHTML = '';
+            
+            if (data && data.threats && data.threats.length > 0) {
+                data.threats.forEach(function(threat) {
+                    var tr = document.createElement('tr');
+                    
+                    var riskClass = threat.risk_score >= 80 ? 'danger' : 
+                                   threat.risk_score >= 60 ? 'warning' : 'info';
+                    
+                    tr.innerHTML = '<td>' + threat.ip + '</td>' +
+                                  '<td><span class="label label-' + riskClass + '">' + 
+                                  threat.risk_score + '</span></td>' +
+                                  '<td>' + (threat.threat_type || 'Unknown') + '</td>' +
+                                  '<td>' + (threat.source || 'N/A') + '</td>' +
+                                  '<td>' + new Date(threat.last_seen).toLocaleString() + '</td>';
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No threats detected</td></tr>';
+            }
+        });
+    }
+    
+    function triggerSync() {
+        var btn = document.getElementById('sync-button');
+        btn.disabled = true;
+        btn.textContent = 'Syncing...';
+        
+        XHR.post('<%=url("admin/services/orasrs/api/sync")%>', null, function(x, data) {
+            btn.disabled = false;
+            btn.textContent = 'Sync Now';
+            
+            if (data && data.success) {
+                alert('Sync completed successfully!');
+                refreshStatus();
+            } else {
+                alert('Sync failed. Please check logs.');
+            }
+        });
+    }
+    
+    // Auto-refresh every 10 seconds
+    setInterval(refreshStatus, 10000);
+    
+    // Initial load
+    window.addEventListener('load', refreshStatus);
+//]]></script>
+
+<h2 name="content"><%:OraSRS Status%></h2>
+
+<fieldset class="cbi-section">
+    <legend><%:Service Information%></legend>
+    <table class="cbi-section-table">
+        <tr>
+            <th><%:Status%></th>
+            <td id="service-status"><%:Loading...%></td>
+        </tr>
+        <tr>
+            <th><%:Version%></th>
+            <td id="version">-</td>
+        </tr>
+        <tr>
+            <th><%:Uptime%></th>
+            <td id="uptime">-</td>
+        </tr>
+    </table>
+    <br/>
+    <input type="button" id="sync-button" class="cbi-button cbi-button-action" value="<%:Sync Now%>" onclick="triggerSync()" />
+</fieldset>
+
+<fieldset class="cbi-section">
+    <legend><%:Statistics%></legend>
+    <table class="cbi-section-table">
+        <tr>
+            <th><%:Total Queries%></th>
+            <td id="total-queries">0</td>
+        </tr>
+        <tr>
+            <th><%:Cache Hits%></th>
+            <td id="cache-hits">0</td>
+        </tr>
+        <tr>
+            <th><%:Hit Rate%></th>
+            <td id="hit-rate">0%</td>
+        </tr>
+        <tr>
+            <th><%:Blocked IPs%></th>
+            <td id="block-count">0</td>
+        </tr>
+    </table>
+</fieldset>
+
+<fieldset class="cbi-section">
+    <legend><%:Recent Threats%></legend>
+    <div class="cbi-section-node">
+        <div class="table-wrapper">
+            <table class="cbi-section-table">
+                <thead>
+                    <tr class="cbi-section-table-titles">
+                        <th class="cbi-section-table-cell"><%:IP Address%></th>
+                        <th class="cbi-section-table-cell"><%:Risk Score%></th>
+                        <th class="cbi-section-table-cell"><%:Threat Type%></th>
+                        <th class="cbi-section-table-cell"><%:Source%></th>
+                        <th class="cbi-section-table-cell"><%:Last Seen%></th>
+                    </tr>
+                </thead>
+                <tbody id="threats-tbody">
+                    <tr><td colspan="5" style="text-align: center;"><%:Loading...%></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</fieldset>
+
+<%+footer%>

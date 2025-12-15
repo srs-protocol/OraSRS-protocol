@@ -138,11 +138,34 @@ orasrs-cli status
 # 运行初始化向导
 orasrs-cli init
 
-# 查询 IP 风险评分
-orasrs-cli query 8.8.8.8
+# 查询 IP 风险评分（中文友好格式）
+orasrs-cli query 45.135.193.0
+
+# 查询 IP（JSON 格式）
+orasrs-cli query 45.135.193.0 --format json
+
+# 手动同步威胁情报
+orasrs-cli sync
+
+# 强制完整同步
+orasrs-cli sync --force
+
+# 查看缓存状态
+orasrs-cli cache status
+
+# 清空缓存
+orasrs-cli cache clear
+
+# 重建缓存
+orasrs-cli cache rebuild
 
 # 查看统计信息
 orasrs-cli stats
+
+# 管理白名单
+orasrs-cli whitelist add 1.2.3.4
+orasrs-cli whitelist remove 1.2.3.4
+orasrs-cli whitelist list
 
 # 查看配置
 orasrs-cli config
@@ -152,10 +175,43 @@ orasrs-cli logs
 
 # 运行系统测试
 orasrs-cli test
+```
 
-# 管理白名单
-orasrs-cli whitelist add 1.2.3.4
-orasrs-cli whitelist remove 1.2.3.4
+### CLI 输出格式示例 / CLI Output Example
+
+**中文友好格式**（`--format pretty`，默认）：
+
+```
+🔍 查询 IP: 45.135.193.0
+
+威胁情报:
+  风险评分: 75/100
+  风险等级: 高
+  威胁类型: Botnet C2 (推测)
+  数据来源: Local Cache (Abuse.ch)
+  首次出现: 2025-12-10
+  持续活跃: Yes
+
+来源：测试协议链
+缓存：是
+📌 注意: OraSRS 仅提供风险评估，是否阻断请结合业务策略决定。
+```
+
+**JSON 格式**（`--format json`）：
+
+```json
+{
+  "query": { "ip": "45.135.193.0" },
+  "response": {
+    "risk_score": 75,
+    "risk_level": "High",
+    "threat_types": ["Botnet C2"],
+    "source": "Local Cache (Abuse.ch)",
+    "cached": true,
+    "first_seen": "2025-12-10T00:00:00Z",
+    "timestamp": "2025-12-15T12:00:00Z"
+  }
+}
 ```
 
 ### 传统服务管理命令
@@ -183,40 +239,210 @@ sudo systemctl status orasrs-client
 - 基于 OraSRS 协议链的去中心化威胁情报
 - 隐私保护设计
 
-## 🛠️ Client Tools
 
-### CLI Usage
-OraSRS provides a command-line interface for management and querying.
+
+## 🛠️ Client Tools / 客户端工具
+
+### CLI Usage / CLI 使用
+
+OraSRS provides a powerful command-line interface for management and querying.
+OraSRS 提供强大的命令行界面用于管理和查询。
 
 ```bash
-# Query an IP
-orasrs-cli query 1.2.3.4
+# Query an IP with pretty output (default)
+# 查询 IP（中文友好格式，默认）
+orasrs-cli query 45.135.193.0
+
+# Query with JSON output
+# 查询并返回 JSON 格式
+orasrs-cli query 45.135.193.0 --format json
 
 # Report a threat (requires private key)
+# 报告威胁（需要私钥）
 orasrs-cli report 1.2.3.4 --reason "Phishing" --private-key <YOUR_KEY>
 
-# Manually sync threat data
+# Manually sync threat data from blockchain
+# 手动从区块链同步威胁数据
 orasrs-cli sync
 
-# Manage whitelist
-orasrs-cli whitelist add 1.2.3.4
-orasrs-cli whitelist list
+# Force full sync (not incremental)
+# 强制完整同步（非增量）
+orasrs-cli sync --force
+
+# Cache management
+# 缓存管理
+orasrs-cli cache status   # View cache status / 查看缓存状态
+orasrs-cli cache clear    # Clear cache / 清空缓存
+orasrs-cli cache rebuild  # Rebuild cache / 重建缓存
+
+# Whitelist management
+# 白名单管理
+orasrs-cli whitelist add 1.2.3.4      # Add to whitelist / 添加到白名单
+orasrs-cli whitelist remove 1.2.3.4   # Remove from whitelist / 从白名单移除
+orasrs-cli whitelist list             # List all / 列出所有
 ```
 
-### Client SDK
-Developers can use the `orasrs-sdk.js` to integrate OraSRS into their applications.
+### Client SDK / 客户端 SDK
+
+Developers can use the `orasrs-sdk` to integrate OraSRS into their applications.
+开发者可以使用 `orasrs-sdk` 将 OraSRS 集成到应用中。
+
+**安装 / Installation:**
+
+```bash
+npm install orasrs-sdk
+```
+
+**基本用法 / Basic Usage:**
 
 ```javascript
-import OraSRSClient from './orasrs-sdk.js';
+import OraSRSClient from 'orasrs-sdk';
 
-const client = new OraSRSClient();
-const result = await client.query('1.2.3.4');
-console.log(result);
+// Create client instance / 创建客户端实例
+const client = new OraSRSClient({
+    apiEndpoint: 'http://localhost:3006',
+    autoCacheManagement: true  // Enable auto-sync / 启用自动同步
+});
+
+// Query IP / 查询 IP
+const result = await client.query('45.135.193.0');
+console.log(result.response.risk_score);
+
+// Whitelist management / 白名单管理
+await client.addToWhitelist('192.168.1.100');
+
+// Cache management / 缓存管理
+const cacheStatus = await client.getCacheStatus();
+await client.sync({ force: true });
+
+// Statistics / 统计信息
+const stats = await client.getStats();
+
+// Event listeners / 事件监听
+client.on('sync-complete', (data) => {
+    console.log('Sync completed:', data);
+});
+
+client.on('query', ({ ip, result }) => {
+    if (result.response.risk_score >= 80) {
+        console.warn(`High risk IP detected: ${ip}`);
+    }
+});
 ```
 
-### OpenWrt Support
-OraSRS supports OpenWrt for IoT/Router protection.
-See `openwrt/` directory for package definitions.
+**完整文档 / Full Documentation:**
+
+- [SDK Usage Guide / SDK 使用指南](SDK_USAGE_GUIDE.md)
+- [API Reference / API 参考](api.md)
+
+### OpenWrt Support / OpenWrt 支持
+
+OraSRS supports OpenWrt for IoT/Router protection, providing lightweight threat intelligence for embedded devices.
+OraSRS 支持 OpenWrt 路由器和 IoT 设备防护，为嵌入式设备提供轻量级威胁情报。
+
+**快速安装 / Quick Installation:**
+
+```bash
+# 从软件源安装
+opkg update
+opkg install orasrs-client
+
+# 或使用一键安装脚本
+wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/main/install-openwrt.sh
+sh install-openwrt.sh
+```
+
+**核心特性 / Core Features:**
+
+- ✅ **超低内存占用（< 20MB）** / Ultra-low memory footprint (< 20MB)
+- ✅ **SQLite 缓存** - 节省 RAM / SQLite-based caching saves RAM
+- ✅ **透明代理模式** / Transparent proxy mode for IoT protection
+- ✅ **IoT 专用威胁情报** / IoT-specific threat intelligence (Mirai, Mozi, etc.)
+- ✅ **LuCI Web 界面** / LuCI web interface for easy management
+- ✅ **自动缓存同步** / Automatic cache synchronization
+- ✅ **防火墙集成（ipset/iptables/nftables）** / Firewall integration
+- ✅ **多架构支持** / Supports ARM/MIPS/ARM64/x86 architectures
+
+**IoT 透明防护 / IoT Transparent Protection:**
+
+OraSRS 可以在不修改 IoT 设备配置的情况下，通过网关层面拦截和检测威胁：
+
+```
+IoT 设备 (摄像头/传感器/智能家居)
+    ↓
+OpenWrt 路由器 + OraSRS (透明检测)
+    ↓ 风险评分 < 80: 放行
+    ↓ 风险评分 ≥ 80: 拦截
+互联网
+```
+
+**威胁情报源 / Threat Intelligence Sources:**
+
+专门针对 IoT 设备的威胁数据：
+
+- **URLhaus** - IoT 恶意软件分发 URL（Mirai, Mozi等）
+- **ThreatFox** - IoT 僵尸网络 C2 指标
+- **Feodo Tracker** - 僵尸网络 C2 服务器
+- 自动更新频率：每小时
+
+**LuCI Web 界面 / LuCI Web Interface:**
+
+安装后访问：`http://your-router-ip/cgi-bin/luci/admin/services/orasrs`
+
+<img src="docs/images/luci-orasrs-status.png" alt="LuCI Interface" width="600"/>
+
+**配置示例 / Configuration Example:**
+
+```
+config orasrs 'main'
+    option enabled '1'
+    option api_endpoint 'https://api.orasrs.net'
+    option sync_interval '3600'
+    option cache_size '1000'
+    option log_level 'info'
+
+config iot_shield 'main'
+    option enabled '1'              # 启用 IoT Shield
+    option shield_mode 'block'      # monitor 或 block
+    option iot_network '192.168.2.0/24'  # IoT 设备网段
+    option protected_ports '80 443 1883 8883'  # 受保护端口
+    option auto_block '1'
+    option block_threshold '80'     # 风险阈值
+```
+
+**服务管理 / Service Management:**
+
+```bash
+# 启动/停止/重启服务
+/etc/init.d/orasrs start|stop|restart
+
+# 查看状态
+/etc/init.d/orasrs status
+
+# 启用透明代理
+/usr/lib/orasrs/transparent-proxy.sh start
+
+# CLI 工具
+orasrs-cli query 1.2.3.4
+orasrs-cli sync
+orasrs-cli cache status
+```
+
+**支持的 IoT 设备类型 / Supported IoT Device Types:**
+
+- 📷 IP 摄像头 / IP cameras
+- 🏠 智能家居设备 / Smart home devices  
+- 🔌 智能插座 / Smart plugs
+- 🌡️ 传感器 / Sensors
+- 🔊 智能音箱 / Smart speakers
+- 🏭 工业控制器（PLC/SCADA）/ Industrial controllers
+
+**完整文档 / Full Documentation:**
+
+- [OpenWrt Installation Guide / OpenWrt 安装指南](OPENWRT_INSTALLATION_GUIDE.md)
+- [IoT Deployment Guide / IoT 部署指南](IOT_DEPLOYMENT_GUIDE.md)
+- [Transparent Proxy Setup / 透明代理设置](TRANSPARENT_PROXY_SETUP.md)
+- [IoT Shield Design / IoT 护盾设计](IOT_SHIELD.md)
 
 ## ✨ 增强功能 / Enhanced Features
 - **三层去中心化架构 / Three-Tier Decentralized Architecture**: 超轻量边缘代理 + 多链可信存证 + 威胁情报协调网络 / Ultra-lightweight Edge Agent + Multi-chain

@@ -782,6 +782,42 @@ class SimpleOraSRSService {
       });
     });
 
+    // Cache Management Endpoints
+
+    // Get cache status
+    this.app.get('/orasrs/v1/cache/status', (req, res) => {
+      try {
+        const cacheData = {
+          threats: Object.keys(this.cache.threats).length,
+          safeIPs: Object.keys(this.cache.safeIPs || {}).length,
+          whitelist: this.cache.whitelist.length,
+          lastUpdate: this.cache.lastUpdate,
+          syncStatus: this.cache.syncStatus || {
+            lastSync: this.cache.lastUpdate,
+            nextSync: null,
+            inProgress: false,
+            errors: []
+          }
+        };
+        res.json(cacheData);
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to get cache status' });
+      }
+    });
+
+    // Clear cache
+    this.app.post('/orasrs/v1/cache/clear', (req, res) => {
+      try {
+        this.cache.threats = {};
+        this.cache.safeIPs = {};
+        // Keep whitelist as it may contain user-configured entries
+        this.saveCache();
+        res.json({ success: true, message: 'Cache cleared successfully' });
+      } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to clear cache' });
+      }
+    });
+
     // 处理威胁并分配动态风控 (Wazuh 集成专用)
     this.app.post('/orasrs/v1/threats/process', async (req, res) => {
       const { ip, threatType, threatLevel, context, evidence } = req.body;
