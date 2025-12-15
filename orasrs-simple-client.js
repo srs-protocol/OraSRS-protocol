@@ -97,8 +97,32 @@ class SimpleOraSRSService {
     // 启动定期缓存更新
     this.startCacheUpdate();
 
+    // 初始化威胁数据加载器
+    this.initializeThreatDataLoader();
+
     // 基本API端点
     this.setupRoutes();
+  }
+
+  async initializeThreatDataLoader() {
+    try {
+      console.log('🔄 初始化威胁情报数据加载器...');
+      await this.threatDataLoader.initialize();
+      console.log(`✅ 威胁情报加载完成: ${this.threatDataLoader.getStats().totalEntries} 条记录`);
+
+      // 每小时同步一次差分更新
+      setInterval(async () => {
+        try {
+          await this.threatDataLoader.syncDiffs();
+          console.log('✅ 威胁情报差分同步完成');
+        } catch (error) {
+          console.error('威胁情报同步失败:', error.message);
+        }
+      }, 3600 * 1000); // 1 hour
+    } catch (error) {
+      console.warn('⚠️  威胁情报数据加载器初始化失败:', error.message);
+      console.warn('    系统将仅使用区块链数据源');
+    }
   }
 
   loadCache() {

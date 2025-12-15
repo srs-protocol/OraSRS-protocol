@@ -2,6 +2,15 @@
 
 > ⚠️ **测试阶段声明**: 本项目处于 Beta 测试阶段，部分功能（如出站审查）默认为监控模式。详见 [免责声明](#-测试阶段免责声明)。
 
+> 🔒 **威胁情报源声明**: 在测试阶段，OraSRS 集成了以下开源威胁情报源作为高危 IP 名单补充：
+> - [Spamhaus DROP](https://www.spamhaus.org/drop/) - 已确认僵尸网络控制节点
+> - [DShield](https://www.dshield.org/) - 恶意扫描活动源
+> - [Abuse.ch Feodo Tracker](https://feodotracker.abuse.ch/) - C2 命令控制服务器
+> 
+> 这些数据源**每日自动更新**（北京时间 00:00），通过 Merkle Tree 验证确保数据完整性。客户端支持**增量差分同步**，带宽消耗降低 96%。
+> 
+> **生产环境建议**: 部署前请根据实际业务需求评估这些数据源，并配置本地白名单以避免误拦截。
+
 > 🌐 **测试节点地域政策**: OraSRS Alpha 测试目前仅面向中国大陆以外的节点开放。中国开发者可部署私有网络。详见 [Alpha 测试政策](ALPHA_TESTING.md)。
 
 > 📄 **学术关联**: 本 Alpha 实现基于论文 *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement* 中的协议设计（**论文审核中，地址待更新**）。**注意**: 代码库中包含若干**实验性扩展模块**（如 eBPF 出站过滤、HVAP 框架、IoT Shield），其设计与实现**超前于当前论文版本**，属于协议 v3.0 的探索性研究，**尚未纳入正式规范**。
@@ -18,6 +27,7 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 - **合规性**：符合 GDPR、CCPA 和中国网络安全法要求。
 - **区块链集成**：所有威胁情报记录在 OraSRS 协议链上，提供透明和不可篡改的验证机制。
 - **三层架构**：边缘层、共识层、智能层的三层共识架构。
+- **智能同步**：增量差分同步系统，带宽消耗降低 96%（5KB vs 132KB）。
 
 ## 核心价值主张
 
@@ -29,6 +39,8 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 6. **区块链验证**：通过长安链技术实现多方共识和验证
 7. **去重逻辑**：防止重复威胁报告的时间窗口机制
 8. **国密算法**：支持 SM2/SM3/SM4 国密算法
+9. **智能缓存**：O(1) 精确 IP 查询 + O(n) CIDR 最长前缀匹配
+10. **增量同步**：每日差分更新，最小化带宽消耗
 
 ## 🏆 原创机制声明 / Original Innovation Declaration
 
@@ -185,11 +197,58 @@ sudo systemctl status orasrs-client
 - [共识参数白皮书 / Consensus Parameters Whitepaper](CONSENSUS_PARAMETERS_WHITEPAPER.md)
 - [国密算法集成指南 / SM Cryptography Integration Guide](SM_CRYPTO_INTEGRATION.md)
 - [设计哲学 / Design Philosophy](docs/design.md)
+
+## 📖 文档索引 / Documentation Index
 - [应用指南 / Application Guide](APPLICATION_GUIDE.md)
 - [API 接口 / API Interface](api.md)
+- [威胁情报系统文档 / Threat Intelligence System](docs/QUICKSTART.md) **NEW!**
+
+## 🛡️ 威胁情报系统 / Threat Intelligence System
+
+OraSRS 集成了生产级威胁情报系统，具有以下特性：
+
+### 数据源
+- **Spamhaus DROP** - 已确认僵尸网络（~900 CIDR）
+- **DShield** - 恶意扫描活动源
+- **Abuse.ch Feodo** - C2 命令控制服务器
+
+### 核心特性
+```
+✅ 1510+ 威胁条目（实时更新）
+✅ O(1) 精确 IP 查询 + O(n) CIDR 最长前缀匹配
+✅ Merkle Tree 验证（32 字节链上存储）
+✅ 增量差分同步（96% 带宽节省）
+✅ 每日自动更新（北京时间 00:00）
+✅ 每小时客户端同步
+```
+
+### 性能指标
+| 指标 | 值 |
+|------|-----|
+| 查询时间 | < 2ms |
+| 内存占用 | ~2MB |
+| 完整数据 | 132KB |
+| 每日差分 | 1-5KB |
+| 月带宽/客户端 | ~618KB |
+
+### 快速开始
+```bash
+# 运行 Oracle（每日 00:00 自动）
+python3 oracle/threat_oracle.py
+
+# 测试查询
+node threat-data-loader.js
+
+# 设置定时任务
+sudo crontab -e
+# 添加: 0 0 * * * /home/Great/SRS-Protocol/scripts/oracle-cron.sh
+```
+
+📚 **完整文档**: [威胁情报系统指南](docs/QUICKSTART.md)
 
 ## 🧩 智能合约 / Smart Contracts
 - [威胁情报协调合约 / Threat Intelligence Coordination Contract](contracts/ThreatIntelligenceCoordination.sol)
+- [优化威胁注册表 / Optimized Threat Registry](contracts/OptimizedThreatRegistry.sol) **NEW!**
 - [OraSRS治理合约 / OraSRS Governance Contract](contracts/OraSRSGovernance.sol)
 - [风险计算器合约 / Risk Calculator Contract](contracts/IPRiskCalculator.sol)
 
