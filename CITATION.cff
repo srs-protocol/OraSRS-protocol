@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "OraSRS Protocol"
+version: 2.1.0
+doi: 10.31224/5985
+date-released: 2025-12-16
+url: "https://github.com/srs-protocol/OraSRS-protocol"
+repository-code: "https://github.com/srs-protocol/OraSRS-protocol"
+license: Apache-2.0
+authors:
+  - family-names: "Luo"
+    given-names: "ZiQian"
+preferred-citation:
+  type: article
+  title: "OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement"
+  authors:
+    - family-names: "Luo"
+      given-names: "ZiQian"
+  doi: "10.31224/5985"
+  url: "https://doi.org/10.31224/5985"
+  year: 2025
+  publisher:
+    name: "Engineering Archive"

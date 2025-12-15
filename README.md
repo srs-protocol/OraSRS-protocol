@@ -2,6 +2,7 @@
 > 一种隐私优先、三层共识架构的安全决策协议。
 > A privacy-first, three-layer consensus architecture security decision protocol.
 
+[![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Discussions](https://img.shields.io/github/discussions/SRS协议/SRA-protocol)](https://github.com/SRS协议/SRA-protocol/discussions)
 [![Lite Client Branch](https://img.shields.io/badge/branch-lite--client-blue)](https://github.com/SRS协议/SRA-protocol/tree/lite-client) 用于代码审查和审稿人查看
