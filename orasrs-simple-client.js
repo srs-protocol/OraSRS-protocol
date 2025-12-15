@@ -160,6 +160,26 @@ class SimpleOraSRSService {
         });
       }
 
+      // 3. 清理过期或低风险的缓存数据
+      const now = Date.now();
+      const TTL = 24 * 60 * 60 * 1000; // 24小时
+      let cleanedCount = 0;
+
+      for (const ip in this.cache.threats) {
+        const threat = this.cache.threats[ip];
+        const lastSeen = new Date(threat.last_seen).getTime();
+
+        // 如果超过TTL或者风险分数变低（假设我们有定期更新机制，这里主要清理过期的）
+        if (now - lastSeen > TTL) {
+          delete this.cache.threats[ip];
+          cleanedCount++;
+        }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`已清理 ${cleanedCount} 条过期威胁记录`);
+      }
+
       this.cache.lastUpdate = new Date().toISOString();
       this.saveCache();
       console.log('本地缓存更新完成');
@@ -268,15 +288,22 @@ class SimpleOraSRSService {
         threatData = this.translateToChinese(threatData);
 
         // 更新缓存
-        if (ip && threatData.response && threatData.response.risk_score > 50) {
-          this.cache.threats[ip] = {
-            ip: ip,
-            risk_score: threatData.response.risk_score,
-            threat_level: threatData.response.risk_level,
-            primary_threat_type: threatData.response.threat_types?.[0] || 'Unknown',
-            last_seen: new Date().toISOString()
-          };
-          this.saveCache();
+        if (ip && threatData.response) {
+          if (threatData.response.risk_score > 50) {
+            // 高危 IP，写入/更新缓存
+            this.cache.threats[ip] = {
+              ip: ip,
+              risk_score: threatData.response.risk_score,
+              threat_level: threatData.response.risk_level,
+              primary_threat_type: threatData.response.threat_types?.[0] || 'Unknown',
+              last_seen: new Date().toISOString()
+            };
+            this.saveCache();
+          } else if (this.cache.threats[ip]) {
+            // 低危 IP，但存在于缓存中，说明风险已降低，从缓存移除
+            delete this.cache.threats[ip];
+            this.saveCache();
+          }
         }
 
         res.json(threatData);

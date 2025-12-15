@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios';
+import { ethers } from 'ethers';
 
 // 使模块可导出
 
@@ -639,77 +640,77 @@ class BlockchainConnector {
 
   // 编码威胁数据查询调用
   encodeThreatDataCall(ipAddress) {
-    // 使用一个通用的查询方法，假设合约有查询IP威胁数据的功能
-    // 如果合约没有特定方法，使用一个通用的数据查询方法
-    // 这里使用一个假定的函数选择器，实际部署时需要根据真实的合约ABI来确定
-
-    // 使用 getThreatScore(string) 方法，其函数选择器是 0xd163533c
-    const functionSelector = 'd163533c';
-
-    // 正确的ABI编码，对于字符串参数
-    // 首先编码字符串长度
-    const ipBytes = Buffer.from(ipAddress, 'utf8');
-    const lengthHex = ipBytes.length.toString(16).padStart(64, '0');
-
-    // 然后是字符串数据，按32字节对齐
-    let dataHex = ipBytes.toString('hex');
-    // 确保数据长度是64的倍数（32字节对齐）
-    const paddingLength = Math.ceil(dataHex.length / 64) * 64 - dataHex.length;
-    dataHex = dataHex.padEnd(paddingLength + dataHex.length, '0');
-
-    // Offset should be 0x20 (32 bytes) for a single string argument
-    return '0x' + functionSelector + '0000000000000000000000000000000000000000000000000000000000000020' + lengthHex + dataHex;
+    const iface = new ethers.Interface([
+      "function getThreatScore(string memory _ip)"
+    ]);
+    return iface.encodeFunctionData("getThreatScore", [ipAddress]);
   }
 
   // 编码威胁提交调用
   encodeThreatSubmissionCall(reportData) {
-    // 使用一个假设的submitThreat函数选择器
-    // 实际部署时需要根据真实的合约ABI来确定
-    const functionSelector = 'b4c5d6e7'; // 假设的submitThreat函数选择器
+    const iface = new ethers.Interface([
+      "function addThreatIntel(string memory _ip, uint8 _threatLevel, string memory _threatType)"
+    ]);
 
-    // 为简单起见，我们暂时返回一个空的调用数据
-    // 在实际部署时，需要根据合约ABI正确编码所有参数
-    return '0x' + functionSelector;
+    // Map threat level string to enum int
+    const levels = { 'Info': 0, 'Warning': 1, 'Critical': 2, 'Emergency': 3 };
+    const level = levels[reportData.threatLevel] || 1; // Default to Warning
+
+    return iface.encodeFunctionData("addThreatIntel", [
+      reportData.ip,
+      level,
+      reportData.threatType || "Manual Report"
+    ]);
   }
 
   // 编码获取威胁列表调用
   encodeGetThreatListCall() {
-    // 计算 "getThreatList()" 的函数选择器
-    // 实际的keccak256("getThreatList()")的前4字节 (需要根据实际合约确定)
-    const functionSelector = 'f1e2d3c4'; // 这是一个模拟的函数选择器，实际应根据合约确定
-
-    return '0x' + functionSelector;
+    const iface = new ethers.Interface([
+      "function getAllThreatIPs(uint256 maxCount)"
+    ]);
+    return iface.encodeFunctionData("getAllThreatIPs", [100]); // Get max 100 IPs
   }
 
   // 处理从合约获取的威胁列表数据
   processThreatListFromContract(rawData) {
-    // 这里应该根据实际合约返回格式解析数据
-    // 目前返回空列表，实际部署时需要根据合约ABI正确解析
-    console.log('从合约获取的威胁列表原始数据:', rawData);
-    return {
-      threat_list: [],
-      last_update: new Date().toISOString(),
-      total_threats: 0
-    };
+    try {
+      const iface = new ethers.Interface([
+        "function getAllThreatIPs(uint256 maxCount) returns (string[])"
+      ]);
+      const decoded = iface.decodeFunctionResult("getAllThreatIPs", rawData);
+
+      // decoded[0] is the array of strings
+      const ips = decoded[0];
+
+      // Transform into expected format
+      const threatList = ips.map(ip => ({
+        ip: ip,
+        threat_level: 'Unknown', // We'd need to query details for each
+        last_seen: new Date().toISOString()
+      }));
+
+      return {
+        threat_list: threatList,
+        last_update: new Date().toISOString(),
+        total_threats: threatList.length
+      };
+    } catch (e) {
+      console.error("Failed to decode threat list:", e);
+      return { threat_list: [], total_threats: 0 };
+    }
   }
 
-  // 编码字符串参数 (简化版)
+  // 编码字符串参数
   encodeStringParam(str) {
-    // 简化的字符串编码，实际需要使用ethers或web3进行正确编码
-    const strBytes = Buffer.from(str, 'utf8');
-    const hexStr = strBytes.toString('hex');
-
-    // 简单的ABI编码：偏移量(32字节) + 长度 + 数据
-    const lengthHex = strBytes.length.toString(16).padStart(64, '0');
-    // Wait, paddedData should be hex string. '00' is 1 byte.
-    // strBytes.length is bytes.
-    // hexStr length is 2 * bytes.
-    // We want to pad to 32 bytes (64 hex chars).
-    // Math.ceil(hexStr.length / 64) * 64
-    const targetLength = Math.ceil(hexStr.length / 64) * 64;
-    const paddedHex = hexStr.padEnd(targetLength, '0');
-
-    return '0000000000000000000000000000000000000000000000000000000000000020' + lengthHex + paddedHex;
+    const abiCoder = new ethers.AbiCoder();
+    // encode returns hex string with 0x prefix
+    // We need to strip the prefix and the offset part because resolveContractAddress manually constructs the call
+    // Wait, resolveContractAddress constructs '0x' + selector + encodedName.
+    // encodedName should be the encoded string.
+    // ethers.AbiCoder.defaultAbiCoder().encode(['string'], [str]) returns offset + length + data.
+    // This is exactly what we want.
+    const encoded = abiCoder.encode(['string'], [str]);
+    return encoded.slice(2); // Remove 0x
   }
 
   delay(ms) {
