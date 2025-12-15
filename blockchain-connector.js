@@ -265,17 +265,21 @@ class BlockchainConnector {
         await this.connect();
       }
 
-      // Resolve the ThreatIntelligenceCoordination contract address
-      // We use the name "ThreatIntelligenceCoordination" (or whatever was registered)
-      // If we can't resolve it, we can't query.
-      let targetContract = this.config.contractAddress; // Fallback to config
+      // Resolve the Threat contract address
+      // Try OptimizedThreatRegistry first, then fall back to old name
+      let targetContract = this.config.contractAddress; // Fall back to config
 
-      // Try to resolve from Registry
-      const resolvedAddress = await this.resolveContractAddress(this.config.contractNames.threatCoordination);
+      // Try to resolve from Registry (try new name first)
+      let resolvedAddress = await this.resolveContractAddress('OptimizedThreatRegistry');
+      if (!resolvedAddress) {
+        // Fall back to old name
+        resolvedAddress = await this.resolveContractAddress(this.config.contractNames.threatCoordination);
+      }
+
       if (resolvedAddress) {
         targetContract = resolvedAddress;
       } else {
-        console.warn(`Could not resolve ${this.config.contractNames.threatCoordination} from Registry. Using fallback: ${targetContract}`);
+        console.warn(`Could not resolve threat contract from Registry. Using fallback: ${targetContract}`);
       }
 
       // 使用web3与智能合约交互
