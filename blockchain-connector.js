@@ -15,9 +15,10 @@ class BlockchainConnector {
       chainId: config.chainId || 8888,
       // Fixed Registry Address (Deterministic on local Hardhat)
       registryAddress: config.registryAddress || '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+      contractAddress: config.contractAddress || '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E', // OptimizedThreatRegistry
       // Default contract names to look up
       contractNames: {
-        threatCoordination: "ThreatIntelligenceCoordination",
+        threatCoordination: "OptimizedThreatRegistry",
         globalWhitelist: "GlobalWhitelist"
       },
       maxRetries: config.maxRetries || 3,
@@ -586,64 +587,66 @@ class BlockchainConnector {
 
   // 解码威胁数据
   processThreatDataFromContract(rawData, ipAddress) {
-    // 这里是模拟处理从合约返回的原始数据
-    // 在实际实现中，需要根据合约ABI和返回格式进行解析
-    console.log(`从合约获取的原始数据: ${rawData}`);
-
-    // 简单解析十六进制数据
     try {
-      // 检查返回数据是否为空或无效
       if (!rawData || rawData === '0x') {
-        console.log(`合约返回空数据 for IP: ${ipAddress}`);
         return this.getNoDataFoundResponse(ipAddress);
       }
 
-      // 检查是否是纯零数据（表示未找到该IP信息）
-      if (rawData.startsWith('0x0000000000000000000000000000000000000000000000000000000000000000')) {
-        console.log(`合约返回零数据 for IP: ${ipAddress}`);
+      const iface = new ethers.Interface([
+        "function getThreat(bytes4 ip) view returns ((uint64 expiry, uint8 riskLevel, uint8 mask, uint16 sourceMask))"
+      ]);
+
+      const decoded = iface.decodeFunctionResult("getThreat", rawData);
+      const info = decoded[0]; // The struct
+
+      // Check if expired or safe
+      const now = Math.floor(Date.now() / 1000);
+      if (info.expiry <= now || info.riskLevel === 0) {
         return this.getNoDataFoundResponse(ipAddress);
       }
 
-      // 解析 getThreatScore 返回的 uint256 (32 bytes)
-      const scoreHex = rawData.startsWith('0x') ? rawData.slice(2) : rawData;
-      const score = parseInt(scoreHex, 16);
-
-      console.log(`从合约获取的威胁评分: ${score} for IP: ${ipAddress}`);
-
-      if (score === 0) {
-        return this.getNoDataFoundResponse(ipAddress);
-      }
+      // Map risk level
+      const riskScore = info.riskLevel * 25; // 1=25, 2=50, 3=75, 4=100
+      const riskLevelMap = ['Safe', 'Low', 'Medium', 'High', 'Critical'];
+      const riskLevelStr = riskLevelMap[info.riskLevel] || 'Unknown';
 
       return {
         query: { ip: ipAddress },
         response: {
-          risk_score: score,
-          confidence: '高',
-          risk_level: score >= 80 ? '严重' : (score >= 40 ? '高' : '中'),
+          risk_score: riskScore,
+          confidence: 'High',
+          risk_level: riskLevelStr,
           evidence: [{
-            type: 'blockchain_score',
-            score: score,
-            timestamp: new Date().toISOString()
+            type: 'blockchain_registry',
+            expiry: new Date(Number(info.expiry) * 1000).toISOString(),
+            mask: info.mask,
+            sources: info.sourceMask
           }],
           recommendations: {
-            default: score >= 80 ? '拦截' : '警告',
+            default: info.riskLevel >= 3 ? 'Block' : 'Alert'
           },
           timestamp: new Date().toISOString(),
-          version: '2.0-blockchain'
+          version: '2.1-optimized'
         }
       };
     } catch (error) {
-      console.error(`解析合约数据时出错:`, error.message);
+      console.error(`Error decoding contract data:`, error.message);
       return this.getNoDataFoundResponse(ipAddress);
     }
   }
 
   // 编码威胁数据查询调用
   encodeThreatDataCall(ipAddress) {
+    // Use the new OptimizedThreatRegistry function
+    return this.encodeGetThreatCall(ipAddress);
+  }
+
+  // 编码查询优化版威胁注册表
+  encodeGetThreatCall(ip) {
     const iface = new ethers.Interface([
-      "function getThreatScore(string memory _ip)"
+      "function getThreat(bytes4 ip) view returns ((uint64 expiry, uint8 riskLevel, uint8 mask, uint16 sourceMask))"
     ]);
-    return iface.encodeFunctionData("getThreatScore", [ipAddress]);
+    return iface.encodeFunctionData("getThreat", [this.ipToBytes4(ip)]);
   }
 
   // 编码威胁提交调用
