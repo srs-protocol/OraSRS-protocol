@@ -48,6 +48,17 @@ SecurityRiskAssessment v2.0 通过威胁情报功能对协议进行重大增强�
 4. **Real-time Global Threat Synchronization (实时全球威胁同步)**:
    - Instant threat intelligence sharing across global nodes
    - Decentralized threat evidence storage
+
+5. **Authoritative Threat Sources (权威威胁源)**:
+   - **Spamhaus**: DROP (Don't Route Or Peer) lists.
+   - **DShield**: Top 20 attacking IPs.
+   - **Abuse.ch**: Feodo Tracker (Botnet C2).
+   - **Oracle Integration**: Automated fetching, cleaning, and on-chain verification.
+
+6. **Light Client Support (轻客户端支持)**:
+   - **Merkle Tree Distribution**: Threat lists are aggregated into a Merkle Tree.
+   - **Root Verification**: Only the Merkle Root is stored on-chain for verification.
+   - **Offline Validation**: IoT devices can download the tree and verify IPs locally against the on-chain root without frequent RPC calls.
    - Immutable on-chain evidence of attacks
    - 全球节点间的即时威胁情报共享
    - 去中心化的威胁证据存储

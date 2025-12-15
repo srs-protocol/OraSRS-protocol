@@ -103,6 +103,13 @@ def update_contract(threat_data):
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "bytes32", "name": "_root", "type": "bytes32"}],
+        "name": "updateMerkleRoot",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     }]
     
     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=abi)
@@ -136,6 +143,71 @@ def update_contract(threat_data):
             
     if ips:
         send_batch(w3, account, contract, ips, levels, masks, sources)
+
+    # Build and update Merkle Tree
+    print("Building Merkle Tree...")
+    leaves = []
+    # Sort IPs for deterministic tree
+    sorted_ips = sorted(threat_data.keys(), key=lambda ip: ipaddress.ip_address(ip))
+    
+    for ip in sorted_ips:
+        # Leaf = keccak256(packed_ip)
+        # We pack just the IP for simple membership proof
+        # Or we could pack (ip, level, expiry)
+        packed = ip_to_bytes4(ip)
+        leaf = Web3.keccak(packed)
+        leaves.append(leaf)
+        
+    if leaves:
+        root = build_merkle_root(leaves)
+        print(f"Merkle Root: {root.hex()}")
+        update_merkle_root(w3, account, contract, root)
+        
+        # Save tree data for clients (simulated CDN)
+        import json
+        tree_data = {
+            "root": root.hex(),
+            "timestamp": int(time.time()),
+            "leaves": [l.hex() for l in leaves],
+            "ips": sorted_ips
+        }
+        with open("oracle/merkle_tree.json", "w") as f:
+            json.dump(tree_data, f, indent=2)
+        print("Tree data saved to oracle/merkle_tree.json")
+
+def build_merkle_root(leaves):
+    if not leaves:
+        return b'\x00' * 32
+    
+    tree = leaves
+    while len(tree) > 1:
+        level = []
+        for i in range(0, len(tree), 2):
+            left = tree[i]
+            if i + 1 < len(tree):
+                right = tree[i+1]
+            else:
+                right = left # Duplicate last node if odd
+            
+            # Standard Merkle Tree: hash(left + right)
+            # Use sorted concatenation to avoid ordering issues? 
+            # Usually standard is left+right.
+            combined = Web3.keccak(left + right)
+            level.append(combined)
+        tree = level
+    return tree[0]
+
+def update_merkle_root(w3, account, contract, root):
+    print(f"Updating Merkle Root to {root.hex()}...")
+    # In a real scenario, sign and send transaction
+    # tx = contract.functions.updateMerkleRoot(root).build_transaction({
+    #     'from': account.address,
+    #     'nonce': w3.eth.get_transaction_count(account.address),
+    # })
+    # signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+    # tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    # print(f"Merkle Root updated: {tx_hash.hex()}")
+    print("Merkle Root update sent (Simulated)")
 
 def send_batch(w3, account, contract, ips, levels, masks, sources):
     print(f"Sending batch of {len(ips)} IPs...")

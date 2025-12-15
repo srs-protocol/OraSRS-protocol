@@ -101,6 +101,19 @@ contract OptimizedThreatRegistry is AccessControl {
         return (false, 0, 0);
     }
 
+    // Merkle Root for Light Client verification
+    bytes32 public merkleRoot;
+    event MerkleRootUpdated(bytes32 indexed root, uint256 timestamp);
+
+    /**
+     * @dev Update the Merkle Root of the threat list.
+     * @param _root New Merkle Root.
+     */
+    function updateMerkleRoot(bytes32 _root) external onlyRole(ORACLE_ROLE) {
+        merkleRoot = _root;
+        emit MerkleRootUpdated(_root, block.timestamp);
+    }
+
     /**
      * @dev Prune expired IPs to free up storage.
      * @param ips Array of IPs to check and prune.
