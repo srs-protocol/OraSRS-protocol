@@ -126,6 +126,17 @@ class ClientOnboarding {
 
         // 连接到区块链
         this.provider = new ethers.JsonRpcProvider(this.config.blockchainEndpoint);
+
+        // 验证连接
+        try {
+            const network = await this.provider.getNetwork();
+            console.log(`   ✓ 已连接到网络: ${network.name} (Chain ID: ${network.chainId})`);
+        } catch (error) {
+            console.error(`   ❌ 无法连接到区块链节点: ${this.config.blockchainEndpoint}`);
+            console.error('   请检查网络连接或节点状态。');
+            throw error;
+        }
+
         this.wallet = this.wallet.connect(this.provider);
 
         // 读取注册表合约

@@ -10,8 +10,8 @@
     }
   },
   "network": {
-    "blockchainEndpoint": "http://127.0.0.1:8545",
-    "chainId": 31337,
+    "blockchainEndpoint": "https://api.orasrs.net",
+    "chainId": 8888,
     "contractAddress": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
   },
   "cache": {
@@ -26,6 +26,10 @@
     "corsOrigin": "*",
     "enableAPIKey": false,
     "apiKeys": [],
-    "whitelist": ["127.0.0.1", "localhost", "::1"]
+    "whitelist": [
+      "127.0.0.1",
+      "localhost",
+      "::1"
+    ]
   }
 }
