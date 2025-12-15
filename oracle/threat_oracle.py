@@ -418,7 +418,18 @@ if __name__ == "__main__":
     with open("oracle/threats_compact.json", "w") as f:
         json.dump(compact_data, f, indent=2)
     print(f"Saved {len(data)} threats to oracle/latest_threats.json and oracle/threats_compact.json")
+    
+    # Generate weekly full snapshot (every Monday or first run of the week)
+    import datetime
+    today = datetime.date.today()
+    week_number = today.isocalendar()[1]
+    year = today.year
+    weekly_snapshot_name = f"oracle/weekly_snapshot_{year}_W{week_number:02d}.json"
+    
+    if not os.path.exists(weekly_snapshot_name):
+        print(f"📅 Creating weekly snapshot: {weekly_snapshot_name}")
+        with open(weekly_snapshot_name, "w") as f:
+            json.dump(compact_data, f, indent=2)
         
     update_contract(data, contract_address, added_ips, removed_ips)
     print("Oracle run complete")
-

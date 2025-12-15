@@ -11,7 +11,7 @@
   },
   "network": {
     "blockchainEndpoint": "https://api.orasrs.net",
-    "chainId": 8888,
+    "chainId": 31337,
     "contractAddress": "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E"
   },
   "cache": {
