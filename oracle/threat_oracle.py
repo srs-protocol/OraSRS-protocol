@@ -82,67 +82,7 @@ def fetch_threats():
 def ip_to_bytes4(ip_str):
     return ipaddress.ip_address(ip_str).packed
 
-def update_contract(threat_data):
-    w3 = Web3(Web3.HTTPProvider(RPC_URL))
-    if not w3.is_connected():
-        print("Failed to connect to blockchain")
-        return
 
-    account = w3.eth.account.from_key(PRIVATE_KEY)
-    
-    # ABI for updateThreatBatch
-    abi = [{
-        "inputs": [
-            {"internalType": "bytes4[]", "name": "ips", "type": "bytes4[]"},
-            {"internalType": "uint8[]", "name": "levels", "type": "uint8[]"},
-            {"internalType": "uint8[]", "name": "masks", "type": "uint8[]"},
-            {"internalType": "uint16[]", "name": "sources", "type": "uint16[]"},
-            {"internalType": "uint64", "name": "duration", "type": "uint64"}
-        ],
-        "name": "updateThreatBatch",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [{"internalType": "bytes32", "name": "_root", "type": "bytes32"}],
-        "name": "updateMerkleRoot",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }]
-    
-    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=abi)
-    
-    ips = []
-    levels = []
-    masks = []
-    sources = []
-    
-    for ip, source_set in threat_data.items():
-        ips.append(ip_to_bytes4(ip))
-        
-        # Risk Logic
-        if len(source_set) >= 2:
-            levels.append(4) # Critical (Risk Control)
-        else:
-            levels.append(3) # High
-            
-        masks.append(32) # Single IP
-        
-        # Source Mask (Mock mapping)
-        src_mask = 0
-        if "Spamhaus" in source_set: src_mask |= 1
-        if "DShield" in source_set: src_mask |= 2
-        if "Abuse.ch" in source_set: src_mask |= 4
-        sources.append(src_mask)
-        
-        if len(ips) >= BATCH_SIZE:
-            send_batch(w3, account, contract, ips, levels, masks, sources)
-            ips, levels, masks, sources = [], [], [], []
-            
-    if ips:
-        send_batch(w3, account, contract, ips, levels, masks, sources)
 
     # Build and update Merkle Tree
     print("Building Merkle Tree...")
@@ -221,9 +161,168 @@ def send_batch(w3, account, contract, ips, levels, masks, sources):
     # print(f"Transaction sent: {tx_hash.hex()}")
     print("Batch sent (Simulated)")
 
+
+
+def update_contract(threat_data, contract_address, added_ips, removed_ips):
+    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    if not w3.is_connected():
+        print("Failed to connect to blockchain")
+        return
+
+    account = w3.eth.account.from_key(PRIVATE_KEY)
+    
+    # ABI (Same as before + updateMerkleRoot)
+    abi = [{
+        "inputs": [
+            {"internalType": "bytes4[]", "name": "ips", "type": "bytes4[]"},
+            {"internalType": "uint8[]", "name": "levels", "type": "uint8[]"},
+            {"internalType": "uint8[]", "name": "masks", "type": "uint8[]"},
+            {"internalType": "uint16[]", "name": "sources", "type": "uint16[]"},
+            {"internalType": "uint64", "name": "duration", "type": "uint64"}
+        ],
+        "name": "updateThreatBatch",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "bytes32", "name": "_root", "type": "bytes32"}],
+        "name": "updateMerkleRoot",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }]
+    
+    contract = w3.eth.contract(address=contract_address, abi=abi)
+    
+    # 1. Update Added/Existing IPs
+    # We should update all current IPs to refresh expiry if they are persistent threats (stacking)
+    # But to save gas, maybe only update added + those close to expiry?
+    # For this demo, let's update ALL current IPs to demonstrate stacking.
+    # Or just added ones if we assume others are fine.
+    # User said "incremental update mechanism", so maybe just added?
+    # But stacking requires "if IP exists... expiry += 7 days". This happens on update.
+    # So we MUST call update on existing IPs to trigger stacking.
+    # So we update ALL current IPs.
+    
+    ips = []
+    levels = []
+    masks = []
+    sources = []
+    
+    # Process all current IPs
+    for ip, source_set in threat_data.items():
+        ips.append(ip_to_bytes4(ip))
+        
+        if len(source_set) >= 2:
+            levels.append(4)
+        else:
+            levels.append(3)
+            
+        masks.append(32)
+        
+        src_mask = 0
+        if "Spamhaus" in source_set: src_mask |= 1
+        if "DShield" in source_set: src_mask |= 2
+        if "Abuse.ch" in source_set: src_mask |= 4
+        sources.append(src_mask)
+        
+        if len(ips) >= BATCH_SIZE:
+            send_batch(w3, account, contract, ips, levels, masks, sources)
+            ips, levels, masks, sources = [], [], [], []
+            
+    if ips:
+        send_batch(w3, account, contract, ips, levels, masks, sources)
+        
+    # 2. Prune Removed IPs (Set level to 0)
+    if removed_ips:
+        print(f"Pruning {len(removed_ips)} removed IPs...")
+        ips, levels, masks, sources = [], [], [], []
+        for ip in removed_ips:
+            ips.append(ip_to_bytes4(ip))
+            levels.append(0) # Level 0 = Delete
+            masks.append(32)
+            sources.append(0)
+            
+            if len(ips) >= BATCH_SIZE:
+                send_batch(w3, account, contract, ips, levels, masks, sources)
+                ips, levels, masks, sources = [], [], [], []
+        if ips:
+            send_batch(w3, account, contract, ips, levels, masks, sources)
+
+    # Build Merkle Tree (from current state)
+    # ... (Same logic as before) ...
+    print("Building Merkle Tree...")
+    leaves = []
+    sorted_ips = sorted(threat_data.keys(), key=lambda ip: ipaddress.ip_address(ip))
+    
+    for ip in sorted_ips:
+        packed = ip_to_bytes4(ip)
+        leaf = Web3.keccak(packed)
+        leaves.append(leaf)
+        
+    if leaves:
+        root = build_merkle_root(leaves)
+        print(f"Merkle Root: {root.hex()}")
+        update_merkle_root(w3, account, contract, root)
+        
+        # Save tree data
+        tree_data = {
+            "root": root.hex(),
+            "timestamp": int(time.time()),
+            "leaves": [l.hex() for l in leaves],
+            "ips": sorted_ips
+        }
+        with open("oracle/merkle_tree.json", "w") as f:
+            json.dump(tree_data, f, indent=2)
+
 if __name__ == "__main__":
     print("Starting Oracle...")
     data = fetch_threats()
     print(f"Processed {len(data)} unique IPs")
-    update_contract(data)
+    
+    # Read contract address
+    try:
+        with open("oracle/contract_address.txt", "r") as f:
+            contract_address = f.read().strip()
+    except FileNotFoundError:
+        print("Contract address file not found. Please deploy contract first.")
+        exit(1)
+
+    print(f"Using Contract Address: {contract_address}")
+    
+    # Load previous version for diff
+    import os
+    import json
+    prev_data = {}
+    if os.path.exists("oracle/latest_threats.json"):
+        with open("oracle/latest_threats.json", "r") as f:
+            prev_data = json.load(f)
+            
+    # Calculate Diff
+    current_ips = set(data.keys())
+    prev_ips = set(prev_data.keys())
+    
+    added_ips = list(current_ips - prev_ips)
+    removed_ips = list(prev_ips - current_ips)
+    
+    version = time.strftime("v%Y%m%d")
+    diff_data = {
+        "version": version,
+        "timestamp": int(time.time()),
+        "added": added_ips,
+        "removed": removed_ips
+    }
+    
+    # Save Diff
+    with open(f"oracle/diff_{version}.json", "w") as f:
+        json.dump(diff_data, f, indent=2)
+    print(f"Diff saved to oracle/diff_{version}.json")
+    
+    # Save current state as latest
+    with open("oracle/latest_threats.json", "w") as f:
+        json.dump(data, f, indent=2)
+        
+    update_contract(data, contract_address, added_ips, removed_ips)
     print("Oracle run complete")
+
