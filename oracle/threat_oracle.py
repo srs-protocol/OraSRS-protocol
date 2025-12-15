@@ -296,8 +296,13 @@ if __name__ == "__main__":
     import json
     prev_data = {}
     if os.path.exists("oracle/latest_threats.json"):
-        with open("oracle/latest_threats.json", "r") as f:
-            prev_data = json.load(f)
+        try:
+            with open("oracle/latest_threats.json", "r") as f:
+                prev_data = json.load(f)
+                # Convert lists back to sets if needed, but for diff keys() is enough
+        except json.JSONDecodeError:
+            print("Warning: oracle/latest_threats.json is corrupted. Starting fresh.")
+            prev_data = {}
             
     # Calculate Diff
     current_ips = set(data.keys())
@@ -320,8 +325,10 @@ if __name__ == "__main__":
     print(f"Diff saved to oracle/diff_{version}.json")
     
     # Save current state as latest
+    # Convert sets to lists for JSON serialization
+    serializable_data = {k: list(v) for k, v in data.items()}
     with open("oracle/latest_threats.json", "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(serializable_data, f, indent=2)
         
     update_contract(data, contract_address, added_ips, removed_ips)
     print("Oracle run complete")
