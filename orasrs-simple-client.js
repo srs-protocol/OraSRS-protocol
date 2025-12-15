@@ -705,6 +705,41 @@ class SimpleOraSRSService {
       res.status(200).json({ success: true, message: `IP ${ip} temporarily whitelisted`, duration: durationMs / 1000 });
     });
 
+    // Manual Sync Endpoint
+    this.app.post('/orasrs/v1/sync', async (req, res) => {
+      try {
+        console.log('🔄 Manual sync triggered via API');
+        await this.threatDataLoader.loadThreatData();
+
+        // Also reload whitelist from blockchain
+        const whitelist = await this.blockchainConnector.getWhitelistedIPs();
+        if (whitelist.length > 0) {
+          // Merge with local whitelist (avoid duplicates)
+          let added = 0;
+          for (const ip of whitelist) {
+            if (!this.cache.whitelist.includes(ip)) {
+              this.cache.whitelist.push(ip);
+              added++;
+            }
+          }
+          if (added > 0) this.saveCache();
+          console.log(`✅ Synced ${added} new whitelist IPs from blockchain`);
+        }
+
+        res.json({
+          success: true,
+          message: 'Threat data synced successfully',
+          stats: {
+            threats: this.threatDataLoader.getThreatCount(),
+            safeIPs: this.threatDataLoader.getSafeIPCount()
+          }
+        });
+      } catch (error) {
+        console.error('Sync failed:', error);
+        res.status(500).json({ success: false, message: error.message });
+      }
+    });
+
     // Whitelist Management Routes
 
     // Add IP to whitelist

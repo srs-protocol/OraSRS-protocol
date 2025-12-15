@@ -181,8 +181,43 @@ sudo systemctl status orasrs-client
 - 基于 OraSRS 协议链的去中心化威胁情报
 - 隐私保护设计
 
+## 🛠️ Client Tools
+
+### CLI Usage
+OraSRS provides a command-line interface for management and querying.
+
+```bash
+# Query an IP
+orasrs-cli query 1.2.3.4
+
+# Report a threat (requires private key)
+orasrs-cli report 1.2.3.4 --reason "Phishing" --private-key <YOUR_KEY>
+
+# Manually sync threat data
+orasrs-cli sync
+
+# Manage whitelist
+orasrs-cli whitelist add 1.2.3.4
+orasrs-cli whitelist list
+```
+
+### Client SDK
+Developers can use the `orasrs-sdk.js` to integrate OraSRS into their applications.
+
+```javascript
+import OraSRSClient from './orasrs-sdk.js';
+
+const client = new OraSRSClient();
+const result = await client.query('1.2.3.4');
+console.log(result);
+```
+
+### OpenWrt Support
+OraSRS supports OpenWrt for IoT/Router protection.
+See `openwrt/` directory for package definitions.
+
 ## ✨ 增强功能 / Enhanced Features
-- **三层去中心化架构 / Three-Tier Decentralized Architecture**: 超轻量边缘代理 + 多链可信存证 + 威胁情报协调网络 / Ultra-lightweight Edge Agent + Multi-chain Trusted Evidence Storage + Threat Intelligence Coordination Network
+- **三层去中心化架构 / Three-Tier Decentralized Architecture**: 超轻量边缘代理 + 多链可信存证 + 威胁情报协调网络 / Ultra-lightweight Edge Agent + Multi-chain
 - **轻量级质押机制**: 基于行为的动态声誉评分，无需经济质押 / Behavior-based dynamic reputation scoring, no economic staking required
 - **BFT 共识算法 / BFT Consensus Algorithm**: 支持多链部署，区域化合规 / Multi-chain deployment support, regional compliance
 - **国产化支持 / Localization Support**: 支持国密算法（SM2/SM3/SM4），适配长安链 / Supports Chinese national cryptography (SM2/SM3/SM4), compatible with ChainMaker

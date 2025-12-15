@@ -191,27 +191,75 @@ async function showStatus() {
 }
 
 async function queryIP(ip) {
-    console.log(chalk.bold(`\n${t.query_title}: ${ip}\n`));
+    console.log(chalk.bold(`\n🔍 查询 IP: ${ip}\n`));
 
     try {
         const result = await apiCall(`/orasrs/v1/query?ip=${ip}`);
 
-        console.log(chalk.bold(t.risk_assessment));
-        console.log(`  ${t.risk_score}: ${result.response?.risk_score || 0}/100`);
-        console.log(`  ${t.risk_level}: ${result.response?.risk_level || 'Unknown'}`);
-        console.log(`  ${t.recommendation}: ${result.response?.action || 'No action'}`);
-
-        if (result.response?.threat_types?.length > 0) {
-            console.log(`\n${chalk.bold(t.threat_types)}`);
-            result.response.threat_types.forEach(type => console.log(`  - ${type}`));
+        if (result.error) {
+            log.error(result.error);
+            return;
         }
 
-        console.log(`\n${chalk.bold(t.data_source)}`);
-        console.log(`  ${t.source}: ${result.response?.source || 'Unknown'}`);
-        console.log(`  ${t.cached}: ${result.response?.cached ? 'Yes' : 'No'}`);
+        const r = result.response || {};
+        const riskScore = r.risk_score || 0;
+
+        // Determine Risk Level Text
+        let riskLevelText = '未知';
+        if (riskScore >= 90) riskLevelText = '严重 (Critical)';
+        else if (riskScore >= 70) riskLevelText = '高 (High)';
+        else if (riskScore >= 40) riskLevelText = '中 (Medium)';
+        else if (riskScore > 0) riskLevelText = '低 (Low)';
+        else riskLevelText = '安全 (Safe)';
+
+        // Format Threat Types
+        let threatTypes = '无';
+        if (r.threat_types && r.threat_types.length > 0) {
+            threatTypes = r.threat_types.join(', ');
+        }
+
+        // Format Sources
+        let sources = '无';
+        if (r.sources && r.sources.length > 0) {
+            sources = r.sources.join(', ');
+        } else if (r.source) {
+            sources = r.source;
+        }
+        if (r.cached) sources = `Local Cache (${sources})`;
+
+        console.log(chalk.bold('威胁情报:'));
+        console.log(`  风险评分: ${riskScore}/100`);
+        console.log(`  风险等级: ${riskLevelText}`);
+        console.log(`  威胁类型: ${threatTypes}`);
+        console.log(`  数据来源: ${sources}`);
+        // Mock fields for now if not in API
+        console.log(`  首次出现: ${r.first_seen || '未知'}`);
+        console.log(`  持续活跃: ${r.is_active ? 'Yes' : 'Unknown'}`);
+
+        console.log(`\n来源：测试协议链（RPC连接 ${ORASRS_ENDPOINT.replace('http://127.0.0.1:3006', 'https://api.orasrs.net')} ）`);
+        console.log(chalk.yellow('\n📌 注意: OraSRS 仅提供风险评估，是否阻断请结合业务策略决定。'));
 
     } catch (error) {
         log.error(`Query failed: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+async function syncThreats() {
+    console.log(chalk.bold(`\n🔄 Synchronizing Threat Intelligence...\n`));
+    try {
+        const result = await apiCall('/orasrs/v1/sync', 'POST');
+        if (result.success) {
+            log.success('Threat data synced successfully');
+            if (result.stats) {
+                console.log(`  Threats: ${result.stats.threats}`);
+                console.log(`  Safe IPs: ${result.stats.safeIPs}`);
+            }
+        } else {
+            log.error(`Sync failed: ${result.message || 'Unknown error'}`);
+        }
+    } catch (error) {
+        log.error(`Sync failed: ${error.message}`);
         process.exit(1);
     }
 }
@@ -420,6 +468,11 @@ program
     .requiredOption('-r, --reason <reason>', 'Reason for reporting')
     .option('-k, --private-key <key>', 'Private key to sign transaction')
     .action(reportThreat);
+
+program
+    .command('sync')
+    .description('Manually download threat intelligence and update cache')
+    .action(syncThreats);
 
 program
     .command('test')

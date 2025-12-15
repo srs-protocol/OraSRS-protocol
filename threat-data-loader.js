@@ -266,6 +266,19 @@ class ThreatDataLoader {
         await this.fetchFullTree();
         return true;
     }
+
+    // Alias for initialize/refresh logic
+    async loadThreatData() {
+        return this.initialize();
+    }
+
+    getThreatCount() {
+        return this.stats.totalEntries;
+    }
+
+    getSafeIPCount() {
+        return 0; // ThreatDataLoader doesn't track safe IPs
+    }
 }
 
 export default ThreatDataLoader;
