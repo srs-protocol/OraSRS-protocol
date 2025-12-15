@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "OraSRS Team"
+title: "OraSRS Protocol"
+version: 2.1.0
+doi: 10.31224/5985
+date-released: 2025-12-16
+url: "https://github.com/srs-protocol/OraSRS-protocol"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "OraSRS Team"
+  doi: "10.31224/5985"
+  journal: "Engineering Archive"
+  title: "OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement"
+  year: 2025

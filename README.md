@@ -1,4 +1,6 @@
-# OraSRS (Oracle Security Root Service) - 最新版本
+# OraSRS Protocol
+[![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
+[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
 > ⚠️ **测试阶段声明**: 本项目处于 Beta 测试阶段，部分功能（如出站审查）默认为监控模式。详见 [免责声明](#-测试阶段免责声明)。
 
@@ -13,7 +15,7 @@
 
 > 🌐 **测试节点地域政策**: OraSRS Alpha 测试目前仅面向中国大陆以外的节点开放。中国开发者可部署私有网络。详见 [Alpha 测试政策](ALPHA_TESTING.md)。
 
-> 📄 **学术关联**: 本 Alpha 实现基于论文 *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement* 中的协议设计（**论文审核中，地址待更新**）。**注意**: 代码库中包含若干**实验性扩展模块**（如 eBPF 出站过滤、HVAP 框架、IoT Shield），其设计与实现**超前于当前论文版本**，属于协议 v3.0 的探索性研究，**尚未纳入正式规范**。
+> 📄 **学术关联**: 本 Alpha 实现基于论文 [*OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement*](https://doi.org/10.31224/5985) 中的协议设计。**注意**: 代码库中包含若干**实验性扩展模块**（如 eBPF 出站过滤、HVAP 框架、IoT Shield），其设计与实现**超前于当前论文版本**，属于协议 v3.0 的探索性研究，**尚未纳入正式规范**。
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
 
