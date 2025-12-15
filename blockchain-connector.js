@@ -601,14 +601,17 @@ class BlockchainConnector {
 
       // Check if expired or safe
       const now = Math.floor(Date.now() / 1000);
-      if (info.expiry <= now || info.riskLevel === 0) {
+      const expiry = Number(info.expiry);
+      const riskLevel = Number(info.riskLevel);
+
+      if (expiry <= now || riskLevel === 0) {
         return this.getNoDataFoundResponse(ipAddress);
       }
 
       // Map risk level
-      const riskScore = info.riskLevel * 25; // 1=25, 2=50, 3=75, 4=100
+      const riskScore = riskLevel * 25; // 1=25, 2=50, 3=75, 4=100
       const riskLevelMap = ['Safe', 'Low', 'Medium', 'High', 'Critical'];
-      const riskLevelStr = riskLevelMap[info.riskLevel] || 'Unknown';
+      const riskLevelStr = riskLevelMap[riskLevel] || 'Unknown';
 
       return {
         query: { ip: ipAddress },
@@ -618,12 +621,12 @@ class BlockchainConnector {
           risk_level: riskLevelStr,
           evidence: [{
             type: 'blockchain_registry',
-            expiry: new Date(Number(info.expiry) * 1000).toISOString(),
-            mask: info.mask,
-            sources: info.sourceMask
+            expiry: new Date(expiry * 1000).toISOString(),
+            mask: Number(info.mask),
+            sources: Number(info.sourceMask)
           }],
           recommendations: {
-            default: info.riskLevel >= 3 ? 'Block' : 'Alert'
+            default: riskLevel >= 3 ? 'Block' : 'Alert'
           },
           timestamp: new Date().toISOString(),
           version: '2.1-optimized'
