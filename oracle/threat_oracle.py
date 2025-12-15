@@ -9,6 +9,7 @@ RPC_URL = "http://127.0.0.1:8545"  # Local Hardhat node
 PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" # Hardhat Account #0
 CONTRACT_ADDRESS = "0x..." # To be filled after deployment
 BATCH_SIZE = 100
+MAX_IPS_PER_SOURCE = 50  # Limit IPs per source for testing (set to None for production)
 
 # Threat Sources
 SOURCES = {
@@ -45,34 +46,61 @@ def fetch_threats():
     
     for name, url in SOURCES.items():
         print(f"Fetching {name}...")
+        source_ip_count = 0  # Track IPs per source
+        
         try:
-            # Mocking response for demo if URL is not reachable or rate limited
-            # In production, use requests.get(url).text
-            # response = requests.get(url)
-            # lines = response.text.splitlines()
-            
-            # Mock data for demonstration
-            if name == "Spamhaus":
-                lines = ["1.2.3.4 ; SBL123", "5.6.7.8 ; SBL456"]
-            elif name == "DShield":
-                lines = ["1.2.3.4\t100", "9.10.11.12\t50"]
-            else:
-                lines = ["1.2.3.4", "13.14.15.16", "45.148.10.2", "15.204.219.215", "162.243.103.246", "167.86.75.145", "51.210.96.48"]
+            # Try to fetch real data, fall back to mock
+            try:
+                response = requests.get(url, timeout=10)
+                lines = response.text.splitlines()
+            except:
+                # Mock data for demonstration
+                if name == "Spamhaus":
+                    lines = ["1.10.16.0/20 ; SBL256894", "1.19.0.0/16 ; SBL434604"]
+                elif name == "DShield":
+                    lines = ["1.2.3.4\t100", "9.10.11.12\t50"]
+                else:
+                    lines = ["1.2.3.4", "13.14.15.16", "45.148.10.2", "15.204.219.215", "162.243.103.246", "167.86.75.145", "51.210.96.48"]
 
             for line in lines:
+                # Check limit
+                if MAX_IPS_PER_SOURCE and source_ip_count >= MAX_IPS_PER_SOURCE:
+                    print(f"  Reached limit of {MAX_IPS_PER_SOURCE} IPs for {name}")
+                    break
+                    
                 line = line.strip()
                 if not line or line.startswith("#") or line.startswith(";"):
                     continue
                 
-                # Simple extraction (improve regex for real usage)
+                # Extract IP or CIDR
                 parts = line.split()
                 if not parts: continue
-                ip_str = parts[0]
+                ip_or_cidr = parts[0]
                 
-                if is_public_ip(ip_str):
-                    if ip_str not in threat_data:
-                        threat_data[ip_str] = set()
-                    threat_data[ip_str].add(name)
+                # Handle CIDR notation (e.g., 1.2.3.0/24)
+                if '/' in ip_or_cidr:
+                    try:
+                        network = ipaddress.ip_network(ip_or_cidr, strict=False)
+                        # Use network address as representative IP
+                        ip_str = str(network.network_address)
+                        
+                        # For smaller networks, we could add all IPs
+                        # But for efficiency, we only add the network address
+                        # Clients will need to do CIDR matching
+                        if is_public_ip(ip_str):
+                            if ip_str not in threat_data:
+                                threat_data[ip_str] = set()
+                            threat_data[ip_str].add(name)
+                            source_ip_count += 1
+                    except ValueError:
+                        continue
+                else:
+                    # Single IP
+                    if is_public_ip(ip_or_cidr):
+                        if ip_or_cidr not in threat_data:
+                            threat_data[ip_or_cidr] = set()
+                        threat_data[ip_or_cidr].add(name)
+                        source_ip_count += 1
                     
         except Exception as e:
             print(f"Error fetching {name}: {e}")
