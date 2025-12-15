@@ -57,7 +57,7 @@ def fetch_threats():
             elif name == "DShield":
                 lines = ["1.2.3.4\t100", "9.10.11.12\t50"]
             else:
-                lines = ["1.2.3.4", "13.14.15.16"]
+                lines = ["1.2.3.4", "13.14.15.16", "45.148.10.2"]
 
             for line in lines:
                 line = line.strip()
@@ -140,26 +140,26 @@ def build_merkle_root(leaves):
 def update_merkle_root(w3, account, contract, root):
     print(f"Updating Merkle Root to {root.hex()}...")
     # In a real scenario, sign and send transaction
-    # tx = contract.functions.updateMerkleRoot(root).build_transaction({
-    #     'from': account.address,
-    #     'nonce': w3.eth.get_transaction_count(account.address),
-    # })
-    # signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-    # tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    # print(f"Merkle Root updated: {tx_hash.hex()}")
-    print("Merkle Root update sent (Simulated)")
+    tx = contract.functions.updateMerkleRoot(root).build_transaction({
+        'from': account.address,
+        'nonce': w3.eth.get_transaction_count(account.address),
+    })
+    signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    print(f"Merkle Root updated: {tx_hash.hex()}")
+    # print("Merkle Root update sent (Simulated)")
 
 def send_batch(w3, account, contract, ips, levels, masks, sources):
     print(f"Sending batch of {len(ips)} IPs...")
     # In a real scenario, we would estimate gas and sign transaction
-    # tx = contract.functions.updateThreatBatch(ips, levels, masks, sources, 86400).build_transaction({
-    #     'from': account.address,
-    #     'nonce': w3.eth.get_transaction_count(account.address),
-    # })
-    # signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-    # tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    # print(f"Transaction sent: {tx_hash.hex()}")
-    print("Batch sent (Simulated)")
+    tx = contract.functions.updateThreatBatch(ips, levels, masks, sources, 86400).build_transaction({
+        'from': account.address,
+        'nonce': w3.eth.get_transaction_count(account.address),
+    })
+    signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    print(f"Transaction sent: {tx_hash.hex()}")
+    # print("Batch sent (Simulated)")
 
 
 
