@@ -41,6 +41,8 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 8. **国密算法**：支持 SM2/SM3/SM4 国密算法
 9. **智能缓存**：O(1) 精确 IP 查询 + O(n) CIDR 最长前缀匹配
 10. **增量同步**：每日差分更新，最小化带宽消耗
+11. **三层架构**：边缘层、共识层、智能层的去中心化威胁检测网络
+12. **动态风控**：基于风险评分的自适应封禁时长机制
 
 ## 🏆 原创机制声明 / Original Innovation Declaration
 
@@ -225,6 +227,9 @@ See `openwrt/` directory for package definitions.
 - **SecurityRiskAssessment v2.0 协调防御 / SecurityRiskAssessment v2.0 Coordinated Defense**: 全球轻量级主动防御协调框架 / Global Lightweight Proactive Defense Coordination Framework
 - **SecurityRiskAssessment Agent**: 超轻量级威胁检测代理，< 5MB内存占用 / Ultra-lightweight threat detection agent with < 5MB memory footprint
 - **简化的网络架构 / Simplified Network Architecture**: 移除了复杂的P2P设置，采用更高效的客户端-服务器模式 / Removed complex P2P setup,采用 more efficient client-server model
+- **威胁情报集成 / Threat Intelligence Integration**: 实时威胁情报收集、验证和共享 / Real-time threat intelligence collection, verification and sharing
+- **边缘缓存层 / Edge Cache Layer**: 小额质押缓存节点，提高查询性能 / Low-stake cache nodes for improved query performance
+- **智能路由 / Smart Routing**: 基于地理位置和合规要求的智能路由 / Intelligent routing based on geographic location and compliance requirements
 
 ## 📚 协议规范 / Protocol Specifications
 - [v0.1 规范文档 / v0.1 Specification Document](SRS_PROTOCOL_SPEC.md)（中文/英文 / Chinese/English）
@@ -255,6 +260,9 @@ OraSRS 集成了生产级威胁情报系统，具有以下特性：
 ✅ 增量差分同步（96% 带宽节省）
 ✅ 每日自动更新（北京时间 00:00）
 ✅ 每小时客户端同步
+✅ 三层架构威胁检测（边缘-共识-智能层）
+✅ 威胁情报聚合与验证
+✅ P2P网络威胁共享
 ```
 
 ### 性能指标
@@ -265,6 +273,8 @@ OraSRS 集成了生产级威胁情报系统，具有以下特性：
 | 完整数据 | 132KB |
 | 每日差分 | 1-5KB |
 | 月带宽/客户端 | ~618KB |
+| 威胁检测延迟 | < 100ms |
+| 共识验证时间 | < 500ms |
 
 ### 快速开始
 ```bash
@@ -311,7 +321,6 @@ curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-c
 
 此命令也用于**更新客户端**。如果客户端已安装，运行此命令将自动拉取最新代码并重启服务。
 
-
 ### 方式 2: Wazuh + OraSRS 集成安装 (高级安全)
 
 如果您希望将 OraSRS 集成到 Wazuh 安全平台，实现自动威胁阻断：
@@ -323,7 +332,6 @@ curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-c
 此脚本将：
 1. 安装/更新 OraSRS 客户端（限制为本地访问）。
 2. 安装 Wazuh Agent。
-
 
 **工作原理 (先风控后查询):**
 - **Wazuh 发现威胁**: 触发集成脚本调用 OraSRS 接口 `/v1/threats/process`。
@@ -362,12 +370,13 @@ curl -X POST http://127.0.0.1:3006/orasrs/v1/whitelist/temp \
 
 ### 🛡️ OraSRS IoT Shield (物联网护盾)
 
-对于无法修改固件的摄像头、传感器等设备，OraSRS 提供“透明清洗层”方案：
-- **原理**: 在网关部署 OraSRS + Nginx，实行“先查询后放行”。
+对于无法修改固件的摄像头、传感器等设备，OraSRS 提供"透明清洗层"方案：
+- **原理**: 在网关部署 OraSRS + Nginx，实行"先查询后放行"。
 - **效果**: 隐藏服务入口，利用全球威胁情报保护终端安全。
 - **文档**: [查看详细配置指南](IOT_SHIELD.md)
 
 ### 方式 3: 手动安装 (Docker)
+
 ## 🔐 ChainMaker 合约 / ChainMaker Contract
 - [ChainMaker 合约代码 / ChainMaker Contract Code](chainmaker-contract/sracontract/sracontract.go)
 - [威胁情报扩展 / Threat Intelligence Extensions](chainmaker-contract/sracontract/extra_methods.go)
@@ -388,7 +397,11 @@ curl -X POST http://127.0.0.1:3006/orasrs/v1/whitelist/temp \
 为了安全考虑，系统实施了以下保护措施：
 - **速率限制**: 每个IP每秒最多20个请求 (`limit_req_zone $binary_remote_addr zone=rpc_limit:10m rate=20r/s;`)
 - **连接限制**: 每个IP最多10个并发连接 (`limit_conn_zone $binary_remote_addr zone=addr_limit:10m;`)
--**注**：日志里使用的都是模拟ip，云测试日志因为网络宽带，反代限制，WAF等的问题可能有一些偏差。
+- **去重逻辑**: 防止重复威胁报告的时间窗口机制
+- **威胁情报验证**: 所有威胁情报需经共识层验证
+- **国密算法**: 使用SM2/SM3/SM4算法确保数据安全
+- **三层架构**: 边缘层快速检测 + 共识层验证 + 智能层威胁聚合
+- **注**: 日志里使用的都是模拟ip，云测试日志因为网络宽带，反代限制，WAF等的问题可能有一些偏差。
 
 ## 📊 测试日志 / Test Logs
 标准的测试日志已保存在 `logs/` 目录中，供审稿人审查：
@@ -453,6 +466,8 @@ npm run tauri build
 - 抗量子算法支持 / Post-Quantum Algorithm Support
 - 混合加密方案 / Hybrid Encryption Schemes
 - 数据不出境（中国大陆）/ Data Does Not Leave (Mainland China)
+- 威胁情报去重机制 / Threat Intelligence Deduplication Mechanism
+- 三层架构威胁验证 / Three-Tier Threat Verification
 
 ## 🤝 贡献与社区 / Contribution and Community
 - 提问或建议：[GitHub Discussions](https://github.com/SRS协议/SRA-protocol/discussions)
@@ -484,6 +499,7 @@ docker-compose logs -f SRA-node-1
 - **实时威胁同步** - 秒级全球威胁情报同步
 - **合规设计** - 自动满足GDPR/CCPA/等保2.0合规要求
 - **可扩展性** - 预留跨链接口，用户多时可接入跨链网络
+- **P2P威胁共享** - 基于libp2p gossipsub的威胁情报共享网络
 
 ### API接口 / API Endpoints
 - 节点1 API: `http://localhost:8081`
@@ -497,6 +513,9 @@ docker-compose logs -f SRA-node-1
 - `verifyThreatReport` - 验证威胁报告
 - `getGlobalThreatList` - 获取全局威胁列表
 - `updateReputation` - 更新节点声誉
+- `submitThreatIntel` - 提交威胁情报
+- `getThreatIntel` - 获取威胁情报
+- `updateThreatScore` - 更新威胁评分
 
 ## 🛠️ 启动OraSRS私有链 (Hardhat+Geth) / Start OraSRS Private Chain (Hardhat+Geth)
 

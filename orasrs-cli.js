@@ -225,7 +225,6 @@ async function queryIP(ip) {
         } else if (r.source) {
             sources = r.source;
         }
-        if (r.cached) sources = `Local Cache (${sources})`;
 
         console.log(chalk.bold('威胁情报:'));
         console.log(`  风险评分: ${riskScore}/100`);
@@ -236,7 +235,8 @@ async function queryIP(ip) {
         console.log(`  首次出现: ${r.first_seen || '未知'}`);
         console.log(`  持续活跃: ${r.is_active ? 'Yes' : 'Unknown'}`);
 
-        console.log(`\n来源：测试协议链（RPC连接 ${ORASRS_ENDPOINT.replace('http://127.0.0.1:3006', 'https://api.orasrs.net')} ）`);
+        console.log(`\n来源：测试协议链`);
+        console.log(`缓存：${r.cached ? '是' : '否'}`);
         console.log(chalk.yellow('\n📌 注意: OraSRS 仅提供风险评估，是否阻断请结合业务策略决定。'));
 
     } catch (error) {
