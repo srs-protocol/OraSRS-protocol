@@ -143,8 +143,17 @@ class SimpleOraSRSService {
     try {
       if (fs.existsSync(CACHE_FILE)) {
         const data = fs.readFileSync(CACHE_FILE, 'utf8');
-        this.cache = JSON.parse(data);
-        console.log(`已加载本地缓存: ${Object.keys(this.cache.threats).length} 条威胁记录, ${this.cache.whitelist.length} 条白名单`);
+        const loadedCache = JSON.parse(data);
+
+        // Merge with default structure to ensure all fields exist
+        this.cache = {
+          threats: loadedCache.threats || {},
+          whitelist: loadedCache.whitelist || this.cache.whitelist,
+          safeIPs: loadedCache.safeIPs || {},  // Ensure safeIPs exists
+          lastUpdate: loadedCache.lastUpdate
+        };
+
+        console.log(`已加载本地缓存: ${Object.keys(this.cache.threats).length} 条威胁记录, ${Object.keys(this.cache.safeIPs || {}).length} 条安全IP, ${this.cache.whitelist.length} 条白名单`);
       } else {
         console.log('本地缓存不存在，将创建新缓存');
         this.saveCache();
