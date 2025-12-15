@@ -86,10 +86,24 @@ class SimpleOraSRSService {
       }
     });
 
-    // 初始化本地缓存
+    // 缓存
     this.cache = {
       threats: {},
-      whitelist: [],
+      whitelist: [
+        '127.0.0.1',
+        'localhost',
+        '::1',
+        // 公共 DNS 服务器
+        '8.8.8.8',        // Google DNS
+        '8.8.4.4',        // Google DNS
+        '1.1.1.1',        // Cloudflare DNS
+        '1.0.0.1',        // Cloudflare DNS
+        '208.67.222.222', // OpenDNS
+        '208.67.220.220', // OpenDNS
+        '9.9.9.9',        // Quad9 DNS
+        '149.112.112.112' // Quad9 DNS
+      ],
+      safeIPs: {},      // 缓存已验证的安全 IP
       lastUpdate: null
     };
     this.loadCache();
@@ -305,6 +319,26 @@ class SimpleOraSRSService {
           }
         }
 
+        // 2.5. 检查安全 IP 缓存
+        if (ip && this.cache.safeIPs[ip]) {
+          const safeCached = this.cache.safeIPs[ip];
+          // 安全 IP 缓存 24 小时
+          const cacheTime = new Date(safeCached.verified_at).getTime();
+          if (Date.now() - cacheTime < 86400000) {
+            return res.json(this.translateToChinese({
+              query: { ip, domain },
+              response: {
+                risk_score: 0,
+                risk_level: 'Safe',
+                action: 'Allow',
+                source: safeCached.source,
+                cached: true,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
+        }
+
         // 3. 从区块链获取威胁数据 (如果缓存未命中或过期)
         let threatData = await this.blockchainConnector.getThreatData(ip || domain);
 
@@ -322,6 +356,16 @@ class SimpleOraSRSService {
               primary_threat_type: threatData.response.threat_types?.[0] || 'Unknown',
               last_seen: new Date().toISOString()
             };
+            this.saveCache();
+          } else if (threatData.response.risk_score === 0) {
+            // 安全 IP，缓存到 safeIPs（避免重复查询）
+            this.cache.safeIPs[ip] = {
+              ip: ip,
+              verified_at: new Date().toISOString(),
+              source: threatData.response.source || 'Blockchain'
+            };
+            // 标记为已缓存
+            threatData.response.cached = true;
             this.saveCache();
           } else if (this.cache.threats[ip]) {
             // 低危 IP，但存在于缓存中，说明风险已降低，从缓存移除
