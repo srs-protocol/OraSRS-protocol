@@ -740,10 +740,25 @@ class BlockchainConnector {
     }
   }
 
-  // 清除所有缓存
-  clearCache() {
-    this.cache.clear();
-    this.cacheTimestamp.clear();
+  // 将IP转换为bytes4
+  ipToBytes4(ip) {
+    const parts = ip.split('.');
+    if (parts.length !== 4) return '0x00000000';
+
+    let hex = '0x';
+    for (const part of parts) {
+      const val = parseInt(part, 10);
+      hex += val.toString(16).padStart(2, '0');
+    }
+    return hex;
+  }
+
+  // 编码查询优化版威胁注册表
+  encodeGetThreatCall(ip) {
+    const iface = new ethers.Interface([
+      "function getThreat(bytes4 ip) view returns ((uint64 expiry, uint8 riskLevel, uint8 mask, uint16 sourceMask))"
+    ]);
+    return iface.encodeFunctionData("getThreat", [this.ipToBytes4(ip)]);
   }
 }
 

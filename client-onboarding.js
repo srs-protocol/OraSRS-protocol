@@ -130,7 +130,11 @@ class ClientOnboarding {
         // 验证连接
         try {
             const network = await this.provider.getNetwork();
-            console.log(`   ✓ 已连接到网络: ${network.name} (Chain ID: ${network.chainId})`);
+            let networkName = network.name;
+            if (network.chainId === 31337n || network.chainId === 8888n) {
+                networkName = "ORASRS测试协议链";
+            }
+            console.log(`   ✓ 已连接到网络: ${networkName} (Chain ID: ${network.chainId})`);
         } catch (error) {
             console.error(`   ❌ 无法连接到区块链节点: ${this.config.blockchainEndpoint}`);
             console.error('   请检查网络连接或节点状态。');
