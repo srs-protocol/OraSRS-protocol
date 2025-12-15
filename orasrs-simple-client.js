@@ -1103,7 +1103,7 @@ const config = {
         ['https://api.orasrs.net', 'https://backup.orasrs.net'],
     chainId: process.env.ORASRS_CHAIN_ID || userConfig.network?.chainId || securityConfig.network?.chainId || 8888,
     registryAddress: process.env.ORASRS_REGISTRY_ADDRESS || userConfig.network?.registryAddress || securityConfig.network?.registryAddress || '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    contractAddress: process.env.ORASRS_CONTRACT_ADDRESS || userConfig.network?.contractAddress || securityConfig.network?.contractAddress || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+    contractAddress: process.env.ORASRS_CONTRACT_ADDRESS || userConfig.network?.contractAddress || securityConfig.network?.contractAddress || '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E',
     timeout: securityConfig.security?.blockchainConnection?.timeout || 30000, // 增加超时时间以支持公网连接
     retries: securityConfig.security?.blockchainConnection?.retries || 5, // 增加重试次数以支持公网连接
     retryDelay: securityConfig.security?.blockchainConnection?.retryDelay || 2000 // 增加重试延迟以支持公网连接
