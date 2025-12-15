@@ -85,13 +85,15 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 
 ## 📚 学术出版物 / Academic Publications
 
-本项目的核心协议设计基于学术论文（**审核中**）：
+本项目的核心协议设计基于学术论文（**预印本已发布**）：
 
 **论文标题**: *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement*
 
-**作者**: Luo ZiQian
+**作者**: Luo ZiQian [![ORCID](https://img.shields.io/badge/ORCID-0009--0008--8644--8717-green)](https://orcid.org/0009-0008-8644-8717)
 
-**状态**: 论文审核中，正式发表地址将在审核通过后更新
+**状态**: 预印本已发布  
+**DOI**: [10.31224/5985](https://doi.org/10.31224/5985)  
+**发布平台**: Engineering Archive
 
 **摘要**: 本文提出了一种轻量级去中心化威胁情报协议，通过"先风控后查询"机制、动态封禁叠加和本地-链上协同决策，实现了对零日攻击的主动防御。协议采用三层架构（边缘层、共识层、智能层），支持国密算法，满足 GDPR/CCPA/等保 2.0 合规要求。
 
@@ -105,14 +107,22 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 
 这些扩展功能基于论文的核心设计原则，但属于协议 v3.0 的前沿研究方向，尚未纳入正式规范。
 
-**引用格式** (BibTeX - 待论文发表后更新):
+**引用格式** (BibTeX):
 ```bibtex
 @article{luo2025orasrs,
   title={OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement},
   author={Luo, ZiQian},
   year={2025},
-  note={Under review. Code available at: https://github.com/srs-protocol/OraSRS-protocol}
+  doi={10.31224/5985},
+  url={https://doi.org/10.31224/5985},
+  publisher={Engineering Archive},
+  note={Preprint. Code available at: https://github.com/srs-protocol/OraSRS-protocol}
 }
+```
+
+**APA 格式**:
+```
+Luo, Z. (2025). OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement. Engineering Archive. https://doi.org/10.31224/5985
 ```
 
 ## 一键安装 (Linux)
