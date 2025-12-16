@@ -276,3 +276,293 @@ API supports Chinese national cryptographic algorithms:
 - SM2: Digital signature and key exchange
 - SM3: Hash algorithm
 - SM4: Block cipher
+
+---
+
+## 10. 内核加速 API (Kernel Acceleration API)
+
+### 10.1 获取内核加速状态 (Get Kernel Acceleration Status)
+
+- **端点 / Endpoint**: `GET /orasrs/v1/kernel/stats`
+- **描述 / Description**: 获取 eBPF 内核加速基本状态
+- **Description**: Get basic eBPF kernel acceleration status
+
+#### 示例请求 (Example Request)
+```bash
+curl -X GET "http://localhost:3006/orasrs/v1/kernel/stats"
+```
+
+#### 响应 (Response)
+```json
+{
+  "success": true,
+  "kernel_acceleration": {
+    "enabled": true,
+    "mode": "monitor",
+    "interface": "eth0",
+    "cacheSize": 1234,
+    "riskThreshold": 80,
+    "totalPackets": 10000,
+    "highRiskHits": 50,
+    "blockedPackets": 30,
+    "allowedPackets": 9970,
+    "status": "running"
+  }
+}
+```
+
+### 10.2 获取详细统计信息 (Get Detailed Statistics)
+
+- **端点 / Endpoint**: `GET /orasrs/v1/kernel/stats/detailed`
+- **描述 / Description**: 获取详细的性能和统计信息
+- **Description**: Get detailed performance and statistics
+
+#### 示例请求 (Example Request)
+```bash
+curl -X GET "http://localhost:3006/orasrs/v1/kernel/stats/detailed"
+```
+
+#### 响应 (Response)
+```json
+{
+  "success": true,
+  "kernel_acceleration": {
+    "enabled": true,
+    "mode": "monitor",
+    "interface": "eth0",
+    "cacheSize": 1234,
+    "riskThreshold": 80,
+    "totalPackets": 10000,
+    "highRiskHits": 50,
+    "blockedPackets": 30,
+    "allowedPackets": 9970,
+    "performance": {
+      "avgQueryLatency": 0.001,
+      "peakTPS": 15000,
+      "memoryUsage": 45.2
+    },
+    "riskDistribution": {
+      "low": 8000,
+      "medium": 1500,
+      "high": 450,
+      "critical": 50
+    },
+    "uptime": 86400,
+    "status": "running"
+  }
+}
+```
+
+### 10.3 更新内核配置 (Update Kernel Configuration)
+
+- **端点 / Endpoint**: `POST /orasrs/v1/kernel/config`
+- **描述 / Description**: 动态更新内核加速配置（无需重启）
+- **Description**: Dynamically update kernel acceleration configuration (no restart required)
+
+#### 请求参数 (Request Parameters)
+```json
+{
+  "mode": "monitor|enforce|disabled",
+  "riskThreshold": 80,
+  "cacheUpdateInterval": 300000
+}
+```
+
+#### 示例请求 (Example Request)
+```bash
+curl -X POST "http://localhost:3006/orasrs/v1/kernel/config" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "enforce",
+    "riskThreshold": 90
+  }'
+```
+
+#### 响应 (Response)
+```json
+{
+  "success": true,
+  "message": "Configuration updated successfully",
+  "changes": [
+    "mode: monitor → enforce",
+    "riskThreshold: 80 → 90"
+  ]
+}
+```
+
+### 10.4 手动同步威胁数据 (Manual Threat Sync)
+
+- **端点 / Endpoint**: `POST /orasrs/v1/kernel/sync`
+- **描述 / Description**: 手动同步威胁数据到内核 BPF Map
+- **Description**: Manually sync threat data to kernel BPF Map
+
+#### 示例请求 (Example Request)
+```bash
+curl -X POST "http://localhost:3006/orasrs/v1/kernel/sync"
+```
+
+#### 响应 (Response)
+```json
+{
+  "success": true,
+  "message": "Threats synced to kernel successfully"
+}
+```
+
+### 10.5 配置参数说明 (Configuration Parameters)
+
+| 参数 / Parameter | 类型 / Type | 默认值 / Default | 说明 / Description |
+|------------------|-------------|------------------|---------------------|
+| `mode` | string | "monitor" | 运行模式: monitor (监控), enforce (强制), disabled (禁用) |
+| `interface` | string | "eth0" | 网络接口名称 |
+| `riskThreshold` | number | 80 | 风险阈值 (0-100) |
+| `cacheUpdateInterval` | number | 300000 | 缓存更新间隔 (毫秒) |
+
+### 10.6 模式说明 (Mode Description)
+
+#### Monitor 模式
+- **功能**: 记录所有高风险连接，不阻断
+- **用途**: 测试、调试、数据收集
+- **性能**: 无额外开销
+- **安全**: 无服务中断风险
+
+#### Enforce 模式
+- **功能**: 实时阻断高风险连接
+- **用途**: 生产环境保护
+- **性能**: < 0.04ms 额外延迟
+- **安全**: 需要配置白名单
+
+#### Disabled 模式
+- **功能**: 禁用 eBPF 加速
+- **用途**: 故障排查、降级
+- **性能**: 回退到纯缓存模式
+- **安全**: 无内核级保护
+
+---
+
+## 11. 性能指标 (Performance Metrics)
+
+### 11.1 内核加速性能
+
+| 指标 / Metric | 目标值 / Target | 实际值 / Actual |
+|---------------|-----------------|-----------------|
+| 查询延迟 / Query Latency | < 0.04ms | ~0.001ms |
+| 吞吐量 / Throughput | > 10,000 TPS | ~15,000 TPS |
+| 内存使用 / Memory Usage | < 50MB | ~45MB |
+| CPU 使用 / CPU Usage | < 5% | ~2% |
+
+### 11.2 API 响应时间
+
+| 端点 / Endpoint | 平均响应时间 / Avg Response Time |
+|-----------------|----------------------------------|
+| `/orasrs/v1/kernel/stats` | < 10ms |
+| `/orasrs/v1/kernel/stats/detailed` | < 20ms |
+| `/orasrs/v1/kernel/config` | < 50ms |
+| `/orasrs/v1/kernel/sync` | < 100ms |
+
+---
+
+## 12. 使用示例 (Usage Examples)
+
+### 12.1 完整工作流程
+
+```bash
+# 1. 检查内核加速状态
+curl http://localhost:3006/orasrs/v1/kernel/stats
+
+# 2. 切换到 enforce 模式
+curl -X POST http://localhost:3006/orasrs/v1/kernel/config \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "enforce"}'
+
+# 3. 调整风险阈值
+curl -X POST http://localhost:3006/orasrs/v1/kernel/config \
+  -H "Content-Type: application/json" \
+  -d '{"riskThreshold": 90}'
+
+# 4. 手动同步威胁数据
+curl -X POST http://localhost:3006/orasrs/v1/kernel/sync
+
+# 5. 查看详细统计
+curl http://localhost:3006/orasrs/v1/kernel/stats/detailed
+```
+
+### 12.2 监控脚本示例
+
+```bash
+#!/bin/bash
+# 监控内核加速状态
+
+while true; do
+  # 获取统计信息
+  stats=$(curl -s http://localhost:3006/orasrs/v1/kernel/stats/detailed)
+  
+  # 提取关键指标
+  blocked=$(echo $stats | jq '.kernel_acceleration.blockedPackets')
+  total=$(echo $stats | jq '.kernel_acceleration.totalPackets')
+  
+  # 计算阻断率
+  if [ "$total" -gt 0 ]; then
+    rate=$(echo "scale=2; $blocked * 100 / $total" | bc)
+    echo "$(date): Blocked: $blocked/$total ($rate%)"
+    
+    # 告警: 阻断率 > 5%
+    if (( $(echo "$rate > 5" | bc -l) )); then
+      echo "WARNING: High block rate detected!"
+    fi
+  fi
+  
+  sleep 60
+done
+```
+
+---
+
+## 13. 错误处理 (Error Handling)
+
+### 13.1 内核加速错误码
+
+| 错误码 / Code | 描述 / Description | 解决方案 / Solution |
+|---------------|---------------------|---------------------|
+| 404 | eBPF 未启用 | 检查配置文件，启用 egressProtection |
+| 400 | 无效的模式 | 使用 monitor, enforce, 或 disabled |
+| 500 | 内核加速失败 | 检查 BCC 安装和内核版本 |
+
+### 13.2 错误响应示例
+
+```json
+{
+  "success": false,
+  "error": "eBPF kernel acceleration is not enabled",
+  "message": "Please enable egressProtection in configuration"
+}
+```
+
+---
+
+## 14. 安全建议 (Security Recommendations)
+
+1. **API 访问控制**:
+   - 限制 API 访问为 localhost (127.0.0.1)
+   - 使用防火墙保护
+   - 启用 HTTPS (生产环境)
+
+2. **配置管理**:
+   - 使用强密码保护配置文件
+   - 定期备份配置
+   - 审计配置变更
+
+3. **监控告警**:
+   - 监控阻断率
+   - 监控性能指标
+   - 设置告警阈值
+
+---
+
+## 15. 版本历史 (Version History)
+
+| 版本 / Version | 日期 / Date | 更新内容 / Changes |
+|----------------|-------------|---------------------|
+| 2.1.0 | 2025-12-16 | 添加内核加速 API |
+| 2.0.1 | 2025-12-15 | 更新威胁情报 API |
+| 2.0.0 | 2025-12-14 | 初始版本 |
