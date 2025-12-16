@@ -37,6 +37,26 @@ check_root() {
         print_error "请使用root权限运行此脚本"
         exit 1
     fi
+    fi
+}
+
+# 智能设备检测
+detect_device_type() {
+    if [ -f /proc/meminfo ]; then
+        TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+        TOTAL_MEM_MB=$((TOTAL_MEM / 1024))
+    else
+        # Fallback for systems without /proc/meminfo
+        TOTAL_MEM_MB=1024 
+    fi
+    
+    if [ $TOTAL_MEM_MB -lt 256 ]; then
+        echo "edge"  # <256MB: Edge Mode
+    elif [ $TOTAL_MEM_MB -lt 1024 ]; then
+        echo "hybrid" # 256MB-1GB: Hybrid Mode
+    else
+        echo "full"   # >1GB: Full Mode
+    fi
 }
 
 # 选择语言
@@ -442,6 +462,39 @@ main() {
     
     check_root
     select_language
+    
+    DEVICE_TYPE=$(detect_device_type)
+    print_info "💡 检测到设备类型: $DEVICE_TYPE"
+    
+    if [ "$DEVICE_TYPE" == "edge" ]; then
+        print_info "🔧 内存受限设备 (<256MB)，将尝试安装原生边缘代理..."
+        detect_os
+        check_dependencies
+        
+        # Clone repo to get source
+        clone_orasrs
+        
+        # Try to build native agent
+        if [ -f "/opt/orasrs/src/agent/Makefile" ]; then
+            print_info "编译原生代理..."
+            cd /opt/orasrs/src/agent
+            if make native-agent; then
+                print_success "原生代理编译成功"
+                # Install binary
+                cp native-agent /usr/local/bin/orasrs-edge-agent
+                # Create systemd service for native agent
+                # (Simplified for now)
+                print_success "已安装到 /usr/local/bin/orasrs-edge-agent"
+                print_info "请手动配置运行: orasrs-edge-agent"
+                exit 0
+            else
+                print_error "原生代理编译失败，回退到标准安装..."
+            fi
+        else
+            print_warning "未找到原生代理源码，回退到标准安装..."
+        fi
+    fi
+
     detect_os
     check_dependencies
     check_ebpf_dependencies  # 检查 eBPF 支持（可选）

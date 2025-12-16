@@ -349,6 +349,47 @@ else
 fi
 
 # ============================================
+# 6. Lightweight Agent Benchmark
+# ============================================
+
+print_header "6. Lightweight Agent Benchmark"
+
+if [ -f "orasrs-edge-agent.py" ]; then
+    print_info "Starting lightweight agent..."
+    chmod +x orasrs-edge-agent.py
+    
+    # Start agent in background
+    ./orasrs-edge-agent.py > agent.log 2>&1 &
+    AGENT_PID=$!
+    
+    sleep 5
+    
+    if ps -p $AGENT_PID > /dev/null; then
+        print_pass "Agent started successfully (PID: $AGENT_PID)"
+        
+        # Measure memory
+        AGENT_MEM_KB=$(ps -p $AGENT_PID -o rss | tail -1 | tr -d ' ')
+        AGENT_MEM_MB=$(echo "scale=2; $AGENT_MEM_KB / 1024" | bc)
+        
+        print_metric "Agent Memory" "$AGENT_MEM_MB" "MB" "< 30MB"
+        
+        if (( $(echo "$AGENT_MEM_MB < 30" | bc -l) )); then
+            print_pass "Lightweight agent memory usage is optimized"
+        else
+            print_info "Agent memory usage could be further optimized (Python overhead)"
+        fi
+        
+        # Kill agent
+        kill $AGENT_PID
+    else
+        print_fail "Agent failed to start. Check agent.log"
+        cat agent.log
+    fi
+else
+    print_info "orasrs-edge-agent.py not found"
+fi
+
+# ============================================
 # 测试总结
 # ============================================
 

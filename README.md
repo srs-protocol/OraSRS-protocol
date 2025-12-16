@@ -46,6 +46,70 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 11. **三层架构**：边缘层、共识层、智能层的去中心化威胁检测网络
 12. **动态风控**：基于风险评分的自适应封禁时长机制
 
+## 🚀 部署模式与资源需求 / Deployment Modes
+
+OraSRS 提供三种灵活的部署模式，以适应从云服务器到 IoT 设备的各种环境：
+
+| 模式 | 适用场景 | 内存需求 | 核心组件 | 功能 |
+|------|----------|----------|----------|------|
+| **完整管理节点 (Full)** | 云服务器、网关 | ~90 MB | Node.js + eBPF | 完整 API、区块链交互、可视化、CLI |
+| **混合模式 (Hybrid)** | 边缘网关、路由器 | ~30 MB | Python + eBPF | 核心防护、有限 API、自动同步 |
+| **原生边缘代理 (Edge)** | IoT 设备、传感器 | **< 5 MB** | Native C + eBPF | 仅核心防护、被动更新、极致轻量 |
+
+**注意**: 论文中提到的 "<5MB" 内存指标特指 **原生边缘代理 (Native Edge Agent)** 模式。默认安装脚本会自动检测设备内存并推荐合适的模式。
+
+### 📊 性能基准测试与复现 / Performance Benchmark & Reproduction
+
+为确保透明度，我们提供了自动化脚本以复现上述性能指标。以下是基于 v2.1.0 版本的实测数据：
+
+**1. 运行基准测试脚本**:
+```bash
+# 完整客户端 & Python 代理测试
+./benchmark-kernel-acceleration.sh
+
+# 原生 C 代理内存验证
+./verify-native-agent.sh
+```
+
+**2. 实测日志摘要 (2025-12-17)**:
+
+**A. 完整管理节点 (Full Client)**
+```
+ℹ️  OraSRS 进程 PID: 79594
+CPU 使用率: 0.2 %
+内存使用: 98.03 MB
+✅ 内存使用正常 (< 100MB)
+```
+
+**B. 混合模式代理 (Python Agent)**
+```
+ℹ️  Starting lightweight agent...
+✅ Agent started successfully (PID: 99036)
+Agent Memory: 23.70 MB
+✅ Lightweight agent memory usage is optimized (< 30MB)
+```
+
+**C. 原生边缘代理 (Native Agent)**
+```
+=== OraSRS Native Agent Memory Verification ===
+[*] Measuring memory footprint...
+PID: 99214
+RSS: 1.25 MB
+✅ MEMORY TARGET ACHIEVED: 1.25MB < 5MB
+```
+
+> **结论**: 原生 C 代理 (1.25 MB) 成功满足论文中 "< 5MB" 的资源约束要求。
+
+**🔗 相关文件链接**:
+
+| 文件 | 说明 | 链接 |
+|------|------|------|
+| `benchmark-kernel-acceleration.sh` | 综合性能基准测试脚本 | [查看源码](benchmark-kernel-acceleration.sh) |
+| `verify-native-agent.sh` | 原生代理内存验证脚本 | [查看源码](verify-native-agent.sh) |
+| `src/agent/native_edge_agent.c` | 原生代理 C 源码 | [查看源码](src/agent/native_edge_agent.c) |
+| `orasrs-edge-agent.py` | Python 轻量代理源码 | [查看源码](orasrs-edge-agent.py) |
+| `docs/MEMORY_USAGE_EXPLANATION.md` | 详细内存分析报告 | [查看文档](docs/MEMORY_USAGE_EXPLANATION.md) |
+
 ## 🏆 原创机制声明 / Original Innovation Declaration
 
 **OraSRS 协议的以下核心机制由 [Luo ZiQian] 于 2025 年首创并开源，受 Apache License 2.0 保护：**

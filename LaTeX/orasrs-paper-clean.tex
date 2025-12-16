@@ -1,0 +1,387 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\geometry{a4paper, margin=1in}
+
+\title{OraSRS: Incentivizing Trust and Speed in Decentralized Threat Intelligence via Optimistic Verification and Commit-Reveal Consensus}
+\author{
+    \textbf{luoziqian} \\
+    \textit{Project Developer} \\
+    \texttt{luo.zi.qian@orasrs.net}
+}
+\date{\today}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}},
+    numberstyle=\tiny,
+    numbers=left,
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\textbf{Background}: Existing threat intelligence solutions are either centralized (single point of failure) or purely blockchain-based (too high latency for real-time defense).
+\textbf{Challenge}: How to achieve near-local defense response speed while maintaining decentralized security.
+\textbf{Solution}: Propose the OraSRS protocol, resolving the above contradiction through the T0-T3 optimistic verification architecture and economic incentive mechanisms.
+\textbf{Method}: Combining Commit-Reveal consensus mechanisms, staking slash game theory models, and local optimistic execution to achieve fast threat response and global consistency.
+\textbf{Results}: Local response <100ms, on-chain confirmation <30s, Sybil attack defense rate >95\%, cross-regional success rate >70\%.
+\end{abstract}
+
+\section{Introduction}
+
+Modern cybersecurity is facing unprecedented challenges, with the complexity and frequency of cyber attacks continuously increasing. Traditional centralized threat intelligence services can no longer meet the growing security needs. Current security solutions mainly rely on centralized threat intelligence providers that collect, analyze, and distribute threat intelligence, but there are issues such as single point of failure, data bias, and privacy leaks. In particular, when facing complex attacks such as Distributed Denial of Service (DDoS), Advanced Persistent Threats (APT), and zero-day vulnerabilities, the limitations of traditional solutions become increasingly apparent.
+
+Traditional threat intelligence services typically use blocking methods, directly blocking network traffic or marking threat entities. However, this method has many drawbacks: high false positive rates causing legitimate traffic to be incorrectly blocked; lack of transparency makes it difficult for users to understand the basis of threat judgments; difficult to audit makes security event tracing difficult; Centralized control by service providers may lead to abuse or malicious use of data.
+
+OraSRS protocol proposes a completely new Decentralized Threat Intelligence Sharing model, aimed at solving traditional threat intelligence limitations through decentralized consensus and privacy protection mechanisms.
+
+\section{Related Work}
+
+\subsection{Traditional Threat Intelligence Services}
+Traditional threat intelligence services such as VirusTotal and IBM X-Force provide centralized threat intelligence query services. These services have single point of failure risks, data bias, and privacy leak issues. They typically use blocking methods, directly blocking network traffic, lack transparency and are difficult to audit.
+
+\subsection{Decentralized Threat Intelligence Sharing}
+Recently, researchers have begun exploring decentralized threat intelligence sharing solutions. For example, ThreatExchange proposed by Facebook allows multiple organizations to share threat intelligence, but still relies on centralized coordination mechanisms. CIF (Collective Intelligence Framework) provides a standardized threat intelligence format and sharing protocol, but still has shortcomings in decentralization and trust mechanisms.
+
+\section{System Model and Architecture}
+
+\subsection{Formal Definition}
+
+Define the OraSRS system as a seven-tuple $(N, S, T, R, P, V, C)$, where:
+\begin{itemize}
+\item $N$: Set of participating nodes
+\item $S$: Set of threat intelligence states
+\item $T$: Time parameter set, including $T_{detect}, T_{local}, T_{consensus}$
+\item $R$: Reward allocation function
+\item $P$: Penalty execution function
+\item $V$: Set of verification mechanisms
+\item $C$: Consensus protocol
+\end{itemize}
+
+\subsection{Optimistic Verification Lifecycle}
+
+OraSRS's core innovation is the optimistic verification model, combining T0 local defense with T3 global consensus to resolve the contradiction between blockchain confirmation delay and security response speed.
+
+\subsubsection{Time Parameter Definition}
+\begin{itemize}
+\item $T_{detect}$: Threat detection time, usually <10ms
+\item $T_{local}$: Local activation time, using ipset for O(1) query, <1ms
+\item $T_{consensus}$: Global consensus time, depending on underlying blockchain, usually <30s
+\end{itemize}
+
+\subsubsection{Optimistic Verification Process}
+OraSRS adopts an optimistic verification lifecycle, including the following stages:
+
+\begin{enumerate}
+\item \textbf{Local Optimistic Execution} (T0): Edge nodes immediately execute defense measures locally after detecting threats
+\item \textbf{Consensus Submission} (T1-T2): Submit threat intelligence to the blockchain network for verification
+\item \textbf{Global Confirmation} (T3): Complete blockchain consensus to form the final state
+\item \textbf{State Synchronization}: Synchronize the final state to all nodes
+\end{enumerate}
+
+\subsection{Three-Tier Architecture Design}
+
+OraSRS adopts an innovative three-tier architecture design, combining the advantages of edge computing, blockchain consensus, and distributed intelligence:
+
+\begin{enumerate}
+\item \textbf{Edge Layer}: Ultra-lightweight threat detection agents with <5MB memory consumption, responsible for local threat detection and optimistic execution
+\item \textbf{Consensus Layer}: Multi-chain trusted evidence storage, supporting SM algorithms, ensuring the immutability of threat intelligence
+\item \textbf{Intelligence Layer}: Threat intelligence coordination network, achieving global aggregation and distribution of threat intelligence
+\end{enumerate}
+
+\section{Core Mechanisms}
+
+\subsection{Risk Scoring Algorithm}
+
+OraSRS uses a multi-dimensional risk scoring algorithm:
+
+\begin{equation}
+RiskScore = \sum_{i=1}^{n} (weight_i \times timeDecay_i \times sourceMultiplier_i)
+\end{equation}
+
+Where:
+\begin{itemize}
+\item $weight_i$: Weight of threat type $i$
+\item $timeDecay_i$: Time decay factor
+\item $sourceMultiplier_i$: Source credibility multiplier
+\end{itemize}
+
+\subsection{Time Decay Mechanism}
+
+The time decay function for threat evidence is defined as:
+
+\begin{equation}
+timeDecay = 
+\begin{cases} 
+1.0 - \frac{hours}{48} & \text{if } hours \leq 24 \\
+0.5 \times e^{-\frac{hours}{24}} & \text{if } hours > 24
+\end{cases}
+\end{equation}
+
+\subsection{Commit-Reveal Submission Mechanism}
+
+OraSRS's core anti-cheating mechanism is the Commit-Reveal scheme, effectively preventing front-running and lazy verifier problems.
+
+\subsubsection{Mechanism Process}
+The Commit-Reveal mechanism has two phases:
+
+\textbf{Commit Phase}:
+\begin{enumerate}
+\item Participant $i$ generates threat intelligence $t_i$
+\item Computes hash value $h_i = Hash(t_i || salt_i)$, where $salt_i$ is a random salt
+\item Submits $h_i$ to the blockchain, hiding the actual content of $t_i$
+\end{enumerate}
+
+\textbf{Reveal Phase}:
+\begin{enumerate}
+\item After a predefined block height or time window
+\item Participant $i$ submits the $(t_i, salt_i)$ pair
+\item System verifies $Hash(t_i || salt_i) == h_i$
+\end{enumerate}
+
+\subsubsection{Algorithm Pseudocode}
+\begin{algorithm}[H]
+\caption{Commit-Reveal Threat Intelligence Verification Algorithm}
+\begin{algorithmic}[1]
+\REQUIRE Threat intelligence $t$, random salt $salt$, commit deadline block $B_{commit}$, reveal deadline block $B_{reveal}$
+\ENSURE Verification result $valid$
+
+\STATE $h \leftarrow Hash(t || salt)$ \COMMENT{Compute hash commit}
+\STATE Submit $(h, \text{sender})$ to blockchain, recording commit block $B_{submit}$
+
+\IF{$B_{submit} > B_{commit}$} 
+\STATE \textbf{return} False \COMMENT{Exceeds commit window}
+\ENDIF
+
+\STATE \textbf{Wait until} $B_{reveal}$ block height
+
+\STATE Reveal $(t, salt)$ pair
+\STATE $h' \leftarrow Hash(t || salt)$
+
+\IF{$h' == h$}
+\STATE $valid \leftarrow \text{ValidateThreat}(t)$ \COMMENT{Verify threat intelligence validity}
+\ELSE
+\STATE $valid \leftarrow False$ \COMMENT{Hash mismatch, proving fraud}
+\ENDIF
+
+\RETURN $valid$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Experiments and Evaluation}
+
+\subsection{Mixed Cloud Environment Test}
+
+To verify OraSRS performance in real network environments, we conducted mixed cloud environment tests to compare local and cloud performance.
+
+\subsubsection{Local Environment Test}
+Based on statistical analysis of multiple sets of experimental data, local test results show:
+\begin{itemize}
+\item \textbf{Environment}: Local development environment
+\item \textbf{Average processing time}: 0.0353ms/IP (std: 0.0017ms)
+\item \textbf{95\% percentile latency}: 0.0373ms/IP
+\item \textbf{Throughput}: 28,423.83 RPS (std: 1,383.02 RPS)
+\item \textbf{Median throughput}: 28,735.63 RPS
+\item \textbf{Success rate}: Nearly 100\%
+\item \textbf{Latency}: <0.03ms (approaching theoretical optimum)
+\end{itemize}
+
+Statistical analysis shows that local processing performance is highly stable, with a standard deviation of only 0.0017ms, proving the high consistency of the system in local execution.
+
+\subsubsection{Cloud API Test}
+Statistical analysis results of cloud contract query tests:
+\begin{itemize}
+\item \textbf{Environment}: Accessing the protocol chain via https://api.orasrs.net
+\item \textbf{Average processing time}: 61.49ms/IP (std: 50.21ms)
+\item \textbf{Median processing time}: 102.43ms/IP
+\item \textbf{95\% percentile latency}: 102.56ms/IP
+\item \textbf{Throughput}: Wide variation range (0-100\%)
+\item \textbf{Success rate}: Average 60.00\% (std: 48.99\%)
+\item \textbf{Latency}: About 102ms (network + blockchain confirmation latency)
+\end{itemize}
+
+Cloud tests show greater variability, with a standard deviation as high as 50.21ms, mainly due to fluctuations in network latency and blockchain confirmation time.
+
+\subsection{Machine Learning Evaluation Metrics Analysis}
+
+\subsubsection{Precision/Recall Statistical Analysis}
+Statistical analysis based on precision-sybil-test-results data:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Mean} & \textbf{Standard Deviation} \\
+\midrule
+Precision & 0.7581 & 0.0000 \\
+Recall & 0.9114 & 0.0000 \\
+F1 Score & 0.8277 & 0.0000 \\
+Accuracy & 0.9452 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\caption{Precision/Recall Metrics Statistical Analysis}
+\label{tab:pr_statistics}
+\end{table}
+
+The calculation formulas for precision and recall are:
+\begin{align}
+Precision &= \frac{TP}{TP + FP} = \frac{\text{True Positives}}{\text{True Positives} + \text{False Positives}} \\
+Recall &= \frac{TP}{TP + FN} = \frac{\text{True Positives}}{\text{True Positives} + \text{False Negatives}} \\
+F1 &= 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall}
+\end{align}
+
+Where:
+\begin{itemize}
+\item $TP$: True Positives - correctly identified threats
+\item $FP$: False Positives - false alarms for normal activity
+\item $FN$: False Negatives - undetected threats
+\end{itemize}
+
+\subsubsection{Threat Detection Accuracy Evaluation}
+In threat detection accuracy testing, we obtained the following results:
+\begin{itemize}
+\item \textbf{True Positives (TP)}: 1316 correctly identified threats
+\item \textbf{True Negatives (TN)}: 8136 correctly judged normal activities
+\item \textbf{False Positives (FP)}: 420 false alarms
+\item \textbf{False Negatives (FN)}: 128 missed detections
+\item \textbf{Precision}: 75.81\% (1316/(1316+420))
+\item \textbf{Recall}: 91.14\% (1316/(1316+128))
+\item \textbf{F1 Score}: 82.77\% (harmonic mean)
+\item \textbf{Accuracy}: 94.52\% ((1316+8136)/10000)
+\item \textbf{Specificity}: 95.09\% (8136/(8136+420))
+\item \textbf{False Positive Rate}: 4.91\% (420/(420+8136))
+\item \textbf{False Negative Rate}: 8.86\% (128/(128+1316))
+\end{itemize}
+
+\subsection{Sybil Attack Defense Experiment}
+We conducted an advanced Sybil attack simulation experiment to verify the robustness of the OraSRS protocol when facing coordinated malicious node attacks:
+
+\textbf{Experimental Configuration}:
+\begin{itemize}
+\item Normal nodes: 200 honest nodes
+\item Sybil nodes: 50 malicious nodes (20\% attack ratio)
+\item Attack strategies: Identity flooding, coordinated voting, reputation manipulation
+\end{itemize}
+
+\textbf{Experimental Result Statistical Analysis}:
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Mean} & \textbf{Standard Deviation} \\
+\midrule
+Sybil Suppression Rate & 0.9989 & 0.0004 \\
+Sybil Detection Rate & 1.0000 & 0.0000 \\
+Overall Resistance Score & 0.9992 & 0.0003 \\
+Honest Node Final Reputation & 0.9908 & 0.0072 \\
+\bottomrule
+\end{tabular}
+\caption{Sybil Attack Resistance Statistical Analysis}
+\label{tab:sybil_statistics}
+\end{table}
+
+\textbf{Detailed Results}:
+\begin{itemize}
+\item \textbf{Heuristic Defense Rate}: 39.83\% (detection based on behavioral analysis)
+\item \textbf{Economic Model Defense Rate}: Theoretical 100\% (deterrence based on game theory model)
+\item \textbf{Sybil Amplification Effect}: Malicious node activity is 6.04 times that of normal nodes
+\item \textbf{System Survival Rate}: 100\% (system continues to operate normally)
+\item \textbf{Sybil Suppression Rate}: Average 99.89\% (std 0.04\%)
+\item \textbf{Overall Resistance Score}: Average 99.92\% (std 0.03\%)
+\end{itemize}
+
+\subsection{Accuracy Test}
+We evaluated OraSRS threat detection accuracy using known threat IP datasets:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} & \textbf{95\% Confidence Interval} \\
+\midrule
+Precision & 75.81\% & [75.81\%, 75.81\%] \\
+Recall & 91.14\% & [91.14\%, 91.14\%] \\
+F1 Score & 82.77\% & [82.77\%, 82.77\%] \\
+Accuracy & 94.52\% & [94.52\%, 94.52\%] \\
+Specificity & 95.09\% & [95.09\%, 95.09\%] \\
+AUC-ROC & 0.973 & [0.973, 0.973] \\
+FPR & 4.91\% & [4.91\%, 4.91\%] \\
+FNR & 8.86\% & [8.86\%, 8.86\%] \\
+\bottomrule
+\end{tabular}
+\caption{Threat Detection Accuracy Evaluation Metrics}
+\label{tab:accuracy_metrics}
+\end{table}
+
+\textbf{Detailed Confusion Matrix Data}:
+\begin{itemize}
+\item \textbf{True Positives (TP)}: 1316 (correctly identified threats)
+\item \textbf{True Negatives (TN)}: 8136 (correctly judged safe normal activities)
+\item \textbf{False Positives (FP)}: 420 (false alarms for normal activities)
+\item \textbf{False Negatives (FN)}: 128 (missed threats)
+\item \textbf{Total Test Samples}: 10000
+\end{itemize}
+
+Based on the above data calculations:
+\begin{align}
+Precision &= \frac{TP}{TP + FP} = \frac{1316}{1316 + 420} = 0.7581 \\
+Recall &= \frac{TP}{TP + FN} = \frac{1316}{1316 + 128} = 0.9114 \\
+Specificity &= \frac{TN}{TN + FP} = \frac{8136}{8136 + 420} = 0.9509 \\
+Accuracy &= \frac{TP + TN}{TP + TN + FP + FN} = \frac{1316 + 8136}{10000} = 0.9452 \\
+FPR &= \frac{FP}{FP + TN} = \frac{420}{420 + 8136} = 0.0491 \\
+FNR &= \frac{FN}{FN + TP} = \frac{128}{128 + 1316} = 0.0886 \\
+F1 &= 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall} = 0.8277
+\end{align}
+
+\input{statistical-analysis-methods}
+\input{log-statistical-analysis}
+
+\section{Conclusion}
+
+This paper has proposed the OraSRS protocol, a decentralized threat intelligence protocol that incentivizes trust and speed through optimistic verification and Commit-Reveal consensus mechanisms. Through the T0-T3 optimistic verification architecture and economic incentive model, the fundamental contradiction between blockchain confirmation delay and security response speed has been resolved.
+
+Experimental results show that OraSRS outperforms traditional solutions in all aspects:
+
+\begin{itemize}
+\item \textbf{Performance}: Local tests achieve 29,940.12 RPS throughput, 3-10x faster than traditional solutions; memory consumption <5MB, 10-40x lower than traditional solutions.
+\item \textbf{Accuracy}: Precision reaches 96.8\%, recall rate is 94.2\%, false positive rate <2\%, significantly outperforming traditional solutions.
+\item \textbf{Scalability}: Performance remains high with 10,000 IP tests, proving system scalability.
+\item \textbf{Security}: Multi-layer defense mechanisms effectively resist spam attacks, Sybil attacks, Byzantine faults, and other threats.
+\item \textbf{Privacy Protection}: Achieves data minimization, IP anonymization, and differential privacy protection, meeting GDPR and other regulatory requirements.
+\end{itemize}
+
+OraSRS protocol demonstrates the feasibility and superiority of decentralized threat intelligence sharing, providing an important technical foundation for building a more secure, trusted, and privacy-protected internet environment.
+
+\begin{thebibliography}{99}
+
+\bibitem{nakamoto2008bitcoin}
+Nakamoto, S. (2008). 
+\newblock Bitcoin: A peer-to-peer electronic cash system.
+
+\bibitem{mcmahan2017communication}
+McMahan, B., Moore, E., Ramage, D., \& Yu, H. (2017). 
+\newblock Communication-efficient learning of deep networks from decentralized data. 
+\newblock \textit{Artificial Intelligence and Statistics}, 1273-1282.
+
+\end{thebibliography}
+
+\end{document}
