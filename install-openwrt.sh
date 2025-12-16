@@ -74,14 +74,61 @@ install_orasrs() {
     mkdir -p "$TMP_DIR"
     cd "$TMP_DIR"
     
-    # 下载最新版本
-    RELEASE_URL="https://github.com/srs-protocol/OraSRS-protocol/raw/lite-client/orasrs-lite-client/releases/orasrs-lite-client-v2.0.0-20251208"
+    # 定义多个下载源
+    GITHUB_RAW="https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/orasrs-lite-client/openwrt/usr/bin/orasrs_client.sh"
+    GITHUB_PROXY="https://ghproxy.com/$GITHUB_RAW"
+    JSDELIVR="https://cdn.jsdelivr.net/gh/srs-protocol/OraSRS-protocol@lite-client/orasrs-lite-client/openwrt/usr/bin/orasrs_client.sh"
     
-    print_info "下载客户端脚本..."
-    curl -L -o orasrs_client.sh "$RELEASE_URL/orasrs-lite-client.sh" || {
-        print_error "下载失败，请检查网络连接"
+    # 尝试多个下载源
+    print_info "尝试下载客户端脚本..."
+    DOWNLOAD_SUCCESS=0
+    
+    # 方法 1: 直接从 GitHub
+    print_info "尝试源 1: GitHub Raw"
+    if curl -L -o orasrs_client.sh --connect-timeout 10 --max-time 30 "$GITHUB_RAW" 2>/dev/null; then
+        if [ -s orasrs_client.sh ]; then
+            DOWNLOAD_SUCCESS=1
+            print_info "✅ 从 GitHub 下载成功"
+        fi
+    fi
+    
+    # 方法 2: 使用 GitHub 代理
+    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
+        print_info "尝试源 2: GitHub Proxy"
+        if curl -L -o orasrs_client.sh --connect-timeout 10 --max-time 30 "$GITHUB_PROXY" 2>/dev/null; then
+            if [ -s orasrs_client.sh ]; then
+                DOWNLOAD_SUCCESS=1
+                print_info "✅ 从 GitHub Proxy 下载成功"
+            fi
+        fi
+    fi
+    
+    # 方法 3: 使用 jsDelivr CDN
+    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
+        print_info "尝试源 3: jsDelivr CDN"
+        if curl -L -o orasrs_client.sh --connect-timeout 10 --max-time 30 "$JSDELIVR" 2>/dev/null; then
+            if [ -s orasrs_client.sh ]; then
+                DOWNLOAD_SUCCESS=1
+                print_info "✅ 从 jsDelivr 下载成功"
+            fi
+        fi
+    fi
+    
+    # 检查下载是否成功
+    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
+        print_error "所有下载源均失败"
+        print_info "请手动下载并安装:"
+        print_info "1. 访问: https://github.com/srs-protocol/OraSRS-protocol/tree/lite-client/orasrs-lite-client/openwrt"
+        print_info "2. 下载 orasrs_client.sh 到 /usr/bin/orasrs-client"
+        print_info "3. 运行: chmod +x /usr/bin/orasrs-client"
         exit 1
-    }
+    fi
+    
+    # 验证下载的文件
+    if ! head -1 orasrs_client.sh | grep -q "#!/bin/sh"; then
+        print_error "下载的文件格式不正确"
+        exit 1
+    fi
     
     # 安装到系统
     print_info "安装 OraSRS 客户端..."
@@ -92,6 +139,7 @@ install_orasrs() {
     # 创建配置目录
     mkdir -p /etc/config
     mkdir -p /var/lib/orasrs
+    mkdir -p /var/log
     
     # 创建默认配置
     create_config
