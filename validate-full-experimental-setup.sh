@@ -56,7 +56,7 @@ echo "   ✅ 运行手册: $(if [ -f "README.md" ] || [ -f "INSTALL_GUIDE.md" ];
 echo "   ✅ 伦理规范: $(if [ -f "SECURITY_CONTRACTS_README.md" ]; then echo "存在"; else echo "缺失"; fi)"
 
 echo -e "\n9. 验证实际测试结果..."
-if [ -f "logs/performance-test-10k-ips-summary-*.json" ]; then
+if ls logs/performance-test-10k-ips-summary-*.json 1> /dev/null 2>&1; then
     LATEST_LOCAL=$(ls -t logs/performance-test-10k-ips-summary-*.json | head -1)
     LOCAL_RPS=$(cat "$LATEST_LOCAL" | grep -o '"requests_per_second": "[0-9.]*"' | cut -d'"' -f4)
     LOCAL_LATENCY=$(cat "$LATEST_LOCAL" | grep -o '"avg_time_per_ip_ms": "[0-9.]*"' | cut -d'"' -f4)
@@ -65,7 +65,7 @@ else
     echo "   ❌ 本地性能测试: 未找到结果"
 fi
 
-if [ -f "logs/online-test-1k-ips-contract-summary-*.json" ]; then
+if ls logs/online-test-1k-ips-contract-summary-*.json 1> /dev/null 2>&1; then
     LATEST_CLOUD=$(ls -t logs/online-test-1k-ips-contract-summary-*.json | head -1)
     CLOUD_RPS=$(cat "$LATEST_CLOUD" | grep -o '"requests_per_second": "[0-9.]*"' | cut -d'"' -f4)
     CLOUD_LATENCY=$(cat "$LATEST_CLOUD" | grep -o '"avg_time_per_query_ms": "[0-9.]*"' | cut -d'"' -f4)

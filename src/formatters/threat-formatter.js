@@ -17,14 +17,31 @@ class ThreatFormatter {
         let output = '';
         output += chalk.cyan(`🔍 查询 IP: ${ip}\n\n`);
 
-        if (response.risk_score === 0 || response.risk_level === 'Safe' || response.risk_level === '安全') {
-            output += chalk.green('✅ 安全 IP\n');
-            output += chalk.gray(`  数据来源: ${response.source || 'Unknown'}\n`);
-            output += chalk.gray(`  缓存: ${response.cached ? '是' : '否'}\n`);
+        // Check if whitelisted
+        const isWhitelisted = response.is_whitelisted || response.source === 'Local Whitelist';
+
+        if (isWhitelisted) {
+            output += chalk.green('✅ 白名单 IP\n\n');
+            output += `  ${chalk.bold('白名单')}: ${chalk.green('是')}\n`;
+            output += `  ${chalk.bold('数据来源')}: ${this.formatSource(response.source)}\n`;
+            output += chalk.gray(`\n来源：${this.getBlockchainSource(response)}\n`);
+            output += chalk.gray(`缓存：${response.cached || response.from_cache ? '是' : '否'}\n`);
+        } else if (response.risk_score === 0 || response.risk_level === 'Safe' || response.risk_level === '安全') {
+            output += chalk.green('✅ 安全 IP\n\n');
+            output += `  ${chalk.bold('风险评分')}: ${chalk.green('0/100')}\n`;
+            output += `  ${chalk.bold('风险等级')}: ${chalk.green('安全')}\n`;
+            output += `  ${chalk.bold('数据来源')}: ${this.formatSource(response.source)}\n`;
+            output += `  ${chalk.bold('白名单')}: ${chalk.gray('否')}\n`;
+            output += chalk.gray(`\n来源：${this.getBlockchainSource(response)}\n`);
+            output += chalk.gray(`缓存：${response.cached || response.from_cache ? '是' : '否'}\n`);
         } else {
             output += chalk.yellow('威胁情报:\n');
             output += `  ${chalk.bold('风险评分')}: ${this.formatRiskScore(response.risk_score)}\n`;
             output += `  ${chalk.bold('风险等级')}: ${this.formatRiskLevel(response.risk_level, response.risk_score)}\n`;
+
+            // Calculate and display risk control period
+            const riskControlPeriod = this.calculateRiskControlPeriod(response.risk_score);
+            output += `  ${chalk.bold('建议风控')}: ${this.formatRiskControlPeriod(riskControlPeriod, response.risk_score)}\n`;
 
             const threatType = this.formatThreatType(response.threat_types, response.primary_threat_type);
             output += `  ${chalk.bold('威胁类型')}: ${threatType}\n`;
@@ -40,9 +57,11 @@ class ThreatFormatter {
                 output += `  ${chalk.bold('持续活跃')}: ${isActive ? chalk.red('Yes') : chalk.gray('No')}\n`;
             }
 
+            output += `  ${chalk.bold('白名单')}: ${chalk.gray('否')}\n`;
+
             output += '\n';
             output += chalk.gray(`来源：${this.getBlockchainSource(response)}\n`);
-            output += chalk.gray(`缓存：${response.cached ? '是' : '否'}\n`);
+            output += chalk.gray(`缓存：${response.cached || response.from_cache ? '是' : '否'}\n`);
         }
 
         output += '\n';
@@ -50,6 +69,30 @@ class ThreatFormatter {
 
         return output;
     }
+
+    /**
+     * Calculate risk control period based on risk score
+     * 根据风险评分计算建议风控时长
+     */
+    calculateRiskControlPeriod(score) {
+        if (score >= 90) return '7天';
+        if (score >= 80) return '3天';
+        if (score >= 60) return '24小时';
+        if (score >= 40) return '12小时';
+        if (score >= 20) return '6小时';
+        return '无需风控';
+    }
+
+    /**
+     * Format risk control period with color
+     */
+    formatRiskControlPeriod(period, score) {
+        if (score >= 80) return chalk.red(period);
+        if (score >= 60) return chalk.yellow(period);
+        if (score >= 40) return chalk.blue(period);
+        return chalk.gray(period);
+    }
+
 
     /**
      * Format risk score with color coding

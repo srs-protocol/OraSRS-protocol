@@ -291,56 +291,64 @@ orasrs-cli cache rebuild  # Rebuild cache / 重建缓存
 # 白名单管理
 orasrs-cli whitelist add 1.2.3.4      # Add to whitelist / 添加到白名单
 orasrs-cli whitelist remove 1.2.3.4   # Remove from whitelist / 从白名单移除
-orasrs-cli whitelist list             # List all / 列出所有
+orasrs-cli whitelist list             # 列出所有
 ```
 
 ### Client SDK / 客户端 SDK
 
-Developers can use the `orasrs-sdk` to integrate OraSRS into their applications.
-开发者可以使用 `orasrs-sdk` 将 OraSRS 集成到应用中。
+Developers can use the OraSRS client to integrate threat intelligence into their applications.
+开发者可以使用 OraSRS 客户端将威胁情报集成到应用中。
 
 **安装 / Installation:**
 
 ```bash
-npm install orasrs-sdk
+# Clone the repository / 克隆仓库
+git clone https://github.com/srs-protocol/OraSRS-protocol.git
+cd OraSRS-protocol
+
+# Install dependencies / 安装依赖
+npm install
+
+# Start the OraSRS service / 启动 OraSRS 服务
+node orasrs-simple-client.js
+```
+
+**或使用一键安装脚本 / Or use the one-click installation script:**
+
+```bash
+# For Linux systems / Linux 系统
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/orasrs-lite-client/scripts/install.sh | sudo bash
+
+# The service will be available at / 服务将在以下地址可用
+# http://localhost:3006
 ```
 
 **基本用法 / Basic Usage:**
 
 ```javascript
-import OraSRSClient from 'orasrs-sdk';
+// Query IP via HTTP API / 通过 HTTP API 查询 IP
+const response = await fetch('http://localhost:3006/orasrs/v1/query?ip=45.135.193.0');
+const data = await response.json();
 
-// Create client instance / 创建客户端实例
-const client = new OraSRSClient({
-    apiEndpoint: 'http://localhost:3006',
-    autoCacheManagement: true  // Enable auto-sync / 启用自动同步
+console.log(data.response.risk_score);
+console.log(data.response.risk_level);
+console.log(data.response.threat_types);
+
+// Add to whitelist / 添加到白名单
+await fetch('http://localhost:3006/orasrs/v1/whitelist/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ip: '192.168.1.100' })
 });
 
-// Query IP / 查询 IP
-const result = await client.query('45.135.193.0');
-console.log(result.response.risk_score);
+// Manual sync / 手动同步
+await fetch('http://localhost:3006/orasrs/v1/sync', { method: 'POST' });
 
-// Whitelist management / 白名单管理
-await client.addToWhitelist('192.168.1.100');
-
-// Cache management / 缓存管理
-const cacheStatus = await client.getCacheStatus();
-await client.sync({ force: true });
-
-// Statistics / 统计信息
-const stats = await client.getStats();
-
-// Event listeners / 事件监听
-client.on('sync-complete', (data) => {
-    console.log('Sync completed:', data);
-});
-
-client.on('query', ({ ip, result }) => {
-    if (result.response.risk_score >= 80) {
-        console.warn(`High risk IP detected: ${ip}`);
-    }
-});
+// Get cache status / 获取缓存状态
+const cacheStatus = await fetch('http://localhost:3006/orasrs/v1/cache/status');
+const cache = await cacheStatus.json();
 ```
+
 
 **完整文档 / Full Documentation:**
 
@@ -355,14 +363,18 @@ OraSRS 支持 OpenWrt 路由器和 IoT 设备防护，为嵌入式设备提供�
 **快速安装 / Quick Installation:**
 
 ```bash
-# 从软件源安装
-opkg update
-opkg install orasrs-client
+# 方法1: 使用一键安装脚本 (推荐)
+# Method 1: Use one-click installation script (Recommended)
+wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/orasrs-lite-client/scripts/install.sh
+chmod +x install.sh
+sudo ./install.sh
 
-# 或使用一键安装脚本
-wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/main/install-openwrt.sh
-sh install-openwrt.sh
+# 方法2: 从软件源安装 (开发中)
+# Method 2: Install from package repository (In development)
+# opkg update
+# opkg install orasrs-client
 ```
+
 
 **核心特性 / Core Features:**
 
