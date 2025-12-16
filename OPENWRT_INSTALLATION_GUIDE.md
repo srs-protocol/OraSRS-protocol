@@ -12,7 +12,7 @@
 
 ```bash
 # 下载安装脚本
-wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/main/install-openwrt.sh
+wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh
 
 # 运行安装
 sh install-openwrt.sh
