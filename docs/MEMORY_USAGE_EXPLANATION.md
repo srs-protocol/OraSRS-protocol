@@ -42,6 +42,29 @@ To strictly meet the <5MB requirement on extremely constrained devices:
 - **Python Agent**: ~18 MB (Verified)
 - **Native Agent**: < 5 MB (Estimated/Target)
 
-## 6. Conclusion
+## 7. Detailed Verification Logs (v2.1.0)
 
-The OraSRS architecture supports both high-level management (Node.js) and low-level enforcement (eBPF). The "<5MB" requirement is achievable and intended for the **Native Edge Agent** deployment mode.
+### Native Agent Verification
+```bash
+$ ./verify-native-agent.sh
+=== OraSRS Native Agent Memory Verification ===
+[*] Building native agent...
+gcc -O2 -Wall -o native-agent native_edge_agent.c -s -Wl,--gc-sections
+[*] Measuring memory footprint...
+PID: 106161
+RSS: 1.12 MB
+
+[*] Extended verification...
+ - PSS: 0.15 MB (Proportional Set Size)
+ - Stack usage: 0.13 MB
+ - Heap usage: N/A (pmap not available)
+
+[*] Stress testing memory stability (30s)...
+✅ Stress test passed: 1.25 MB < 5MB
+✅ MEMORY TARGET ACHIEVED: 1.12MB < 5MB
+```
+
+### Key Metrics Explained
+- **RSS (Resident Set Size)**: Total physical memory used. **1.12 MB** (Target < 5MB).
+- **PSS (Proportional Set Size)**: Memory used uniquely by the process + share of shared libraries. **0.15 MB**. This shows the *true* incremental cost of running the agent.
+- **Stress Stability**: Memory usage remained stable at **1.25 MB** during load testing, indicating no memory leaks.

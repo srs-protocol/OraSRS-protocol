@@ -50,12 +50,14 @@ detect_device_type() {
         TOTAL_MEM_MB=1024 
     fi
     
-    if [ $TOTAL_MEM_MB -lt 256 ]; then
-        echo "edge"  # <256MB: Edge Mode
+    if [ $TOTAL_MEM_MB -lt 16 ]; then
+        echo "ultra-low"  # <16MB: Ultra-Low Mode (Pure eBPF)
+    elif [ $TOTAL_MEM_MB -lt 256 ]; then
+        echo "edge"       # 16-256MB: Edge Mode (Native Agent)
     elif [ $TOTAL_MEM_MB -lt 1024 ]; then
-        echo "hybrid" # 256MB-1GB: Hybrid Mode
+        echo "hybrid"     # 256MB-1GB: Hybrid Mode
     else
-        echo "full"   # >1GB: Full Mode
+        echo "full"       # >1GB: Full Mode
     fi
 }
 
@@ -465,6 +467,12 @@ main() {
     
     DEVICE_TYPE=$(detect_device_type)
     print_info "💡 检测到设备类型: $DEVICE_TYPE"
+    
+    if [ "$DEVICE_TYPE" == "ultra-low" ]; then
+        print_warning "🚨 内存极低 (<16MB)。仅启用内核级防护，无法运行用户态代理。"
+        print_info "请手动加载 eBPF 程序。"
+        exit 0
+    fi
     
     if [ "$DEVICE_TYPE" == "edge" ]; then
         print_info "🔧 内存受限设备 (<256MB)，将尝试安装原生边缘代理..."
