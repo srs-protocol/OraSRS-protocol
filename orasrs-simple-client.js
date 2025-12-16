@@ -8,6 +8,7 @@
 import BlockchainConnector from './blockchain-connector.js';
 import ThreatDetection from './threat-detection.js';
 import ThreatDataLoader from './threat-data-loader.js';
+import EgressProtection from './egress-protection.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -41,6 +42,18 @@ class SimpleOraSRSService {
 
     // 初始化威胁检测器
     this.threatDetection = new ThreatDetection(this.blockchainConnector);
+
+    // 初始化 eBPF 出站保护（如果启用）
+    this.egressProtection = null;
+    if (this.config.egressProtection?.enabled) {
+      try {
+        this.egressProtection = new EgressProtection(this.config);
+        console.log('🚀 eBPF 内核加速模块已初始化');
+      } catch (error) {
+        console.warn('⚠️  eBPF 内核加速模块初始化失败:', error.message);
+        console.warn('    系统将使用纯缓存模式');
+      }
+    }
 
     // 简化的Express应用
     this.app = express();
@@ -159,6 +172,9 @@ class SimpleOraSRSService {
         try {
           await this.threatDataLoader.syncDiffs();
           console.log('✅ 威胁情报差分同步完成');
+
+          // 同步到内核
+          await this.syncThreatsToKernel();
         } catch (error) {
           console.error('威胁情报同步失败:', error.message);
         }
@@ -166,6 +182,57 @@ class SimpleOraSRSService {
     } catch (error) {
       console.warn('⚠️  威胁情报数据加载器初始化失败:', error.message);
       console.warn('    系统将仅使用区块链数据源');
+    }
+  }
+
+  /**
+   * 启动 eBPF 内核加速模块
+   */
+  async startEBPFAcceleration() {
+    if (!this.egressProtection) {
+      return;
+    }
+
+    try {
+      console.log('🚀 启动 eBPF 内核加速...');
+      await this.egressProtection.start(this.blockchainConnector);
+
+      // 初始同步威胁数据到内核
+      await this.syncThreatsToKernel();
+
+      console.log('✅ eBPF 内核加速已启动');
+    } catch (error) {
+      console.error('❌ eBPF 内核加速启动失败:', error.message);
+      this.egressProtection = null;
+    }
+  }
+
+  /**
+   * 同步威胁数据到内核 eBPF Map
+   */
+  async syncThreatsToKernel() {
+    if (!this.egressProtection) {
+      return;
+    }
+
+    try {
+      let syncCount = 0;
+
+      // 同步缓存中的威胁数据
+      for (const [ip, threat] of Object.entries(this.cache.threats)) {
+        await this.egressProtection.updateIPRisk(
+          ip,
+          threat.risk_score,
+          threat.risk_score >= 90
+        );
+        syncCount++;
+      }
+
+      if (syncCount > 0) {
+        console.log(`🔄 已同步 ${syncCount} 条威胁记录到内核`);
+      }
+    } catch (error) {
+      console.error('同步威胁数据到内核失败:', error.message);
     }
   }
 
@@ -829,6 +896,66 @@ class SimpleOraSRSService {
       });
     });
 
+    // Kernel Acceleration Endpoints
+
+    // Get kernel acceleration status
+    this.app.get('/orasrs/v1/kernel/stats', async (req, res) => {
+      if (!this.egressProtection) {
+        return res.json({
+          success: true,
+          kernel_acceleration: {
+            enabled: false,
+            message: 'eBPF kernel acceleration is not enabled'
+          }
+        });
+      }
+
+      try {
+        const stats = await this.egressProtection.getStatistics();
+        res.json({
+          success: true,
+          kernel_acceleration: {
+            enabled: true,
+            mode: stats.mode,
+            interface: stats.interface,
+            cache_size: stats.cacheSize,
+            risk_threshold: stats.riskThreshold,
+            status: 'running'
+          }
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to get kernel statistics',
+          message: error.message
+        });
+      }
+    });
+
+    // Manually sync threats to kernel
+    this.app.post('/orasrs/v1/kernel/sync', async (req, res) => {
+      if (!this.egressProtection) {
+        return res.status(404).json({
+          success: false,
+          error: 'eBPF kernel acceleration is not enabled'
+        });
+      }
+
+      try {
+        await this.syncThreatsToKernel();
+        res.json({
+          success: true,
+          message: 'Threats synced to kernel successfully'
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to sync threats to kernel',
+          message: error.message
+        });
+      }
+    });
+
     // Cache Management Endpoints
 
     // Get cache status
@@ -1384,6 +1511,13 @@ const config = {
     enableAPIKey: false,
     apiKeys: [],
     whitelist: ['127.0.0.1', 'localhost', '::1']
+  },
+  egressProtection: userConfig.egressProtection || securityConfig.egressProtection || {
+    enabled: false,  // 默认禁用，需要用户手动启用
+    mode: 'monitor',  // monitor 或 enforce
+    interface: 'eth0',
+    riskThreshold: 80,
+    cacheUpdateInterval: 300000  // 5 minutes
   }
 };
 
@@ -1429,6 +1563,18 @@ async function startService() {
       console.log('✅ 威胁检测模块启动成功');
     } catch (error) {
       console.warn('⚠️  启动威胁检测模块时出现问题:', error.message);
+    }
+
+    // 启动 eBPF 内核加速（如果启用）
+    if (orasrsService.egressProtection) {
+      console.log('🚀 启动 eBPF 内核加速模块...');
+      try {
+        await orasrsService.startEBPFAcceleration();
+        console.log('✅ eBPF 内核加速模块启动成功');
+      } catch (error) {
+        console.warn('⚠️  eBPF 内核加速启动失败:', error.message);
+        console.warn('    系统将继续以纯缓存模式运行');
+      }
     }
 
     console.log('\n✅ OraSRS 服务启动成功!');

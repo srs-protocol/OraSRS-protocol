@@ -416,6 +416,58 @@ async function runTests() {
     }
 }
 
+async function showKernelStatus() {
+    console.log(chalk.bold('\n🚀 内核加速状态\n'));
+
+    try {
+        const result = await apiCall('/orasrs/v1/kernel/stats');
+
+        if (!result.kernel_acceleration.enabled) {
+            log.warning('eBPF 内核加速未启用');
+            console.log('\n要启用内核加速，请在配置文件中设置:');
+            console.log(chalk.gray('  "egressProtection": {'));
+            console.log(chalk.gray('    "enabled": true,'));
+            console.log(chalk.gray('    "mode": "monitor"'));
+            console.log(chalk.gray('  }'));
+            return;
+        }
+
+        const ka = result.kernel_acceleration;
+        log.success('eBPF 内核加速已启用');
+        console.log(`  模式: ${chalk.cyan(ka.mode)}`);
+        console.log(`  网络接口: ${chalk.cyan(ka.interface)}`);
+        console.log(`  内核缓存大小: ${chalk.cyan(ka.cache_size)} 条记录`);
+        console.log(`  风险阈值: ${chalk.cyan(ka.risk_threshold)}`);
+        console.log(`  状态: ${chalk.green(ka.status)}`);
+
+        console.log('\n' + chalk.bold('说明:'));
+        console.log('  - monitor 模式: 记录但不阻断高风险连接');
+        console.log('  - enforce 模式: 内核级阻断高风险连接');
+
+    } catch (error) {
+        log.error(`Failed to get kernel status: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+async function syncToKernel() {
+    console.log(chalk.bold('\n🔄 同步威胁数据到内核\n'));
+
+    try {
+        log.info('正在同步威胁数据到 eBPF Map...');
+        const result = await apiCall('/orasrs/v1/kernel/sync', 'POST');
+
+        if (result.success) {
+            log.success('威胁数据已成功同步到内核');
+        } else {
+            log.error('同步失败');
+        }
+    } catch (error) {
+        log.error(`Sync failed: ${error.message}`);
+        process.exit(1);
+    }
+}
+
 // CLI Setup
 program
     .name('orasrs-cli')
@@ -508,6 +560,16 @@ program
     .command('test')
     .description('Run system tests')
     .action(runTests);
+
+program
+    .command('kernel')
+    .description('Show kernel acceleration status')
+    .action(showKernelStatus);
+
+program
+    .command('kernel-sync')
+    .description('Manually sync threats to kernel')
+    .action(syncToKernel);
 
 program.parse();
 

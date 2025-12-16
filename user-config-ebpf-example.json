@@ -1,0 +1,30 @@
+{
+    "port": 3006,
+    "host": "127.0.0.1",
+    "network": {
+        "blockchainEndpoint": "https://api.orasrs.net",
+        "chainId": 8888
+    },
+    "egressProtection": {
+        "enabled": true,
+        "mode": "monitor",
+        "interface": "eth0",
+        "riskThreshold": 80,
+        "cacheUpdateInterval": 300000
+    },
+    "security": {
+        "enableRateLimiting": true,
+        "enableCORS": true,
+        "corsOrigin": "*",
+        "whitelist": [
+            "127.0.0.1",
+            "localhost",
+            "::1"
+        ]
+    },
+    "cache": {
+        "enable": true,
+        "maxSize": 10000,
+        "ttl": 3600000
+    }
+}
