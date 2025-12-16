@@ -416,11 +416,12 @@ async function runTests() {
     }
 }
 
-async function showKernelStatus() {
+async function showKernelStatus(options = {}) {
     console.log(chalk.bold('\n🚀 内核加速状态\n'));
 
     try {
-        const result = await apiCall('/orasrs/v1/kernel/stats');
+        const endpoint = options.detailed ? '/orasrs/v1/kernel/stats/detailed' : '/orasrs/v1/kernel/stats';
+        const result = await apiCall(endpoint);
 
         if (!result.kernel_acceleration.enabled) {
             log.warning('eBPF 内核加速未启用');
@@ -436,13 +437,56 @@ async function showKernelStatus() {
         log.success('eBPF 内核加速已启用');
         console.log(`  模式: ${chalk.cyan(ka.mode)}`);
         console.log(`  网络接口: ${chalk.cyan(ka.interface)}`);
-        console.log(`  内核缓存大小: ${chalk.cyan(ka.cache_size)} 条记录`);
-        console.log(`  风险阈值: ${chalk.cyan(ka.risk_threshold)}`);
+        console.log(`  内核缓存大小: ${chalk.cyan(ka.cacheSize || ka.cache_size)} 条记录`);
+        console.log(`  风险阈值: ${chalk.cyan(ka.riskThreshold || ka.risk_threshold)}`);
         console.log(`  状态: ${chalk.green(ka.status)}`);
+
+        // 显示详细统计（如果请求）
+        if (options.detailed && ka.totalPackets !== undefined) {
+            console.log('\n' + chalk.bold('📊 数据包统计:'));
+            console.log(`  总数据包: ${chalk.cyan(ka.totalPackets)}`);
+            console.log(`  高风险命中: ${chalk.yellow(ka.highRiskHits)}`);
+            console.log(`  已阻断: ${chalk.red(ka.blockedPackets)}`);
+            console.log(`  已放行: ${chalk.green(ka.allowedPackets)}`);
+
+            if (ka.totalPackets > 0) {
+                const blockRate = ((ka.blockedPackets / ka.totalPackets) * 100).toFixed(2);
+                console.log(`  阻断率: ${chalk.cyan(blockRate + '%')}`);
+            }
+        }
+
+        // 显示性能指标
+        if (options.detailed && ka.performance) {
+            console.log('\n' + chalk.bold('⚡ 性能指标:'));
+            console.log(`  平均延迟: ${chalk.cyan(ka.performance.avgQueryLatency.toFixed(4) + 'ms')}`);
+            console.log(`  峰值 TPS: ${chalk.cyan(ka.performance.peakTPS)}`);
+            console.log(`  内存使用: ${chalk.cyan(ka.performance.memoryUsage.toFixed(2) + ' MB')}`);
+        }
+
+        // 显示风险分布
+        if (options.detailed && ka.riskDistribution) {
+            console.log('\n' + chalk.bold('🎯 风险分布:'));
+            console.log(`  低风险: ${chalk.green(ka.riskDistribution.low)}`);
+            console.log(`  中风险: ${chalk.yellow(ka.riskDistribution.medium)}`);
+            console.log(`  高风险: ${chalk.red(ka.riskDistribution.high)}`);
+            console.log(`  严重: ${chalk.red.bold(ka.riskDistribution.critical)}`);
+        }
+
+        // 显示运行时间
+        if (options.detailed && ka.uptime) {
+            const hours = Math.floor(ka.uptime / 3600);
+            const minutes = Math.floor((ka.uptime % 3600) / 60);
+            console.log('\n' + chalk.bold('⏱️  运行时间:'));
+            console.log(`  ${chalk.cyan(hours + '小时 ' + minutes + '分钟')}`);
+        }
 
         console.log('\n' + chalk.bold('说明:'));
         console.log('  - monitor 模式: 记录但不阻断高风险连接');
         console.log('  - enforce 模式: 内核级阻断高风险连接');
+
+        if (!options.detailed) {
+            console.log('\n' + chalk.gray('提示: 使用 --detailed 查看详细统计'));
+        }
 
     } catch (error) {
         log.error(`Failed to get kernel status: ${error.message}`);
@@ -564,6 +608,7 @@ program
 program
     .command('kernel')
     .description('Show kernel acceleration status')
+    .option('-d, --detailed', 'Show detailed statistics')
     .action(showKernelStatus);
 
 program

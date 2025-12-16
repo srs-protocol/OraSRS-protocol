@@ -187,6 +187,11 @@ orasrs-cli logs
 
 # 运行系统测试
 orasrs-cli test
+
+# 内核加速管理 (eBPF)
+orasrs-cli kernel                    # 查看内核加速状态
+orasrs-cli kernel --detailed         # 查看详细统计信息
+orasrs-cli kernel-sync               # 手动同步威胁数据到内核
 ```
 
 ### CLI 输出格式示例 / CLI Output Example

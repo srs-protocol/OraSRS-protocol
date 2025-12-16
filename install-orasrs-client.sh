@@ -130,6 +130,71 @@ check_dependencies() {
     print_success "依赖检查完成"
 }
 
+# 检查 eBPF 依赖（可选）
+check_ebpf_dependencies() {
+    print_info "检查 eBPF 内核加速支持..."
+    
+    # 检查内核版本
+    KERNEL_VERSION=$(uname -r | cut -d. -f1-2)
+    KERNEL_MAJOR=$(echo $KERNEL_VERSION | cut -d. -f1)
+    KERNEL_MINOR=$(echo $KERNEL_VERSION | cut -d. -f2)
+    
+    if [ "$KERNEL_MAJOR" -lt 4 ] || ([ "$KERNEL_MAJOR" -eq 4 ] && [ "$KERNEL_MINOR" -lt 8 ]); then
+        print_warning "内核版本 $KERNEL_VERSION 不支持 eBPF XDP (需要 >= 4.8)"
+        print_info "eBPF 内核加速将被禁用，客户端将以纯缓存模式运行"
+        return 1
+    fi
+    
+    print_success "内核版本 $KERNEL_VERSION 支持 eBPF"
+    
+    # 检查 Python3
+    if ! command -v python3 &> /dev/null; then
+        print_warning "Python3 未安装，eBPF 功能需要 Python3"
+        return 1
+    fi
+    
+    # 检查 BCC 工具
+    if ! python3 -c "from bcc import BPF" 2>/dev/null; then
+        print_warning "BCC (BPF Compiler Collection) 未安装"
+        print_info "是否安装 BCC 以启用 eBPF 内核加速？(y/n)"
+        
+        if [ -t 0 ]; then
+            read -p "选择 [y/n]: " install_bcc
+        else
+            read -p "选择 [y/n]: " install_bcc < /dev/tty
+        fi
+        
+        if [[ "$install_bcc" == "y" || "$install_bcc" == "Y" ]]; then
+            print_info "安装 BCC..."
+            if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
+                apt update && apt install -y bpfcc-tools python3-bpfcc linux-headers-$(uname -r)
+            elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
+                yum install -y bcc-tools python3-bcc kernel-devel-$(uname -r)
+            elif [[ "$OS" == *"Fedora"* ]]; then
+                dnf install -y bcc-tools python3-bcc kernel-devel-$(uname -r)
+            else
+                print_warning "不支持的操作系统，无法自动安装 BCC"
+                return 1
+            fi
+            
+            # 验证安装
+            if python3 -c "from bcc import BPF" 2>/dev/null; then
+                print_success "BCC 安装成功"
+                return 0
+            else
+                print_warning "BCC 安装失败"
+                return 1
+            fi
+        else
+            print_info "跳过 BCC 安装，eBPF 功能将被禁用"
+            return 1
+        fi
+    else
+        print_success "BCC 已安装"
+        return 0
+    fi
+}
+
 # 克隆OraSRS项目
 clone_orasrs() {
     print_info "克隆OraSRS项目..."
@@ -345,6 +410,8 @@ show_completion_info() {
     echo "  查看配置: orasrs-cli config"
     echo "  查看日志: orasrs-cli logs"
     echo "  运行测试: orasrs-cli test"
+    echo "  内核加速: orasrs-cli kernel"
+    echo "  详细统计: orasrs-cli kernel --detailed"
     echo
     echo -e "${GREEN}服务管理命令:${NC}"
     echo "  启动服务: sudo systemctl start orasrs-client"
@@ -377,6 +444,7 @@ main() {
     select_language
     detect_os
     check_dependencies
+    check_ebpf_dependencies  # 检查 eBPF 支持（可选）
     clone_orasrs
     install_node_dependencies
     setup_service
