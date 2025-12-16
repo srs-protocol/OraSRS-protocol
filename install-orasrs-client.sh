@@ -37,7 +37,6 @@ check_root() {
         print_error "请使用root权限运行此脚本"
         exit 1
     fi
-    fi
 }
 
 # 智能设备检测

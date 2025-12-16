@@ -108,12 +108,18 @@ echo -e "${CYAN}CPU 核心:${NC} $(nproc)"
 echo -e "${CYAN}内存:${NC} $(free -h | awk '/^Mem:/ {print $2}')"
 
 # 检查 eBPF 状态
-EBPF_ENABLED=$(curl -s "$API_BASE/orasrs/v1/kernel/stats" | jq -r '.kernel_acceleration.enabled')
-if [ "$EBPF_ENABLED" == "true" ]; then
-    EBPF_MODE=$(curl -s "$API_BASE/orasrs/v1/kernel/stats" | jq -r '.kernel_acceleration.mode')
-    echo -e "${CYAN}eBPF 状态:${NC} ${GREEN}启用${NC} (模式: $EBPF_MODE)"
+KERNEL_STATS=$(curl -s "$API_BASE/orasrs/v1/kernel/stats" 2>/dev/null || echo "{}")
+if echo "$KERNEL_STATS" | jq empty 2>/dev/null; then
+    EBPF_ENABLED=$(echo "$KERNEL_STATS" | jq -r '.kernel_acceleration.enabled // false' 2>/dev/null || echo "false")
+    if [ "$EBPF_ENABLED" == "true" ]; then
+        EBPF_MODE=$(echo "$KERNEL_STATS" | jq -r '.kernel_acceleration.mode // "unknown"' 2>/dev/null || echo "unknown")
+        echo -e "${CYAN}eBPF 状态:${NC} ${GREEN}启用${NC} (模式: $EBPF_MODE)"
+    else
+        echo -e "${CYAN}eBPF 状态:${NC} ${YELLOW}禁用${NC}"
+    fi
 else
-    echo -e "${CYAN}eBPF 状态:${NC} ${YELLOW}禁用${NC}"
+    echo -e "${CYAN}eBPF 状态:${NC} ${YELLOW}无法获取 (API 返回无效数据)${NC}"
+    EBPF_ENABLED="false"
 fi
 
 # ============================================
@@ -255,12 +261,18 @@ if [ "$EBPF_ENABLED" == "true" ]; then
     print_header "4. eBPF 性能测试"
     
     # 获取 eBPF 统计
-    STATS=$(curl -s "$API_BASE/orasrs/v1/kernel/stats/detailed")
+    STATS=$(curl -s "$API_BASE/orasrs/v1/kernel/stats/detailed" 2>/dev/null || echo "{}")
     
-    TOTAL_PACKETS=$(echo "$STATS" | jq -r '.kernel_acceleration.totalPackets // 0')
-    BLOCKED_PACKETS=$(echo "$STATS" | jq -r '.kernel_acceleration.blockedPackets // 0')
-    ALLOWED_PACKETS=$(echo "$STATS" | jq -r '.kernel_acceleration.allowedPackets // 0')
-    CACHE_SIZE=$(echo "$STATS" | jq -r '.kernel_acceleration.cacheSize // 0')
+    # 验证 JSON 格式
+    if ! echo "$STATS" | jq empty 2>/dev/null; then
+        print_info "无法获取 eBPF 统计信息 (API 返回无效数据)"
+        STATS="{}"
+    fi
+    
+    TOTAL_PACKETS=$(echo "$STATS" | jq -r '.kernel_acceleration.totalPackets // 0' 2>/dev/null || echo "0")
+    BLOCKED_PACKETS=$(echo "$STATS" | jq -r '.kernel_acceleration.blockedPackets // 0' 2>/dev/null || echo "0")
+    ALLOWED_PACKETS=$(echo "$STATS" | jq -r '.kernel_acceleration.allowedPackets // 0' 2>/dev/null || echo "0")
+    CACHE_SIZE=$(echo "$STATS" | jq -r '.kernel_acceleration.cacheSize // 0' 2>/dev/null || echo "0")
     
     print_metric "内核缓存大小" "$CACHE_SIZE" "条记录"
     print_metric "总数据包" "$TOTAL_PACKETS" "个"
@@ -274,9 +286,9 @@ if [ "$EBPF_ENABLED" == "true" ]; then
     
     # 性能指标
     if echo "$STATS" | jq -e '.kernel_acceleration.performance' > /dev/null 2>&1; then
-        AVG_LATENCY=$(echo "$STATS" | jq -r '.kernel_acceleration.performance.avgQueryLatency // 0')
-        PEAK_TPS=$(echo "$STATS" | jq -r '.kernel_acceleration.performance.peakTPS // 0')
-        MEM_USAGE=$(echo "$STATS" | jq -r '.kernel_acceleration.performance.memoryUsage // 0')
+        AVG_LATENCY=$(echo "$STATS" | jq -r '.kernel_acceleration.performance.avgQueryLatency // 0' 2>/dev/null || echo "0")
+        PEAK_TPS=$(echo "$STATS" | jq -r '.kernel_acceleration.performance.peakTPS // 0' 2>/dev/null || echo "0")
+        MEM_USAGE=$(echo "$STATS" | jq -r '.kernel_acceleration.performance.memoryUsage // 0' 2>/dev/null || echo "0")
         
         echo ""
         print_metric "平均查询延迟" "$AVG_LATENCY" "ms" "< 0.04ms"
