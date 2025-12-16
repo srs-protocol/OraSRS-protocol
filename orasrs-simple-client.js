@@ -711,6 +711,29 @@ class SimpleOraSRSService {
         console.log('🔄 Manual sync triggered via API');
         await this.threatDataLoader.loadThreatData();
 
+        // Populate cache from threatDataLoader
+        const threatData = this.threatDataLoader.getAllThreats();
+        if (threatData && threatData.length > 0) {
+          let added = 0;
+          for (const threat of threatData) {
+            if (threat.ip && !this.cache.threats[threat.ip]) {
+              this.cache.threats[threat.ip] = {
+                ip: threat.ip,
+                risk_score: threat.risk_score || 80,
+                threat_level: threat.threat_level || 'High',
+                primary_threat_type: threat.primary_threat_type || threat.threat_type || 'Unknown',
+                last_seen: threat.last_seen || new Date().toISOString(),
+                first_seen: threat.first_seen || threat.last_seen || new Date().toISOString()
+              };
+              added++;
+            }
+          }
+          if (added > 0) {
+            this.saveCache();
+            console.log(`✅ Added ${added} threats to cache`);
+          }
+        }
+
         // Also reload whitelist from blockchain
         const whitelist = await this.blockchainConnector.getWhitelistedIPs();
         if (whitelist.length > 0) {
@@ -731,7 +754,8 @@ class SimpleOraSRSService {
           message: 'Threat data synced successfully',
           stats: {
             threats: this.threatDataLoader.getThreatCount(),
-            safeIPs: this.threatDataLoader.getSafeIPCount()
+            safeIPs: this.threatDataLoader.getSafeIPCount(),
+            whitelist: this.cache.whitelist.length
           }
         });
       } catch (error) {

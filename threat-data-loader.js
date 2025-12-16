@@ -279,6 +279,43 @@ class ThreatDataLoader {
     getSafeIPCount() {
         return 0; // ThreatDataLoader doesn't track safe IPs
     }
+
+    /**
+     * Get all threat entries (for cache population)
+     */
+    getAllThreats() {
+        const threats = [];
+
+        // Add exact IP entries
+        for (const [ip, entry] of this.exactIpMap.entries()) {
+            threats.push({
+                ip: ip,
+                cidr: entry.cidr,
+                risk_score: entry.risk * 25, // Convert 1-4 scale to 0-100
+                threat_level: this.getRiskLevelName(entry.risk),
+                primary_threat_type: entry.type || 'Unknown',
+                threat_type: entry.type || 'Unknown',
+                last_seen: new Date().toISOString(),
+                first_seen: this.lastUpdate ? this.lastUpdate.toISOString() : new Date().toISOString()
+            });
+        }
+
+        // Add CIDR entries
+        for (const entry of this.cidrList) {
+            threats.push({
+                ip: entry.ip,
+                cidr: entry.cidr,
+                risk_score: entry.risk * 25,
+                threat_level: this.getRiskLevelName(entry.risk),
+                primary_threat_type: entry.type || 'Unknown',
+                threat_type: entry.type || 'Unknown',
+                last_seen: new Date().toISOString(),
+                first_seen: this.lastUpdate ? this.lastUpdate.toISOString() : new Date().toISOString()
+            });
+        }
+
+        return threats;
+    }
 }
 
 export default ThreatDataLoader;
