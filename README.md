@@ -447,7 +447,7 @@ sudo ./install.sh
 
 **核心特性 / Core Features:**
 
-- ✅ **超低内存占用（< 20MB）** / Ultra-low memory footprint (< 20MB)
+- ✅ **超低内存占用（< 50MB）** / Ultra-low memory footprint (< 50MB)
 - ✅ **SQLite 缓存** - 节省 RAM / SQLite-based caching saves RAM
 - ✅ **透明代理模式** / Transparent proxy mode for IoT protection
 - ✅ **IoT 专用威胁情报** / IoT-specific threat intelligence (Mirai, Mozi, etc.)
@@ -544,7 +544,7 @@ orasrs-cli cache status
 - **国产化支持 / Localization Support**: 支持国密算法（SM2/SM3/SM4），适配长安链 / Supports Chinese national cryptography (SM2/SM3/SM4), compatible with ChainMaker
 - **合规治理 / Compliance Governance**: 自动区域合规引擎，满足GDPR/CCPA/等保2.0 / Automatic regional compliance engine, compliant with GDPR/CCPA/Cybersecurity Protection Level 2.0
 - **SecurityRiskAssessment v2.0 协调防御 / SecurityRiskAssessment v2.0 Coordinated Defense**: 全球轻量级主动防御协调框架 / Global Lightweight Proactive Defense Coordination Framework
-- **SecurityRiskAssessment Agent**: 超轻量级威胁检测代理，< 20MB内存占用 / Ultra-lightweight threat detection agent with < 20MB memory footprint
+- **SecurityRiskAssessment Agent**: 超轻量级威胁检测代理，< 5MB内存占用 / Ultra-lightweight threat detection agent with < 5MB memory footprint
 - **简化的网络架构 / Simplified Network Architecture**: 移除了复杂的P2P设置，采用更高效的客户端-服务器模式 / Removed complex P2P setup,采用 more efficient client-server model
 - **威胁情报集成 / Threat Intelligence Integration**: 实时威胁情报收集、验证和共享 / Real-time threat intelligence collection, verification and sharing
 - **边缘缓存层 / Edge Cache Layer**: 小额质押缓存节点，提高查询性能 / Low-stake cache nodes for improved query performance
