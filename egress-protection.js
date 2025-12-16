@@ -43,8 +43,10 @@ class EgressProtection extends EventEmitter {
 
             console.log('[Egress] ✅ Egress protection started successfully');
         } catch (error) {
-            console.error('[Egress] Failed to start:', error.message);
+            console.error('[Egress] ⚠️  Failed to start eBPF:', error.message);
+            console.log('[Egress] ℹ️  Continuing in cache-only mode (eBPF disabled)');
             this.enabled = false;
+            // Don't throw - allow client to continue without eBPF
         }
     }
 
@@ -63,6 +65,9 @@ class EgressProtection extends EventEmitter {
                 stdio: ['pipe', 'pipe', 'pipe']
             });
 
+            let hasResolved = false;
+            let errorOutput = '';
+
             this.ebpfProcess.stdout.on('data', (data) => {
                 const output = data.toString().trim();
                 if (output) {
@@ -72,6 +77,7 @@ class EgressProtection extends EventEmitter {
 
             this.ebpfProcess.stderr.on('data', (data) => {
                 const error = data.toString().trim();
+                errorOutput += error + '\n';
                 if (error && !error.includes('WARNING')) {
                     console.error(`[Egress/eBPF] ${error}`);
                 }
@@ -79,21 +85,33 @@ class EgressProtection extends EventEmitter {
 
             this.ebpfProcess.on('error', (error) => {
                 console.error('[Egress] eBPF process error:', error.message);
-                reject(error);
+                if (!hasResolved) {
+                    hasResolved = true;
+                    reject(error);
+                }
             });
 
-            this.ebpfProcess.on('exit', (code) => {
-                if (code !== 0 && code !== null) {
+            this.ebpfProcess.on('exit', (code, signal) => {
+                if (code !== 0 && code !== null && !hasResolved) {
                     console.error(`[Egress] eBPF process exited with code ${code}`);
+                    if (errorOutput.includes('bpf_helpers.h')) {
+                        console.error('[Egress] ⚠️  BPF headers not found. Install libbpf-devel or run without eBPF.');
+                    }
+                    hasResolved = true;
+                    reject(new Error(`eBPF process exited with code ${code}`));
                 }
             });
 
             // Give it a moment to start
             setTimeout(() => {
-                if (this.ebpfProcess && !this.ebpfProcess.killed) {
-                    resolve();
-                } else {
-                    reject(new Error('eBPF process failed to start'));
+                if (!hasResolved) {
+                    if (this.ebpfProcess && !this.ebpfProcess.killed) {
+                        hasResolved = true;
+                        resolve();
+                    } else {
+                        hasResolved = true;
+                        reject(new Error('eBPF process failed to start'));
+                    }
                 }
             }, 2000);
         });
@@ -189,7 +207,19 @@ class EgressProtection extends EventEmitter {
                 ttl: 3600 // 1 hour
             }) + '\n';
 
-            this.ebpfProcess.stdin.write(command);
+            // Safely write to stdin with error handling
+            try {
+                this.ebpfProcess.stdin.write(command, (err) => {
+                    if (err && err.code !== 'EPIPE') {
+                        console.error(`[Egress] Error writing to eBPF stdin:`, err.message);
+                    }
+                });
+            } catch (writeError) {
+                // Ignore EPIPE errors - process has exited
+                if (writeError.code !== 'EPIPE') {
+                    console.error(`[Egress] Write error:`, writeError.message);
+                }
+            }
 
             // Update local cache
             this.riskCache.set(ipAddress, {
@@ -214,9 +244,17 @@ class EgressProtection extends EventEmitter {
         // Request stats from eBPF process
         try {
             const command = JSON.stringify({ action: 'stats' }) + '\n';
-            this.ebpfProcess.stdin.write(command);
+            if (this.ebpfProcess && !this.ebpfProcess.killed) {
+                this.ebpfProcess.stdin.write(command, (err) => {
+                    if (err && err.code !== 'EPIPE') {
+                        console.error('[Egress] Error writing stats request:', err.message);
+                    }
+                });
+            }
         } catch (error) {
-            console.error('[Egress] Failed to request stats:', error.message);
+            if (error.code !== 'EPIPE') {
+                console.error('[Egress] Failed to request stats:', error.message);
+            }
         }
 
         return {

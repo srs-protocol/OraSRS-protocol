@@ -51,7 +51,8 @@ class EgressFilter:
         
         # Set mode
         config_map = self.bpf.get_table("config_map")
-        config_map[0] = struct.pack('I', self.mode_map[self.mode])
+        import ctypes
+        config_map[ctypes.c_uint32(0)] = ctypes.c_uint32(self.mode_map[self.mode])
         
         print(f"[OraSRS] eBPF filter attached to {self.interface}")
         
@@ -75,16 +76,26 @@ class EgressFilter:
         if not self.bpf:
             raise RuntimeError("eBPF program not loaded")
         
+        import ctypes
+        
         # Convert IP to integer
         ip_int = struct.unpack("!I", socket.inet_aton(ip_address))[0]
         
         # Calculate expiry
         expiry = int(time.time()) + ttl
         
+        # Define risk_info structure to match C struct
+        class RiskInfo(ctypes.Structure):
+            _fields_ = [
+                ("score", ctypes.c_uint32),
+                ("is_blocked", ctypes.c_uint8),
+                ("expiry", ctypes.c_uint64)
+            ]
+        
         # Update map
         risk_cache = self.bpf.get_table("risk_cache")
-        risk_info = struct.pack('IBQ', score, 1 if is_blocked else 0, expiry)
-        risk_cache[struct.pack('I', ip_int)] = risk_info
+        risk_info = RiskInfo(score=score, is_blocked=1 if is_blocked else 0, expiry=expiry)
+        risk_cache[ctypes.c_uint32(ip_int)] = risk_info
         
         print(f"[OraSRS] Updated risk cache: {ip_address} -> score={score}, blocked={is_blocked}, ttl={ttl}s")
         
@@ -93,13 +104,14 @@ class EgressFilter:
         if not self.bpf:
             return None
         
+        import ctypes
         stats_map = self.bpf.get_table("stats_map")
         
         stats = {
-            'total_packets': struct.unpack('Q', stats_map[0])[0],
-            'high_risk_hits': struct.unpack('Q', stats_map[1])[0],
-            'blocked_packets': struct.unpack('Q', stats_map[2])[0],
-            'allowed_packets': struct.unpack('Q', stats_map[3])[0],
+            'total_packets': stats_map[ctypes.c_uint32(0)].value if ctypes.c_uint32(0) in stats_map else 0,
+            'high_risk_hits': stats_map[ctypes.c_uint32(1)].value if ctypes.c_uint32(1) in stats_map else 0,
+            'blocked_packets': stats_map[ctypes.c_uint32(2)].value if ctypes.c_uint32(2) in stats_map else 0,
+            'allowed_packets': stats_map[ctypes.c_uint32(3)].value if ctypes.c_uint32(3) in stats_map else 0,
         }
         
         return stats
