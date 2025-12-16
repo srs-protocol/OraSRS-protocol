@@ -131,6 +131,29 @@ class SimpleOraSRSService {
       await this.threatDataLoader.initialize();
       console.log(`✅ 威胁情报加载完成: ${this.threatDataLoader.getStats().totalEntries} 条记录`);
 
+      // 将威胁数据填充到缓存
+      const threatData = this.threatDataLoader.getAllThreats();
+      if (threatData && threatData.length > 0) {
+        let added = 0;
+        for (const threat of threatData) {
+          if (threat.ip && !this.cache.threats[threat.ip]) {
+            this.cache.threats[threat.ip] = {
+              ip: threat.ip,
+              risk_score: threat.risk_score || 80,
+              threat_level: threat.threat_level || 'High',
+              primary_threat_type: threat.primary_threat_type || threat.threat_type || 'Unknown',
+              last_seen: threat.last_seen || new Date().toISOString(),
+              first_seen: threat.first_seen || threat.last_seen || new Date().toISOString()
+            };
+            added++;
+          }
+        }
+        if (added > 0) {
+          this.saveCache();
+          console.log(`✅ 已将 ${added} 条威胁记录填充到缓存`);
+        }
+      }
+
       // 每小时同步一次差分更新
       setInterval(async () => {
         try {
