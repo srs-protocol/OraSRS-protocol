@@ -1,0 +1,36 @@
+[Unit]
+Description=OraSRS Local Hardhat Node
+Documentation=https://hardhat.org/
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/Great/SRS-Protocol
+Environment=NODE_ENV=development
+Environment=HARDHAT_SECURE_MODE=true
+Environment=PATH=/usr/bin:/usr/local/bin:/www/server/nodejs/v24.11.1/bin
+
+# 启动 Hardhat 节点
+ExecStart=/usr/bin/npx hardhat node --hostname 127.0.0.1 --port 8545
+
+# 自动重启配置
+Restart=always
+RestartSec=10
+
+# 进程管理
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hardhat-node
+
+[Install]
+WantedBy=multi-user.target
