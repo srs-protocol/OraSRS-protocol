@@ -211,12 +211,111 @@ class EgressProtection extends EventEmitter {
             return null;
         }
 
+        // Request stats from eBPF process
+        try {
+            const command = JSON.stringify({ action: 'stats' }) + '\n';
+            this.ebpfProcess.stdin.write(command);
+        } catch (error) {
+            console.error('[Egress] Failed to request stats:', error.message);
+        }
+
         return {
             enabled: this.enabled,
             mode: this.mode,
             interface: this.interface,
             cacheSize: this.riskCache.size,
-            riskThreshold: this.riskThreshold
+            riskThreshold: this.riskThreshold,
+            // These will be populated by eBPF stats
+            totalPackets: 0,
+            highRiskHits: 0,
+            blockedPackets: 0,
+            allowedPackets: 0
+        };
+    }
+
+    /**
+     * Update configuration dynamically without restart
+     */
+    async updateConfig(newConfig) {
+        console.log('[Egress] Updating configuration...');
+
+        const changes = [];
+
+        // Update mode
+        if (newConfig.mode && newConfig.mode !== this.mode) {
+            if (!['monitor', 'enforce', 'disabled'].includes(newConfig.mode)) {
+                throw new Error(`Invalid mode: ${newConfig.mode}`);
+            }
+
+            const oldMode = this.mode;
+            this.mode = newConfig.mode;
+            changes.push(`mode: ${oldMode} → ${this.mode}`);
+
+            // Send mode update to eBPF
+            if (this.ebpfProcess && !this.ebpfProcess.killed) {
+                const modeMap = { 'disabled': 0, 'monitor': 1, 'enforce': 2 };
+                const command = JSON.stringify({
+                    action: 'set_mode',
+                    mode: modeMap[this.mode]
+                }) + '\n';
+                this.ebpfProcess.stdin.write(command);
+            }
+        }
+
+        // Update risk threshold
+        if (newConfig.riskThreshold && newConfig.riskThreshold !== this.riskThreshold) {
+            const oldThreshold = this.riskThreshold;
+            this.riskThreshold = newConfig.riskThreshold;
+            changes.push(`riskThreshold: ${oldThreshold} → ${this.riskThreshold}`);
+        }
+
+        // Update cache interval
+        if (newConfig.cacheUpdateInterval && newConfig.cacheUpdateInterval !== this.updateInterval) {
+            const oldInterval = this.updateInterval;
+            this.updateInterval = newConfig.cacheUpdateInterval;
+            changes.push(`cacheUpdateInterval: ${oldInterval} → ${this.updateInterval}`);
+
+            // Restart cache update timer
+            if (this.updateTimer) {
+                clearInterval(this.updateTimer);
+                this.startCacheUpdates();
+            }
+        }
+
+        if (changes.length > 0) {
+            console.log(`[Egress] Configuration updated: ${changes.join(', ')}`);
+            this.emit('config-updated', { changes });
+        } else {
+            console.log('[Egress] No configuration changes');
+        }
+
+        return { success: true, changes };
+    }
+
+    /**
+     * Get detailed statistics including performance metrics
+     */
+    async getDetailedStatistics() {
+        const basicStats = await this.getStatistics();
+
+        if (!basicStats) {
+            return null;
+        }
+
+        return {
+            ...basicStats,
+            performance: {
+                avgQueryLatency: 0.001, // Will be populated by eBPF
+                peakTPS: 0,
+                memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 // MB
+            },
+            riskDistribution: {
+                low: 0,
+                medium: 0,
+                high: 0,
+                critical: 0
+            },
+            uptime: process.uptime()
         };
     }
 

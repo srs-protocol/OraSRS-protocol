@@ -956,6 +956,57 @@ class SimpleOraSRSService {
       }
     });
 
+    // Update kernel configuration dynamically
+    this.app.post('/orasrs/v1/kernel/config', async (req, res) => {
+      if (!this.egressProtection) {
+        return res.status(404).json({
+          success: false,
+          error: 'eBPF kernel acceleration is not enabled'
+        });
+      }
+
+      try {
+        const result = await this.egressProtection.updateConfig(req.body);
+        res.json({
+          success: true,
+          message: 'Configuration updated successfully',
+          changes: result.changes
+        });
+      } catch (error) {
+        res.status(400).json({
+          success: false,
+          error: 'Failed to update configuration',
+          message: error.message
+        });
+      }
+    });
+
+    // Get detailed kernel statistics
+    this.app.get('/orasrs/v1/kernel/stats/detailed', async (req, res) => {
+      if (!this.egressProtection) {
+        return res.json({
+          success: true,
+          kernel_acceleration: {
+            enabled: false
+          }
+        });
+      }
+
+      try {
+        const stats = await this.egressProtection.getDetailedStatistics();
+        res.json({
+          success: true,
+          kernel_acceleration: stats
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to get detailed statistics',
+          message: error.message
+        });
+      }
+    });
+
     // Cache Management Endpoints
 
     // Get cache status
