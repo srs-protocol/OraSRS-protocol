@@ -18,7 +18,7 @@ wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/main/install
 sh install-openwrt.sh
 ```
 
-## 手动安装 / Manual Installation
+## 手动安装 / Manual Installation（等更新）
 
 ### 1. 添加软件源 / Add Package Feed
 
