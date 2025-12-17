@@ -86,31 +86,27 @@ OraSRS 提供三种灵活的部署模式，以适应从云服务器到 IoT 设�
 ./verify-native-agent.sh
 ```
 
-**2. 实测日志摘要 (2025-12-17)**:
+**2. 实测日志摘要 (2025-12-17 v3.2.0)**:
 
-**A. 完整管理节点 (Full Client)**
+**A. 完整管理节点 (Full Client - Node.js)**
 ```
-ℹ️  OraSRS 进程 PID: 79594
-CPU 使用率: 0.2 %
-内存使用: 98.03 MB
-✅ 内存使用正常 (< 100MB)
-```
-
-**B. 混合模式代理 (Python Agent)**
-```
-ℹ️  Starting lightweight agent...
-✅ Agent started successfully (PID: 99036)
-Agent Memory: 23.70 MB
-✅ Lightweight agent memory usage is optimized (< 30MB)
+Full Client PID: 721026
+Full Client Memory (RSS): 42.45 MB
+✅ Full Mode: PASS (< 100MB)
 ```
 
-**C. 原生边缘代理 (Native Agent)**
+**B. 混合模式代理 (Hybrid Agent - Python)**
 ```
-=== OraSRS Native Agent Memory Verification ===
-[*] Measuring memory footprint...
-PID: 99214
-RSS: 1.25 MB
-✅ MEMORY TARGET ACHIEVED: 1.25MB < 5MB
+Hybrid Client PID: 720993
+Hybrid Client Memory (RSS): 9.13 MB
+✅ Hybrid Mode: PASS (< 30MB)
+```
+
+**C. 原生边缘代理 (Edge Agent - Shell/nftables)**
+```
+Edge Client PID: 720928
+Edge Client Memory (RSS): 3.88 MB
+✅ Edge Mode: PASS (< 5MB)
 ```
 
 > **结论**: 原生 C 代理 (1.25 MB) 成功满足论文中 "< 5MB" 的资源约束要求。
