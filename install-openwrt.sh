@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.6
+# Version: 3.2.7
 
 set -e
 
@@ -53,18 +53,12 @@ check_environment() {
         print_info "Python3: 未安装"
     fi
     
-    # 检查 nftables
-    if command -v nft >/dev/null 2>&1; then
-        HAS_NFT=1
-        print_info "nftables: 已安装 (将优先使用)"
+    # 强制使用 iptables (更稳定)
+    if command -v ipset >/dev/null 2>&1; then
+        HAS_IPSET=1
+        print_info "ipset: 已安装"
     else
-        # 检查 ipset
-        if command -v ipset >/dev/null 2>&1; then
-            HAS_IPSET=1
-            print_info "ipset: 已安装"
-        else
-            print_warning "ipset/nftables: 未安装 (将尝试自动安装)"
-        fi
+        print_warning "ipset: 未安装 (将尝试自动安装)"
     fi
     
     # 检查 LuCI
@@ -138,13 +132,7 @@ install_dependencies() {
     opkg update
     
     # 通用依赖
-    PACKAGES="curl ca-certificates"
-    
-    if [ "$HAS_NFT" -eq 1 ]; then
-        PACKAGES="$PACKAGES nftables"
-    else
-        PACKAGES="$PACKAGES ipset iptables"
-    fi
+    PACKAGES="curl ca-certificates ipset iptables iptables-mod-conntrack-extra"
     
     # 模式特定依赖
     if [ "$INSTALL_MODE" = "hybrid" ]; then
@@ -162,18 +150,11 @@ generate_edge_client() {
     cat > /usr/bin/orasrs-client << 'EOF'
 #!/bin/sh
 # OraSRS Edge Client (Shell Version)
-# 工业级增强版: nftables/ipset 双栈支持、原子更新、并发锁
+# iptables + ipset 稳定版
 
 CONFIG_FILE="/etc/config/orasrs"
 LOCK_FILE="/var/lock/orasrs.lock"
 LOG_FILE="/var/log/orasrs.log"
-
-# 检测后端
-if command -v nft >/dev/null 2>&1; then
-    BACKEND="nft"
-else
-    BACKEND="iptables"
-fi
 
 log() { echo "$(date): $1" >> $LOG_FILE; }
 
@@ -184,59 +165,9 @@ get_config() {
     SYNC_INTERVAL=$(uci get orasrs.main.sync_interval 2>/dev/null || echo 3600)
 }
 
-init_firewall_nft() {
-    # 转换为 nftables 格式 (20/s -> 20/second)
-    NFT_LIMIT=$(echo $LIMIT | sed 's/s/second/')
+init_firewall() {
+    get_config
     
-    # 关键修复：先清空链，防止规则重复叠加
-    nft add table inet orasrs 2>/dev/null || true
-    nft flush chain inet orasrs input 2>/dev/null || true
-    nft flush chain inet orasrs forward 2>/dev/null || true
-    
-    # 获取 SSH 端口
-    SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
-    SSH_PORT=${SSH_PORT:-22}
-    
-    cat > /tmp/orasrs.nft << NFT
-table inet orasrs {
-    set threats {
-        type ipv4_addr
-        flags interval
-    }
-    
-    chain input {
-        type filter hook input priority filter; policy accept;
-        
-        # 1. Accept Established/Related (关键：防止断连)
-        ct state established,related accept
-        
-        # 2. Drop Invalid
-        ct state invalid drop
-        
-        # 3. Whitelist SSH (关键：防止管理被锁死)
-        tcp dport $SSH_PORT accept
-        
-        # 4. SYN Flood Protection
-        tcp flags syn limit rate $NFT_LIMIT burst $BURST counter packets return
-        tcp flags syn counter drop
-        
-        # 5. Threat Blocking
-        ip saddr @threats counter drop
-    }
-    
-    chain forward {
-        type filter hook forward priority filter; policy accept;
-        ct state established,related accept
-        ct state invalid drop
-        ip saddr @threats counter drop
-    }
-}
-NFT
-    nft -f /tmp/orasrs.nft
-    log "Firewall initialized (nftables). Limit: $NFT_LIMIT, Burst: $BURST"
-}
-
-init_firewall_iptables() {
     # 自动加载内核模块
     modprobe ip_set 2>/dev/null
     modprobe ip_set_hash_net 2>/dev/null
@@ -259,17 +190,17 @@ init_firewall_iptables() {
     # 创建自定义链
     iptables -N orasrs_chain
     
-    # 1. Accept Established/Related
+    # 1. Accept Established/Related (关键：防止断连)
     iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
     # 2. Drop Invalid
     iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
     
-    # 3. Whitelist SSH
+    # 3. Whitelist SSH (关键：防止管理被锁死)
     iptables -A orasrs_chain -p tcp --dport $SSH_PORT -j ACCEPT
     
-    # 4. SYN Flood Protection
-    iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT --limit-burst $BURST -j RETURN
+    # 4. SYN Flood Protection (用户提供的逻辑)
+    iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT --limit-burst $BURST -j ACCEPT
     iptables -A orasrs_chain -p tcp --syn -j DROP
     
     # 5. Threat Blocking
@@ -281,58 +212,30 @@ init_firewall_iptables() {
     log "Firewall initialized (iptables). Limit: $LIMIT, Burst: $BURST, SSH: $SSH_PORT"
 }
 
-init_firewall() {
-    get_config
-    if [ "$BACKEND" = "nft" ]; then
-        init_firewall_nft
-    else
-        init_firewall_iptables
-    fi
-}
-
 sync_threats() {
     (
         flock -x 200
-        log "Starting sync ($BACKEND)..."
+        log "Starting sync (iptables/ipset)..."
         
         if curl -s https://feodotracker.abuse.ch/downloads/ipblocklist.txt | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt; then
             if [ -s /tmp/orasrs_threats.txt ]; then
-                if [ "$BACKEND" = "nft" ]; then
-                    # nftables 原子更新
-                    echo "table inet orasrs {" > /tmp/orasrs_update.nft
-                    echo "  set threats {" >> /tmp/orasrs_update.nft
-                    echo "    type ipv4_addr; flags interval;" >> /tmp/orasrs_update.nft
-                    echo "    elements = {" >> /tmp/orasrs_update.nft
-                    # 格式化 IP 列表
-                    awk '{print $1 ","}' /tmp/orasrs_threats.txt >> /tmp/orasrs_update.nft
-                    echo "    }" >> /tmp/orasrs_update.nft
-                    echo "  }" >> /tmp/orasrs_update.nft
-                    echo "}" >> /tmp/orasrs_update.nft
-                    
-                    if nft -f /tmp/orasrs_update.nft; then
-                        log "Sync completed (nftables). Rules updated."
-                    else
-                        log "Sync failed (nftables): Syntax error."
-                    fi
-                else
-                    # iptables/ipset 原子更新
-                    IPSET_NAME="orasrs_threats"
-                    ipset create ${IPSET_NAME}_tmp hash:net -exist
-                    ipset flush ${IPSET_NAME}_tmp
-                    while read ip; do
-                        ipset add ${IPSET_NAME}_tmp $ip -exist
-                    done < /tmp/orasrs_threats.txt
-                    ipset swap ${IPSET_NAME}_tmp $IPSET_NAME
-                    ipset destroy ${IPSET_NAME}_tmp
-                    log "Sync completed (ipset). Rules updated."
-                fi
+                # iptables/ipset 原子更新
+                IPSET_NAME="orasrs_threats"
+                ipset create ${IPSET_NAME}_tmp hash:net -exist
+                ipset flush ${IPSET_NAME}_tmp
+                while read ip; do
+                    ipset add ${IPSET_NAME}_tmp $ip -exist
+                done < /tmp/orasrs_threats.txt
+                ipset swap ${IPSET_NAME}_tmp $IPSET_NAME
+                ipset destroy ${IPSET_NAME}_tmp
+                log "Sync completed (ipset). Rules updated."
             else
                 log "Sync failed: Empty list."
             fi
         else
             log "Sync failed: Download error."
         fi
-        rm -f /tmp/orasrs_threats.txt /tmp/orasrs_update.nft
+        rm -f /tmp/orasrs_threats.txt
         
     ) 200>$LOCK_FILE
 }
@@ -368,50 +271,27 @@ case "$1" in
         init_firewall
         ;;
     check_ip)
-        # 简化 check_ip，仅支持 ipset 方式查询，nft 需要解析 json
-        if [ "$BACKEND" = "iptables" ]; then
-            ipset test orasrs_threats $2 2>/dev/null && echo "THREAT" || echo "SAFE"
-        else
-            echo "SAFE (nft check not implemented in shell)"
-        fi
+        ipset test orasrs_threats $2 2>/dev/null && echo "THREAT" || echo "SAFE"
         ;;
     harden) harden_mode ;;
     relax) relax_mode ;;
     cache_stats)
-        if [ "$BACKEND" = "iptables" ]; then
-            ipset list orasrs_threats -t 2>/dev/null | grep "Number of entries" || echo "Number of entries: 0"
-        else
-            # nftables stats (simple count)
-            nft list set inet orasrs threats | grep -c "\." || echo "0"
-        fi
+        ipset list orasrs_threats -t 2>/dev/null | grep "Number of entries" || echo "Number of entries: 0"
         ;;
     cache_list)
-        if [ "$BACKEND" = "iptables" ]; then
-            ipset list orasrs_threats | head -n 20
-        else
-            nft list set inet orasrs threats | head -n 20
-        fi
+        ipset list orasrs_threats | head -n 20
         ;;
     cache_clear)
-        if [ "$BACKEND" = "iptables" ]; then
-            ipset flush orasrs_threats
-        else
-            nft flush set inet orasrs threats
-        fi
+        ipset flush orasrs_threats
         log "Cache cleared by user."
         echo "Cache cleared."
         ;;
     status)
-        echo "Backend: $BACKEND"
-        if [ "$BACKEND" = "iptables" ]; then
-            echo "--- IPTABLES (INPUT) ---"
-            iptables -nvL INPUT | grep -E "orasrs|syn_flood" || echo "No rules found in INPUT"
-            echo "--- IPSET ---"
-            ipset list orasrs_threats -t 2>/dev/null | grep "Number of entries" || echo "No ipset found"
-        else
-            echo "--- NFTABLES (inet orasrs) ---"
-            nft list table inet orasrs 2>/dev/null || echo "Table 'orasrs' not found"
-        fi
+        echo "Backend: iptables"
+        echo "--- IPTABLES (orasrs_chain) ---"
+        iptables -nvL orasrs_chain 2>/dev/null || echo "Chain 'orasrs_chain' not found"
+        echo "--- IPSET ---"
+        ipset list orasrs_threats -t 2>/dev/null | grep "Number of entries" || echo "No ipset found"
         ;;
     monitor)
         while true; do
@@ -421,19 +301,11 @@ case "$1" in
             echo "Load: $(uptime | awk -F'load average:' '{ print $2 }')"
             echo "Mem:  $(free -m | awk '/Mem:/ { print $3"/"$2" MB" }')"
             echo "--------------------------------"
-            if [ "$BACKEND" = "iptables" ]; then
-                SYN_DROP=$(iptables -nvL syn_flood 2>/dev/null | grep "DROP" | awk '{print $1}')
-                THREAT_DROP=$(iptables -nvL INPUT 2>/dev/null | grep "match-set" | awk '{print $1}')
-                echo "SYN Flood Dropped: ${SYN_DROP:-0}"
-                echo "Threats Dropped:   ${THREAT_DROP:-0}"
-            else
-                # Parse nftables counters
-                NFT_OUT=$(nft list table inet orasrs 2>/dev/null)
-                SYN_DROP=$(echo "$NFT_OUT" | grep "tcp flags syn counter packets 0 bytes 0 drop" | awk '{print $6}' | head -1)
-                # Note: parsing nft output is tricky as format varies. Showing raw stats for now.
-                echo "--- NFTABLES STATS ---"
-                nft list table inet orasrs | grep "packets" | sed 's/^/  /'
-            fi
+            CHAIN_STATS=$(iptables -nvL orasrs_chain 2>/dev/null)
+            SYN_DROP=$(echo "$CHAIN_STATS" | grep "tcp dpt:syn DROP" | awk '{print $1}')
+            THREAT_DROP=$(echo "$CHAIN_STATS" | grep "match-set" | awk '{print $1}')
+            echo "SYN Flood Dropped: ${SYN_DROP:-0}"
+            echo "Threats Dropped:   ${THREAT_DROP:-0}"
             echo "--------------------------------"
             echo "Press Ctrl+C to exit"
             sleep 1
@@ -600,7 +472,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.6"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.7"
     echo "========================================="
     
     check_environment
@@ -612,13 +484,8 @@ main() {
     echo "========================================="
     MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
     echo "  模式: ${MODE_UPPER}"
-    if [ "$HAS_NFT" -eq 1 ]; then
-        echo "  后端: nftables (高性能)"
-        echo "  验证: orasrs-cli status (或 nft list table inet orasrs)"
-    else
-        echo "  后端: iptables (传统)"
-        echo "  验证: orasrs-cli status (或 iptables -nvL INPUT)"
-    fi
+    echo "  后端: iptables (稳定)"
+    echo "  验证: orasrs-cli status"
     if [ "$INSTALL_LUCI" -eq 1 ]; then
         echo "  界面: 已安装 (Services -> OraSRS)"
     fi
