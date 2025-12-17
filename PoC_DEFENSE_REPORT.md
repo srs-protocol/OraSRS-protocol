@@ -58,6 +58,9 @@ curl -H 'Cache-Control: no-cache' -fsSL https://raw.githubusercontent.com/srs-pr
 2. **第二道防线 (OraSRS T0):** 手动注入的动态限速规则 (`limit 20/sec burst 50`)。
 
 ### 3.3 战况取证 (Log Analysis)
+<img width="1240" height="935" alt="381b35c62c1317a3448c467ede44442e" src="https://github.com/user-attachments/assets/262c5bc1-a80e-4ca2-b446-5613288457d5" />
+<img width="861" height="558" alt="image" src="https://github.com/user-attachments/assets/1b31bf29-5e40-4c88-b9e3-a8f8762f03f1" />
+<img width="1651" height="964" alt="image" src="https://github.com/user-attachments/assets/1ba327c7-87ea-4161-bf56-c86117884cde" />
 
 根据 `iptables -nvL INPUT` 的实时快照分析：
 
