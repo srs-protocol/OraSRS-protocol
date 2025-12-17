@@ -19,6 +19,21 @@
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
 
+## 📜 Protocol Specification (协议规范)
+
+OraSRS implements the **Decentralized Threat Signaling Protocol (DTSP)** as defined in the following IETF Internet-Draft:
+
+> **[draft-luo-orasrs-decentralized-threat-signaling-00](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)**
+>
+> * **Title:** Decentralized Threat Signaling Protocol (DTSP) using OraSRS
+> * **Status:** Active Internet-Draft
+> * **Abstract:** Defines the mechanisms for T0 (Local Heuristics) to T3 (Global Consensus) threat signaling in a decentralized network.
+
+To cite this specification:
+```text
+Luo, Z. (2025). Decentralized Threat Signaling Protocol (DTSP) using OraSRS. IETF Internet-Draft draft-luo-orasrs-decentralized-threat-signaling-00.
+```
+
 ## 项目概述
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
