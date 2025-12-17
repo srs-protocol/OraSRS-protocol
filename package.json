@@ -2,7 +2,7 @@
   "name": "orasrs-protocol",
   "version": "3.3.6",
   "description": "OraSRS Protocol - Decentralized Threat Intelligence",
-  "main": "srs-service.js",
+  "main": "src/srs-service.js",
   "type": "module",
   "scripts": {
     "start": "node start-srs-service.js",
