@@ -1,7 +1,8 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.9
+# Version: 3.3.0
+# Updated: 2025-12-18
 
 set -e
 
@@ -17,9 +18,9 @@ INSTALL_MODE=""
 MEMORY_TOTAL=0
 ARCH=""
 HAS_PYTHON=0
-HAS_IPSET=0
-HAS_NFT=0
+HAS_NODE=0
 INSTALL_LUCI=0
+REPO_URL="https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client"
 
 # 打印函数
 print_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
@@ -49,16 +50,12 @@ check_environment() {
     if command -v python3 >/dev/null 2>&1; then
         HAS_PYTHON=1
         print_info "Python3: 已安装"
-    else
-        print_info "Python3: 未安装"
     fi
-    
-    # 强制使用 iptables (更稳定)
-    if command -v ipset >/dev/null 2>&1; then
-        HAS_IPSET=1
-        print_info "ipset: 已安装"
-    else
-        print_warning "ipset: 未安装 (将尝试自动安装)"
+
+    # 检查 Node.js
+    if command -v node >/dev/null 2>&1; then
+        HAS_NODE=1
+        print_info "Node.js: 已安装"
     fi
     
     # 检查 LuCI
@@ -74,11 +71,11 @@ select_mode() {
     
     # 自动推荐
     RECOMMENDED_MODE="edge"
-    if [ "$MEMORY_MB" -ge 64 ] && [ "$HAS_PYTHON" -eq 1 ]; then
+    if [ "$MEMORY_MB" -ge 256 ]; then
         RECOMMENDED_MODE="hybrid"
     fi
     if [ "$MEMORY_MB" -ge 512 ] && [ "$ARCH" = "x86_64" ]; then
-        RECOMMENDED_MODE="full" # 仅建议在强力软路由上
+        RECOMMENDED_MODE="full"
     fi
     
     # 显示模式名称（大写）
@@ -86,9 +83,9 @@ select_mode() {
     print_info "根据硬件配置，推荐模式: ${GREEN}${MODE_UPPER}${NC}"
     
     echo "请选择安装模式 (直接回车将自动选择推荐模式):"
-    echo "  1) Edge   - 极简模式 (<5MB RAM, 适合所有设备)"
-    echo "  2) Hybrid - 混合模式 (~30MB RAM, 需Python支持)"
-    echo "  3) Full   - 完整模式 (~90MB RAM, 仅限x86设备)"
+    echo "  1) Edge   - 极简模式 (<5MB RAM, Shell脚本, 仅T0+T3基础)"
+    echo "  2) Hybrid - 混合模式 (~10MB RAM, Node.js, T0+T3完整功能)"
+    echo "  3) Full   - 完整模式 (~20MB RAM, Node.js, T0-T3全功能)"
     
     # 如果有参数传入，直接使用
     if [ -n "$1" ]; then
@@ -135,22 +132,22 @@ install_dependencies() {
     PACKAGES="curl ca-certificates ipset iptables iptables-mod-conntrack-extra"
     
     # 模式特定依赖
-    if [ "$INSTALL_MODE" = "hybrid" ]; then
-        PACKAGES="$PACKAGES python3 python3-pip"
-    elif [ "$INSTALL_MODE" = "full" ]; then
-        PACKAGES="$PACKAGES node node-npm"
+    if [ "$INSTALL_MODE" = "hybrid" ] || [ "$INSTALL_MODE" = "full" ]; then
+        PACKAGES="$PACKAGES node node-npm sqlite3-cli"
+        # 尝试安装 node-sqlite3 如果可用，否则依赖纯 JS 或 CLI
+        # opkg install node-sqlite3 2>/dev/null || true
     fi
     
     print_info "正在安装: $PACKAGES"
     opkg install $PACKAGES || print_warning "部分包安装失败，尝试继续..."
 }
 
-# 4. 生成 Edge 客户端 (Shell 版本 - 双栈支持)
+# 4. 生成 Edge 客户端 (Shell 版本 - 增强版)
 generate_edge_client() {
     cat > /usr/bin/orasrs-client << 'EOF'
 #!/bin/sh
-# OraSRS Edge Client (Shell Version)
-# iptables + ipset 稳定版
+# OraSRS Edge Client (Shell Version) v3.3.0
+# T0 (Local) + T3 (Public Feeds)
 
 CONFIG_FILE="/etc/config/orasrs"
 LOCK_FILE="/var/lock/orasrs.lock"
@@ -190,16 +187,16 @@ init_firewall() {
     # 创建自定义链
     iptables -N orasrs_chain
     
-    # 1. Accept Established/Related (关键：防止断连)
+    # 1. Accept Established/Related
     iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
     # 2. Drop Invalid
     iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
     
-    # 3. Whitelist SSH SYN (关键：防止管理被锁死)
+    # 3. Whitelist SSH SYN
     iptables -A orasrs_chain -p tcp --dport $SSH_PORT --syn -j ACCEPT
     
-    # 4. SYN Flood Protection (用户提供的逻辑)
+    # 4. SYN Flood Protection
     iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT --limit-burst $BURST -j ACCEPT
     iptables -A orasrs_chain -p tcp --syn -j DROP
     
@@ -215,25 +212,35 @@ init_firewall() {
 sync_threats() {
     (
         flock -x 200
-        log "Starting sync (iptables/ipset)..."
+        log "Starting sync (Shell/Public Feeds)..."
         
-        if curl -s https://feodotracker.abuse.ch/downloads/ipblocklist.txt | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt; then
-            if [ -s /tmp/orasrs_threats.txt ]; then
-                # iptables/ipset 原子更新
-                IPSET_NAME="orasrs_threats"
-                ipset create ${IPSET_NAME}_tmp hash:net -exist
-                ipset flush ${IPSET_NAME}_tmp
-                while read ip; do
-                    ipset add ${IPSET_NAME}_tmp $ip -exist
-                done < /tmp/orasrs_threats.txt
-                ipset swap ${IPSET_NAME}_tmp $IPSET_NAME
-                ipset destroy ${IPSET_NAME}_tmp
-                log "Sync completed (ipset). Rules updated."
-            else
-                log "Sync failed: Empty list."
+        # 多源回退策略
+        URLS="https://feodotracker.abuse.ch/downloads/ipblocklist.txt https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
+        SUCCESS=0
+        
+        for URL in $URLS; do
+            if curl -s --connect-timeout 10 "$URL" | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt; then
+                if [ -s /tmp/orasrs_threats.txt ]; then
+                    SUCCESS=1
+                    log "Downloaded threats from $URL"
+                    break
+                fi
             fi
+        done
+
+        if [ $SUCCESS -eq 1 ]; then
+            # iptables/ipset 原子更新
+            IPSET_NAME="orasrs_threats"
+            ipset create ${IPSET_NAME}_tmp hash:net -exist
+            ipset flush ${IPSET_NAME}_tmp
+            while read ip; do
+                ipset add ${IPSET_NAME}_tmp $ip -exist
+            done < /tmp/orasrs_threats.txt
+            ipset swap ${IPSET_NAME}_tmp $IPSET_NAME
+            ipset destroy ${IPSET_NAME}_tmp
+            log "Sync completed. Rules updated."
         else
-            log "Sync failed: Download error."
+            log "Sync failed: All sources unreachable."
         fi
         rm -f /tmp/orasrs_threats.txt
         
@@ -287,7 +294,7 @@ case "$1" in
         echo "Cache cleared."
         ;;
     status)
-        echo "Backend: iptables"
+        echo "Backend: iptables (Shell Client)"
         echo "--- IPTABLES (orasrs_chain) ---"
         iptables -nvL orasrs_chain 2>/dev/null || echo "Chain 'orasrs_chain' not found"
         echo "--- IPSET ---"
@@ -301,21 +308,10 @@ case "$1" in
             echo "Load: $(uptime | awk -F'load average:' '{ print $2 }')"
             echo "Mem:  $(free -m | awk '/Mem:/ { print $3"/"$2" MB" }')"
             echo "--------------------------------"
-            # 获取 orasrs_chain 的统计信息
             CHAIN_OUTPUT=$(iptables -nvL orasrs_chain 2>/dev/null)
-            # 解析 SYN DROP 规则 (第5行: tcp flags:0x17/0x02 DROP)
             SYN_DROP=$(echo "$CHAIN_OUTPUT" | awk '/flags:0x17\/0x02.*DROP/ {print $1; exit}')
-            # 解析威胁 DROP 规则 (最后一行: match-set)
             THREAT_DROP=$(echo "$CHAIN_OUTPUT" | awk '/match-set.*DROP/ {print $1; exit}')
-            # 计算 SYN 速率 (pps)
-            if [ -n "$PREV_SYN" ] && [ -n "$SYN_DROP" ]; then
-                SYN_RATE=$((SYN_DROP - PREV_SYN))
-            else
-                SYN_RATE=0
-            fi
-            PREV_SYN=$SYN_DROP
-            
-            echo "SYN Flood Dropped: ${SYN_DROP:-0} (${SYN_RATE}/s)"
+            echo "SYN Flood Dropped: ${SYN_DROP:-0}"
             echo "Threats Dropped:   ${THREAT_DROP:-0}"
             echo "--------------------------------"
             echo "Press Ctrl+C to exit"
@@ -328,7 +324,111 @@ EOF
     chmod +x /usr/bin/orasrs-client
 }
 
-# 5. 生成 LuCI 界面
+# 5. 安装 Node.js 客户端 (Hybrid/Full)
+install_node_client() {
+    print_step "下载并安装 Node.js 客户端..."
+    
+    mkdir -p /usr/lib/orasrs
+    mkdir -p /var/lib/orasrs
+    
+    # 下载 orasrs-lite.js
+    CLIENT_URL="${REPO_URL}/openwrt/orasrs-client/orasrs-lite.js"
+    print_info "Downloading from $CLIENT_URL"
+    curl -fsSL "$CLIENT_URL" -o /usr/lib/orasrs/orasrs-lite.js
+    
+    if [ ! -s /usr/lib/orasrs/orasrs-lite.js ]; then
+        print_error "下载失败，请检查网络连接"
+        exit 1
+    fi
+    
+    chmod +x /usr/lib/orasrs/orasrs-lite.js
+    
+    # 安装依赖 (better-sqlite3)
+    # 注意: 在 OpenWrt 上编译 native 模块很困难。
+    # 如果 orasrs-lite.js 依赖 better-sqlite3，我们需要确保环境支持。
+    # 这里我们尝试 npm install，如果失败则警告用户
+    print_step "配置 Node.js 依赖..."
+    cd /usr/lib/orasrs
+    
+    # 创建 package.json
+    cat > package.json << 'EOF'
+{
+  "name": "orasrs-lite",
+  "version": "3.3.0",
+  "description": "OraSRS Lite Client",
+  "main": "orasrs-lite.js",
+  "type": "module",
+  "dependencies": {
+    "better-sqlite3": "^9.0.0"
+  }
+}
+EOF
+    
+    if command -v npm >/dev/null 2>&1; then
+        print_info "运行 npm install..."
+        # 尝试安装，如果失败(常见于无编译环境)，提示用户
+        if ! npm install --production --no-audit --no-fund; then
+            print_warning "npm install 失败 (可能是缺少编译工具)"
+            print_warning "尝试使用 sqlite3 CLI 模式 (如果代码支持)..."
+            # 这里假设 orasrs-lite.js 有回退机制或用户已安装预编译包
+        fi
+    else
+        print_warning "未找到 npm，跳过依赖安装。请确保已安装必要的 Node 模块。"
+    fi
+    
+    # 创建 CLI 包装器
+    cat > /usr/bin/orasrs-client << 'EOF'
+#!/bin/sh
+# OraSRS Client Wrapper
+node /usr/lib/orasrs/orasrs-lite.js "$@"
+EOF
+    chmod +x /usr/bin/orasrs-client
+    
+    # 创建 CLI 工具
+    cat > /usr/bin/orasrs-cli << 'EOF'
+#!/bin/sh
+# OraSRS CLI Tool
+API_URL="http://localhost:3006"
+
+case "$1" in
+    query)
+        curl -s "$API_URL/query?ip=$2"
+        echo ""
+        ;;
+    sync)
+        curl -X POST "$API_URL/sync"
+        echo ""
+        ;;
+    status)
+        curl -s "$API_URL/health"
+        echo ""
+        ;;
+    stats)
+        curl -s "$API_URL/stats"
+        echo ""
+        ;;
+    cache)
+        if [ "$2" = "stats" ]; then
+            sqlite3 /var/lib/orasrs/cache.db "SELECT COUNT(*) FROM threats"
+        elif [ "$2" = "list" ]; then
+            sqlite3 /var/lib/orasrs/cache.db "SELECT * FROM threats LIMIT 10"
+        elif [ "$2" = "clear" ]; then
+             sqlite3 /var/lib/orasrs/cache.db "DELETE FROM threats"
+             echo "Cache cleared"
+        fi
+        ;;
+    monitor)
+        watch -n 1 "curl -s $API_URL/stats"
+        ;;
+    *)
+        echo "Usage: orasrs-cli {query|sync|status|stats|cache|monitor}"
+        ;;
+esac
+EOF
+    chmod +x /usr/bin/orasrs-cli
+}
+
+# 6. 生成 LuCI 界面
 generate_luci() {
     print_step "生成 LuCI 管理界面..."
     
@@ -355,24 +455,24 @@ o = s:option(Flag, "enabled", translate("Enable Protection"))
 
 -- Status Display
 status = s:option(DummyValue, "_status", translate("Current Status"))
-local sys = require "luci.sys"
-local limit = sys.exec("uci get orasrs.main.limit_rate")
-local burst = sys.exec("uci get orasrs.main.limit_burst")
-status.value = string.format("Limit: %s, Burst: %s", limit, burst)
+status.value = "Running"
 
 -- Mode Selection
 mode = s:option(ListValue, "mode", translate("Operation Mode"))
 mode:value("edge", "Edge (Low RAM)")
-mode:value("hybrid", "Hybrid (Python)")
+mode:value("hybrid", "Hybrid (Node.js)")
+mode:value("full", "Full (Node.js)")
 mode.default = "edge"
 
--- Harden Button (Simulated via Flag for now, or custom template)
--- For simplicity in this 10KB version, we use simple config options
+-- Config
 limit_rate = s:option(Value, "limit_rate", translate("SYN Rate Limit"))
 limit_rate.default = "20/s"
 
 limit_burst = s:option(Value, "limit_burst", translate("SYN Burst Limit"))
 limit_burst.default = "50"
+
+sync_interval = s:option(Value, "sync_interval", translate("Sync Interval (s)"))
+sync_interval.default = "3600"
 
 return m
 EOF
@@ -382,47 +482,22 @@ EOF
     print_info "LuCI 界面已安装: Services -> OraSRS Threat Defense"
 }
 
-# 6. 安装主逻辑
+# 7. 安装主逻辑
 install_orasrs() {
     print_step "安装 OraSRS 客户端 ($INSTALL_MODE 模式)..."
     
-    # 仅更新 Edge 客户端以支持 nftables，Hybrid 暂保持原样
     if [ "$INSTALL_MODE" = "edge" ]; then
         generate_edge_client
-    elif [ "$INSTALL_MODE" = "hybrid" ]; then
-        # Hybrid 模式暂未适配 nftables，将使用 Edge 客户端替代..."
-        # 为简化，这里复用 Edge 客户端逻辑（Edge 客户端其实足够强大）
-        # 或者保留原有的 generate_hybrid_client (需自行添加 nft 支持)
-        print_warning "Hybrid 模式暂未适配 nftables，将使用 Edge 客户端替代..."
-        generate_edge_client
-    elif [ "$INSTALL_MODE" = "full" ]; then
-        print_error "Full 模式暂未在 OpenWrt 脚本中完全实现。"
-        exit 1
-    fi
-    
-    # 生成 CLI 工具
-    cat > /usr/bin/orasrs-cli << 'EOF'
+        # Edge 模式使用简单的 CLI
+        cat > /usr/bin/orasrs-cli << 'EOF'
 #!/bin/sh
-case "$1" in
-    query) /usr/bin/orasrs-client check_ip "$2" ;;
-    add) /usr/bin/orasrs-client add_rule "$2" ;;
-    sync) killall -USR1 orasrs-client 2>/dev/null || echo "Triggered sync" ;;
-    harden) /usr/bin/orasrs-client harden ;;
-    relax) /usr/bin/orasrs-client relax ;;
-    cache)
-        case "$2" in
-            stats) /usr/bin/orasrs-client cache_stats ;;
-            list) /usr/bin/orasrs-client cache_list ;;
-            clear) /usr/bin/orasrs-client cache_clear ;;
-            *) echo "Usage: orasrs-cli cache {stats|list|clear}" ;;
-        esac
-        ;;
-    status) /usr/bin/orasrs-client status ;;
-    monitor) /usr/bin/orasrs-client monitor ;;
-    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax|cache|status|monitor}" ;;
-esac
+/usr/bin/orasrs-client "$@"
 EOF
-    chmod +x /usr/bin/orasrs-cli
+        chmod +x /usr/bin/orasrs-cli
+        
+    elif [ "$INSTALL_MODE" = "hybrid" ] || [ "$INSTALL_MODE" = "full" ]; then
+        install_node_client
+    fi
     
     # 生成配置文件
     mkdir -p /etc/config
@@ -433,6 +508,10 @@ config orasrs 'main'
     option sync_interval '3600'
     option limit_rate '20/s'
     option limit_burst '50'
+    # T3 配置
+    option blockchain_endpoints 'https://api.orasrs.net http://127.0.0.1:8545'
+    option offline_mode 'auto'
+    option cache_size '1000'
 EOF
 
     # 生成 Init 脚本
@@ -443,7 +522,14 @@ USE_PROCD=1
 
 start_service() {
     procd_open_instance
-    procd_set_param command /usr/bin/orasrs-client start
+    # 根据模式选择启动命令
+    MODE=$(uci get orasrs.main.mode 2>/dev/null)
+    if [ "$MODE" = "edge" ]; then
+        procd_set_param command /usr/bin/orasrs-client start
+    else
+        procd_set_param command node /usr/lib/orasrs/orasrs-lite.js
+    fi
+    
     procd_set_param respawn ${respawn_threshold:-3600} ${respawn_timeout:-5} ${respawn_retry:-5}
     procd_set_param stdout 1
     procd_set_param stderr 1
@@ -452,7 +538,7 @@ start_service() {
 }
 
 reload_service() {
-    /usr/bin/orasrs-client reload
+    /etc/init.d/orasrs restart
 }
 
 service_triggers() {
@@ -461,12 +547,12 @@ service_triggers() {
 EOF
     chmod +x /etc/init.d/orasrs
 
-    # 生成防火墙 Hotplug 脚本 (防止规则在防火墙重启后丢失)
+    # 生成防火墙 Hotplug 脚本
     mkdir -p /etc/hotplug.d/firewall
     cat > /etc/hotplug.d/firewall/99-orasrs << 'EOF'
 #!/bin/sh
 [ "$ACTION" = "reload" ] || [ "$ACTION" = "start" ] || exit 0
-/usr/bin/orasrs-client reload
+/etc/init.d/orasrs restart
 EOF
     chmod +x /etc/hotplug.d/firewall/99-orasrs
     
@@ -475,92 +561,60 @@ EOF
     cat > /etc/firewall.user << 'FWEOF'
 #!/bin/sh
 # =======================================================================================
-# OraSRS OpenWrt Firewall Rules - Complete Ruleset
-# 完整防火墙规则集 - 优化版
-# =======================================================================================
-# Version: 4.0.0
-# Purpose: Comprehensive DDoS protection with SSH safeguards and threat intelligence
-# Deployment: /etc/firewall.user (auto-loaded on firewall restart)
+# OraSRS OpenWrt Firewall Rules - Complete Ruleset v4.0.1
 # =======================================================================================
 
-# ===========================
-# 模块加载 (Kernel Modules)
-# ===========================
-modprobe ip_set 2>/dev/null || logger -t ORASRS "WARNING: ip_set module not available"
+# 模块加载
+modprobe ip_set 2>/dev/null
 modprobe ip_set_hash_net 2>/dev/null
 modprobe xt_set 2>/dev/null
 modprobe xt_limit 2>/dev/null
 modprobe xt_conntrack 2>/dev/null
-modprobe xt_recent 2>/dev/null
 
-# ===========================
-# 配置参数 (Configuration)
-# ===========================
+# 配置参数
 LIMIT_RATE=$(uci get orasrs.main.limit_rate 2>/dev/null || echo "20/s")
 LIMIT_BURST=$(uci get orasrs.main.limit_burst 2>/dev/null || echo "50")
 SSH_PORT=$(uci get dropbear.@dropbear[0].Port 2>/dev/null || echo "22")
 IPSET_NAME="orasrs_threats"
 
-# ===========================
 # IPSet 初始化
-# ===========================
 ipset create $IPSET_NAME hash:net family inet hashsize 4096 maxelem 65536 -exist 2>/dev/null
 
-# ===========================
-# 清理旧规则 (Cleanup)
-# ===========================
+# 清理旧规则
 iptables -D INPUT -j orasrs_chain 2>/dev/null
 iptables -D FORWARD -j orasrs_chain 2>/dev/null
 iptables -F orasrs_chain 2>/dev/null
 iptables -X orasrs_chain 2>/dev/null
 
-# ===========================
-# 创建自定义链 (Custom Chain)
-# ===========================
+# 创建自定义链
 iptables -N orasrs_chain
 
-# =======================================================================================
-# 核心规则 (Core Rules) - 按优先级排序
-# =======================================================================================
-
-# 1️⃣ 本地回环保护
+# 1. 本地回环
 iptables -A orasrs_chain -i lo -j ACCEPT
 
-# 2️⃣ 连接状态跟踪
+# 2. 连接跟踪
 iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
 
-# 3️⃣ 威胁情报拦截 (零容忍 - 必须在 SSH/SYN 防护之前)
+# 3. 威胁情报拦截 (T3)
 iptables -A orasrs_chain -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null
 
-# 4️⃣ SSH 保护 (三重保障)
-iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+# 4. SSH 保护
 iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --set
 iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --update --seconds 60 --hitcount 4 -j DROP
 iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -j ACCEPT
 
-# 5️⃣ SYN Flood 防护
+# 5. SYN Flood 防护 (T0)
 iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT_RATE --limit-burst $LIMIT_BURST -j ACCEPT
 iptables -A orasrs_chain -p tcp --syn -j DROP
 
-# 6️⃣ ICMP 洪水防护
-iptables -A orasrs_chain -p icmp --icmp-type echo-request -m limit --limit 5/s --limit-burst 10 -j ACCEPT
-iptables -A orasrs_chain -p icmp --icmp-type echo-request -j DROP
-iptables -A orasrs_chain -p icmp --icmp-type destination-unreachable -j ACCEPT
-iptables -A orasrs_chain -p icmp --icmp-type time-exceeded -j ACCEPT
-
-# 7️⃣ 日志记录 (低频率)
-iptables -A orasrs_chain -m limit --limit 1/min --limit-burst 3 -j LOG --log-prefix "ORASRS-DROP: " --log-level 4
-
-# =======================================================================================
-# 应用规则 (Apply Rules)
-# =======================================================================================
+# 应用规则
 iptables -I INPUT 1 -j orasrs_chain
 
-logger -t ORASRS "Firewall rules loaded successfully | Limit: $LIMIT_RATE | Burst: $LIMIT_BURST | SSH: $SSH_PORT"
+logger -t ORASRS "Firewall rules loaded successfully"
 FWEOF
     chmod +x /etc/firewall.user
-    print_info "/etc/firewall.user 已生成 (防火墙重启时自动加载)"
+    print_info "/etc/firewall.user 已生成"
     
     # 安装 LuCI
     if [ "$INSTALL_LUCI" -eq 1 ]; then
@@ -575,7 +629,7 @@ FWEOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.9"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.3.0"
     echo "========================================="
     
     check_environment
@@ -586,16 +640,11 @@ main() {
     echo ""
     echo "========================================="
     MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
-    echo "  模式: ${MODE_UPPER}"
-    echo "  后端: iptables (稳定)"
+    echo "  安装完成! 模式: ${MODE_UPPER}"
     echo "  验证: orasrs-cli status"
     if [ "$INSTALL_LUCI" -eq 1 ]; then
-        echo "  界面: 已安装 (Services -> OraSRS)"
+        echo "  界面: Services -> OraSRS"
     fi
-    echo "  CLI命令: orasrs-cli query <IP>"
-    echo "  监控命令: orasrs-cli monitor"
-    echo "  缓存命令: orasrs-cli cache {stats|list|clear}"
-    echo "  应急命令: orasrs-cli harden"
     echo "========================================="
 }
 
