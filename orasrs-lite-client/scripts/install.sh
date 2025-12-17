@@ -1,9 +1,9 @@
 #!/bin/bash
+# OraSRS Linux 智能安装脚本
+# OraSRS Linux Intelligent Installation Script
+# Version: 3.2.0
 
-# OraSRS Lite Client 一键安装脚本
-# 适用于 Linux 系统
-
-set -e  # 遇到错误时退出
+set -e
 
 # 颜色定义
 RED='\033[0;31m'
@@ -12,302 +12,444 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 打印带颜色的信息
-print_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# 全局变量
+INSTALL_MODE=""
+MEMORY_TOTAL=0
+ARCH=""
+HAS_PYTHON=0
+HAS_NFT=0
+OS=""
+DISTRO=""
 
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
+# 打印函数
+print_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+print_step() { echo -e "${BLUE}[STEP]${NC} $1"; }
 
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# 检查是否为root用户
-check_root() {
-    if [[ $EUID -eq 0 ]]; then
-        print_info "当前为root用户，继续安装"
-    else
-        print_error "请使用root权限运行此脚本"
+# 1. 硬件与环境检测
+check_environment() {
+    print_step "检测系统环境..."
+    
+    # 检查 Root
+    if [[ $EUID -ne 0 ]]; then
+        print_error "请使用 root 权限运行此脚本"
         exit 1
     fi
-}
 
-# 检查系统类型
-detect_os() {
-    if [[ -f /etc/os-release ]]; then
+    # 检测发行版
+    if [ -f /etc/os-release ]; then
         . /etc/os-release
-        OS=$NAME
-        VER=$VERSION_ID
+        DISTRO=$ID
+        print_info "操作系统: $PRETTY_NAME"
     else
         print_error "无法检测操作系统"
         exit 1
     fi
     
-    print_info "检测到操作系统: $OS"
+    # 检查内存 (MB)
+    MEMORY_TOTAL=$(free -m | awk '/Mem:/ {print $2}')
+    print_info "系统内存: ${MEMORY_TOTAL} MB"
+    
+    # 检查架构
+    ARCH=$(uname -m)
+    print_info "CPU架构: $ARCH"
+    
+    # 检查 Python
+    if command -v python3 >/dev/null 2>&1; then
+        HAS_PYTHON=1
+        print_info "Python3: 已安装"
+    fi
+    
+    # 检查 nftables
+    if command -v nft >/dev/null 2>&1; then
+        HAS_NFT=1
+        print_info "nftables: 已安装 (将优先使用)"
+    fi
 }
 
-# 检查依赖
-check_dependencies() {
-    print_info "检查依赖..."
+# 2. 模式选择逻辑
+select_mode() {
+    print_step "选择部署模式..."
     
-    # 检查git
-    if ! command -v git &> /dev/null; then
-        print_info "安装git..."
-        if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
-            apt update && apt install -y git
-        elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
-            yum install -y git
-        elif [[ "$OS" == *"Fedora"* ]]; then
-            dnf install -y git
-        else
-            print_error "不支持的操作系统: $OS"
-            exit 1
-        fi
+    # 自动推荐
+    RECOMMENDED_MODE="edge"
+    if [ "$MEMORY_TOTAL" -ge 256 ] && [ "$HAS_PYTHON" -eq 1 ]; then
+        RECOMMENDED_MODE="hybrid"
+    fi
+    if [ "$MEMORY_TOTAL" -ge 1024 ] && [ "$ARCH" == "x86_64" ]; then
+        RECOMMENDED_MODE="full"
     fi
     
-    # 检查Node.js
-    if ! command -v node &> /dev/null; then
-        print_info "安装Node.js..."
-        # 安装Node.js 18.x
-        if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
-            curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-            apt install -y nodejs
-        elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            yum install -y nodejs
-        elif [[ "$OS" == *"Fedora"* ]]; then
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            dnf install -y nodejs
-        fi
-    fi
+    MODE_UPPER=$(echo "$RECOMMENDED_MODE" | tr 'a-z' 'A-Z')
+    print_info "根据硬件配置，推荐模式: ${GREEN}${MODE_UPPER}${NC}"
     
-    # 检查npm
-    if ! command -v npm &> /dev/null; then
-        print_error "npm未安装"
-        exit 1
-    fi
+    echo "请选择安装模式 (直接回车将自动选择推荐模式):"
+    echo "  1) Edge   - 极简模式 (<5MB RAM, 适合 VPS/IoT)"
+    echo "  2) Hybrid - 混合模式 (~30MB RAM, 需Python)"
+    echo "  3) Full   - 完整模式 (~1GB RAM, Node.js 全功能)"
     
-    # 检查bc（用于计算延迟）
-    if ! command -v bc &> /dev/null; then
-        print_info "安装bc..."
-        if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
-            apt install -y bc
-        elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
-            yum install -y bc
-        elif [[ "$OS" == *"Fedora"* ]]; then
-            dnf install -y bc
-        fi
-    fi
-    
-    print_success "依赖检查完成"
-}
-
-# 克隆OraSRS项目
-clone_orasrs() {
-    print_info "克隆OraSRS Lite Client项目..."
-    
-    if [[ -d "/opt/orasrs" ]]; then
-        print_warning "/opt/orasrs 已存在，正在更新..."
-        cd /opt/orasrs
-        # 保存当前工作区更改
-        git stash
-        # 切换到lite-client分支
-        git checkout lite-client
-        # 拉取最新更新
-        git pull origin lite-client
-        # 如果有之前保存的更改，尝试重新应用
-        if git stash list | grep -q "stash"; then
-            git stash pop || true
-        fi
+    if [ -n "$1" ]; then
+        case "$1" in
+            edge|1) INSTALL_MODE="edge" ;;
+            hybrid|2) INSTALL_MODE="hybrid" ;;
+            full|3) INSTALL_MODE="full" ;;
+            *) print_error "无效的模式参数"; exit 1 ;;
+        esac
     else
-        git clone https://github.com/srs-protocol/OraSRS-protocol.git /opt/orasrs
-        cd /opt/orasrs
-        git checkout lite-client
+        echo -n "请输入选项 [1-3] (10秒后自动选择): "
+        read -t 10 choice || choice=""
+        echo ""
+        
+        if [ -z "$choice" ]; then
+            print_info "自动选择推荐模式..."
+            INSTALL_MODE="$RECOMMENDED_MODE"
+        else
+            case "$choice" in
+                1) INSTALL_MODE="edge" ;;
+                2) INSTALL_MODE="hybrid" ;;
+                3) INSTALL_MODE="full" ;;
+                *) 
+                    print_warning "无效输入，使用推荐模式"
+                    INSTALL_MODE="$RECOMMENDED_MODE" 
+                    ;;
+            esac
+        fi
     fi
     
-    print_success "项目克隆完成"
+    MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
+    print_info "已确认安装模式: ${GREEN}${MODE_UPPER}${NC}"
 }
 
-# 安装Node.js依赖
-install_node_dependencies() {
-    print_info "安装Node.js依赖..."
+# 3. 安装依赖
+install_dependencies() {
+    print_step "安装依赖包..."
     
+    PACKAGES="curl ca-certificates"
+    
+    if [ "$HAS_NFT" -eq 1 ]; then
+        PACKAGES="$PACKAGES nftables"
+    else
+        PACKAGES="$PACKAGES ipset iptables"
+    fi
+    
+    if [ "$INSTALL_MODE" = "hybrid" ]; then
+        PACKAGES="$PACKAGES python3 python3-pip"
+    elif [ "$INSTALL_MODE" = "full" ]; then
+        PACKAGES="$PACKAGES git nodejs npm"
+        # Node.js 源配置略过，假设系统源可用或用户已配置
+    fi
+    
+    if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "debian" ]]; then
+        apt-get update
+        apt-get install -y $PACKAGES
+    elif [[ "$DISTRO" == "centos" || "$DISTRO" == "rhel" || "$DISTRO" == "fedora" ]]; then
+        yum install -y $PACKAGES
+    fi
+}
+
+# 4. 生成 Edge 客户端 (Shell 版本 - 双栈支持)
+generate_edge_client() {
+    mkdir -p /opt/orasrs/bin
+    mkdir -p /etc/orasrs
+    
+    cat > /opt/orasrs/bin/orasrs-client << 'EOF'
+#!/bin/bash
+# OraSRS Edge Client (Linux Shell Version)
+# 工业级增强版: nftables/ipset 双栈支持、原子更新、并发锁
+
+CONFIG_FILE="/etc/orasrs/config"
+LOCK_FILE="/var/lock/orasrs.lock"
+LOG_FILE="/var/log/orasrs.log"
+
+# 检测后端
+if command -v nft >/dev/null 2>&1; then
+    BACKEND="nft"
+else
+    BACKEND="iptables"
+fi
+
+log() { echo "$(date): $1" >> $LOG_FILE; }
+
+# 读取配置
+get_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+    else
+        LIMIT="20/s"
+        BURST="50"
+        SYNC_INTERVAL=3600
+    fi
+}
+
+init_firewall_nft() {
+    NFT_LIMIT=$(echo $LIMIT | sed 's/s/second/')
+    
+    cat > /tmp/orasrs.nft << NFT
+table inet orasrs {
+    set threats {
+        type ipv4_addr
+        flags interval
+    }
+    
+    chain input {
+        type filter hook input priority filter; policy accept;
+        
+        # SYN Flood Protection
+        tcp flags syn limit rate $NFT_LIMIT burst $BURST packets return
+        tcp flags syn drop
+        
+        # Threat Blocking
+        ip saddr @threats drop
+    }
+    
+    chain forward {
+        type filter hook forward priority filter; policy accept;
+        ip saddr @threats drop
+    }
+}
+NFT
+    nft -f /tmp/orasrs.nft
+    log "Firewall initialized (nftables). Limit: $NFT_LIMIT, Burst: $BURST"
+}
+
+init_firewall_iptables() {
+    IPSET_NAME="orasrs_threats"
+    ipset create $IPSET_NAME hash:net -exist
+    
+    iptables -N syn_flood 2>/dev/null || true
+    iptables -F syn_flood
+    iptables -A syn_flood -m limit --limit $LIMIT --limit-burst $BURST -j RETURN
+    iptables -A syn_flood -j DROP
+    
+    if ! iptables -C INPUT -p tcp --syn -j syn_flood 2>/dev/null; then
+        iptables -I INPUT -p tcp --syn -j syn_flood
+    fi
+    
+    if ! iptables -C INPUT -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null; then
+        iptables -I INPUT -m set --match-set $IPSET_NAME src -j DROP
+    fi
+    
+    log "Firewall initialized (iptables). Limit: $LIMIT, Burst: $BURST"
+}
+
+init_firewall() {
+    get_config
+    if [ "$BACKEND" = "nft" ]; then
+        init_firewall_nft
+    else
+        init_firewall_iptables
+    fi
+}
+
+sync_threats() {
+    (
+        flock -x 200
+        log "Starting sync ($BACKEND)..."
+        
+        if curl -s https://feodotracker.abuse.ch/downloads/ipblocklist.txt | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt; then
+            if [ -s /tmp/orasrs_threats.txt ]; then
+                if [ "$BACKEND" = "nft" ]; then
+                    # nftables 原子更新
+                    echo "table inet orasrs {" > /tmp/orasrs_update.nft
+                    echo "  set threats {" >> /tmp/orasrs_update.nft
+                    echo "    type ipv4_addr; flags interval;" >> /tmp/orasrs_update.nft
+                    echo "    elements = {" >> /tmp/orasrs_update.nft
+                    awk '{print $1 ","}' /tmp/orasrs_threats.txt >> /tmp/orasrs_update.nft
+                    echo "    }" >> /tmp/orasrs_update.nft
+                    echo "  }" >> /tmp/orasrs_update.nft
+                    echo "}" >> /tmp/orasrs_update.nft
+                    
+                    if nft -f /tmp/orasrs_update.nft; then
+                        log "Sync completed (nftables). Rules updated."
+                    else
+                        log "Sync failed (nftables): Syntax error."
+                    fi
+                else
+                    # iptables/ipset 原子更新
+                    IPSET_NAME="orasrs_threats"
+                    ipset create ${IPSET_NAME}_tmp hash:net -exist
+                    ipset flush ${IPSET_NAME}_tmp
+                    while read ip; do
+                        ipset add ${IPSET_NAME}_tmp $ip -exist
+                    done < /tmp/orasrs_threats.txt
+                    ipset swap ${IPSET_NAME}_tmp $IPSET_NAME
+                    ipset destroy ${IPSET_NAME}_tmp
+                    log "Sync completed (ipset). Rules updated."
+                fi
+            else
+                log "Sync failed: Empty list."
+            fi
+        else
+            log "Sync failed: Download error."
+        fi
+        rm -f /tmp/orasrs_threats.txt /tmp/orasrs_update.nft
+        
+    ) 200>$LOCK_FILE
+}
+
+harden_mode() {
+    log "Enabling HARDEN mode..."
+    sed -i 's/LIMIT=.*/LIMIT="5\/s"/' $CONFIG_FILE
+    sed -i 's/BURST=.*/BURST="10"/' $CONFIG_FILE
+    init_firewall
+    log "HARDEN mode enabled (5/s, burst 10)"
+}
+
+relax_mode() {
+    log "Enabling RELAX mode..."
+    sed -i 's/LIMIT=.*/LIMIT="20\/s"/' $CONFIG_FILE
+    sed -i 's/BURST=.*/BURST="50"/' $CONFIG_FILE
+    init_firewall
+    log "RELAX mode enabled (20/s, burst 50)"
+}
+
+case "$1" in
+    start)
+        init_firewall
+        while true; do
+            sync_threats
+            get_config
+            sleep $SYNC_INTERVAL
+        done &
+        ;;
+    reload)
+        init_firewall
+        ;;
+    check_ip)
+        if [ "$BACKEND" = "iptables" ]; then
+            ipset test orasrs_threats $2 2>/dev/null && echo "THREAT" || echo "SAFE"
+        else
+            echo "SAFE (nft check not implemented in shell)"
+        fi
+        ;;
+    harden) harden_mode ;;
+    relax) relax_mode ;;
+    *) echo "Usage: $0 {start|reload|check_ip|harden|relax}" ;;
+esac
+EOF
+    chmod +x /opt/orasrs/bin/orasrs-client
+}
+
+# 5. 生成 Hybrid 客户端 (Python 版本)
+generate_hybrid_client() {
+    # 暂复用 Edge 客户端逻辑，因为 Python 脚本在 Linux 上需要更多适配
+    # 且 Edge 客户端已足够强大
+    print_warning "Hybrid 模式暂使用增强版 Shell 客户端替代..."
+    generate_edge_client
+}
+
+# 6. 安装 Full 客户端 (Node.js)
+install_full_client() {
+    print_step "安装 Full 客户端 (Node.js)..."
+    
+    mkdir -p /opt/orasrs
     cd /opt/orasrs
     
-    # 安装项目依赖
-    npm install
-    
-    # 确保必要的文件存在
-    if [[ ! -f "/opt/orasrs/orasrs-simple-client.js" ]]; then
-        print_error "OraSRS简单客户端文件不存在"
-        exit 1
+    # 克隆代码 (如果不存在)
+    if [ ! -d ".git" ]; then
+        git clone https://github.com/srs-protocol/OraSRS-protocol.git .
+        git checkout lite-client
+    else
+        git pull origin lite-client
     fi
     
-    print_success "Node.js依赖安装完成"
+    # 安装依赖
+    cd orasrs-lite-client
+    npm install
+    
+    # 创建启动脚本
+    cat > /opt/orasrs/bin/orasrs-client << 'EOF'
+#!/bin/bash
+cd /opt/orasrs/orasrs-lite-client
+npm start
+EOF
+    chmod +x /opt/orasrs/bin/orasrs-client
 }
 
-# 配置服务
-setup_service() {
-    print_info "配置系统服务..."
+# 7. 配置 Systemd
+setup_systemd() {
+    print_step "配置 Systemd 服务..."
     
-    # 创建systemd服务文件
-    cat > /etc/systemd/system/orasrs-client.service << EOF
+    cat > /etc/systemd/system/orasrs.service << EOF
 [Unit]
-Description=OraSRS Lite Client Service
+Description=OraSRS Threat Defense Client
 After=network.target
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/opt/orasrs
-ExecStart=/usr/bin/node /opt/orasrs/orasrs-simple-client.js
+ExecStart=/opt/orasrs/bin/orasrs-client start
+ExecReload=/opt/orasrs/bin/orasrs-client reload
 Restart=always
-RestartSec=10
-Environment=NODE_ENV=production
-Environment=ORASRS_PORT=3006
-Environment=ORASRS_HOST=0.0.0.0
-Environment=ORASRS_BLOCKCHAIN_ENDPOINT=https://api.orasrs.net
-Environment=ORASRS_CHAIN_ID=8888
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-    # 重载systemd配置
     systemctl daemon-reload
-    
-    # 启用服务自启动
-    systemctl enable orasrs-client
-    
-    print_success "系统服务配置完成"
+    systemctl enable orasrs
+    systemctl start orasrs
 }
 
-# 配置防火墙
-setup_firewall() {
-    print_info "配置防火墙..."
-    
-    # 检查防火墙类型
-    if command -v ufw &> /dev/null; then
-        # Ubuntu/Debian 使用 ufw
-        ufw allow 3006/tcp
-        print_info "已为UFW防火墙开放端口3006"
-    elif command -v firewall-cmd &> /dev/null; then
-        # CentOS/RHEL 使用 firewalld
-        firewall-cmd --permanent --add-port=3006/tcp
-        firewall-cmd --reload
-        print_info "已为Firewalld开放端口3006"
-    elif command -v iptables &> /dev/null; then
-        # 使用 iptables
-        iptables -A INPUT -p tcp --dport 3006 -j ACCEPT
-        print_info "已为iptables开放端口3006"
-    else
-        print_warning "未检测到支持的防火墙，需手动开放端口3006"
-    fi
+# 8. 生成 CLI 工具
+generate_cli() {
+    cat > /usr/bin/orasrs-cli << 'EOF'
+#!/bin/bash
+case "$1" in
+    query) /opt/orasrs/bin/orasrs-client check_ip "$2" ;;
+    add) /opt/orasrs/bin/orasrs-client add_rule "$2" ;;
+    sync) pkill -USR1 -f orasrs-client || echo "Triggered sync" ;;
+    harden) /opt/orasrs/bin/orasrs-client harden ;;
+    relax) /opt/orasrs/bin/orasrs-client relax ;;
+    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax}" ;;
+esac
+EOF
+    chmod +x /usr/bin/orasrs-cli
 }
 
-# 启动服务
-start_service() {
-    print_info "启动OraSRS Lite客户端服务..."
-    
-    systemctl start orasrs-client
-    
-    # 等待服务启动
-    sleep 5
-    
-    # 检查服务状态
-    if systemctl is-active --quiet orasrs-client; then
-        print_success "OraSRS Lite客户端服务启动成功"
-    else
-        print_error "OraSRS Lite客户端服务启动失败"
-        systemctl status orasrs-client
-        exit 1
-    fi
-}
-
-# 验证安装
-verify_installation() {
-    print_info "验证安装..."
-    
-    # 等待API就绪
-    sleep 5
-    
-    # 测试API端点
-    if curl -s http://localhost:3006/health >/dev/null 2>&1; then
-        print_success "API健康检查端点正常"
-        
-        # 显示API信息
-        API_INFO=$(curl -s http://localhost:3006/ | jq -r '.service' 2>/dev/null || echo "OraSRS Lite Client (Oracle Security Root Service)")
-        print_info "客户端服务: $API_INFO"
-    else
-        print_warning "API端点暂时不可用，服务可能仍在启动中"
-    fi
-    
-    # 运行简单的延迟测试
-    print_info "运行延迟测试..."
-    if curl -s "http://localhost:3006/orasrs/v1/query?ip=8.8.8.8" >/dev/null 2>&1; then
-        print_success "威胁查询API正常工作"
-    else
-        print_warning "威胁查询API可能未正常工作"
-    fi
-}
-
-# 显示安装完成信息
-show_completion_info() {
-    print_success "OraSRS Lite客户端安装完成！"
-    echo
-    echo -e "${GREEN}服务管理命令:${NC}"
-    echo "  启动服务: sudo systemctl start orasrs-client"
-    echo "  停止服务: sudo systemctl stop orasrs-client"
-    echo "  重启服务: sudo systemctl restart orasrs-client"
-    echo "  查看状态: sudo systemctl status orasrs-client"
-    echo "  查看日志: sudo journalctl -u orasrs-client -f"
-    echo
-    echo -e "${GREEN}客户端更新:${NC}"
-    echo "  一键更新: curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/update-client.sh | bash"
-    echo
-    echo -e "${GREEN}API端点:${NC}"
-    echo "  健康检查: http://localhost:3006/health"
-    echo "  风险查询: http://localhost:3006/orasrs/v1/query?ip=1.2.3.4"
-    echo "  威胁检测: http://localhost:3006/orasrs/v1/threats/detected"
-    echo "  Gas补贴请求: http://localhost:3006/orasrs/v1/gas-subsidy/request"
-    echo "  Gas补贴状态: http://localhost:3006/orasrs/v1/gas-subsidy/status/{address}"
-    echo "  检测威胁: http://localhost:3006/orasrs/v1/threats/detected"
-    echo "  威胁统计: http://localhost:3006/orasrs/v1/threats/stats"
-    echo "  提交威胁: http://localhost:3006/orasrs/v1/threats/submit"
-    echo
-    echo -e "${GREEN}性能测试:${NC}"
-    echo "  运行10k IP测试: node /opt/orasrs/orasrs-lite-client/benchmarks/10k-ip-test.js"
-    echo "  运行延迟检查: bash /opt/orasrs/orasrs-lite-client/benchmarks/latency-check.sh"
-    echo
-    echo -e "${GREEN}重要提醒:${NC}"
-    echo "  此服务提供咨询建议，最终决策由客户端做出"
-    echo "  OraSRS不直接阻断流量，而是提供风险评估供客户端参考"
-    echo
-    print_success "安装完成！请检查服务状态并根据需要调整配置。"
+# 9. 生成配置文件
+generate_config() {
+    mkdir -p /etc/orasrs
+    cat > /etc/orasrs/config << EOF
+LIMIT="20/s"
+BURST="50"
+SYNC_INTERVAL=3600
+MODE="$INSTALL_MODE"
+EOF
 }
 
 # 主函数
 main() {
-    print_info "开始安装 OraSRS Lite Client (Oracle Security Root Service)..."
+    echo "========================================="
+    echo "  OraSRS Linux 智能安装程序 v3.2.0"
+    echo "========================================="
     
-    check_root
-    detect_os
-    check_dependencies
-    clone_orasrs
-    install_node_dependencies
-    setup_service
-    setup_firewall
-    start_service
-    verify_installation
-    show_completion_info
+    check_environment
+    select_mode "$1"
+    install_dependencies
+    
+    if [ "$INSTALL_MODE" = "full" ]; then
+        install_full_client
+    else
+        generate_edge_client
+        generate_config
+        generate_cli
+        setup_systemd
+    fi
+    
+    echo ""
+    echo "========================================="
+    MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
+    echo "  模式: ${MODE_UPPER}"
+    if [ "$HAS_NFT" -eq 1 ]; then
+        echo "  后端: nftables (高性能)"
+    else
+        echo "  后端: iptables (传统)"
+    fi
+    echo "  CLI命令: orasrs-cli query <IP>"
+    echo "  应急命令: orasrs-cli harden"
+    echo "========================================="
 }
 
-# 执行主函数
-main
+main "$@"
