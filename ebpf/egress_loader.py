@@ -47,14 +47,26 @@ class EgressFilter:
         fn = self.bpf.load_func("egress_filter", BPF.XDP)
         
         # Attach to interface
-        self.bpf.attach_xdp(self.interface, fn, 0)
+        try:
+            # Try native/driver mode first (default)
+            self.bpf.attach_xdp(self.interface, fn, 0)
+            print(f"[OraSRS] eBPF filter attached to {self.interface} (Native/Driver Mode)")
+        except Exception as e:
+            if "Operation not supported" in str(e) or "Invalid argument" in str(e):
+                print(f"[OraSRS] Native XDP not supported on {self.interface}, falling back to Generic/SKB Mode...")
+                try:
+                    # Fallback to Generic Mode (SKB)
+                    self.bpf.attach_xdp(self.interface, fn, BPF.XDP_FLAGS_SKB_MODE)
+                    print(f"[OraSRS] eBPF filter attached to {self.interface} (Generic/SKB Mode)")
+                except Exception as e2:
+                    raise RuntimeError(f"Failed to attach eBPF filter in Generic Mode: {e2}")
+            else:
+                raise e
         
         # Set mode
         config_map = self.bpf.get_table("config_map")
         import ctypes
         config_map[ctypes.c_uint32(0)] = ctypes.c_uint32(self.mode_map[self.mode])
-        
-        print(f"[OraSRS] eBPF filter attached to {self.interface}")
         
     def unload(self):
         """Unload the eBPF program"""
