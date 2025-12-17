@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.3.3
+# Version: 3.3.4
 # Updated: 2025-12-18
 
 set -e
@@ -347,7 +347,7 @@ install_node_client() {
     cat > /usr/lib/orasrs/package.json << 'EOF'
 {
   "name": "orasrs-lite",
-  "version": "3.3.3",
+  "version": "3.3.4",
   "description": "OraSRS Lite Client",
   "main": "orasrs-lite.js",
   "type": "module"
@@ -609,7 +609,7 @@ FWEOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.3.3"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.3.4"
     echo "========================================="
     
     check_environment

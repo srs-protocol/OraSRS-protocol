@@ -409,20 +409,106 @@ class OraSRSLiteClient {
     }
 
     /**
-     * 查询远程 API
+     * 查询远程 API (改为直接查询区块链 RPC)
      */
-    queryRemote(ip) {
-        return new Promise((resolve, reject) => {
-            const url = `${this.config.apiEndpoint}/orasrs/v1/query?ip=${ip}`;
-            const protocol = url.startsWith('https') ? https : http;
+    async queryRemote(ip) {
+        // 转换 IP 为 bytes4 (hex)
+        const ipHex = this.ipToHex(ip);
+        if (!ipHex) return { ip, error: 'Invalid IP' };
 
-            const req = protocol.get(url, { timeout: 5000 }, (res) => {
+        // 构造 eth_call 请求
+        // isThreat(bytes4) selector: 0x31cf4309
+        // 参数: ipHex (padded to 32 bytes)
+        const data = '0x31cf4309' + ipHex.padEnd(64, '0');
+
+        const endpoints = this.config.blockchainEndpoints || ['https://api.orasrs.net'];
+
+        for (const endpoint of endpoints) {
+            try {
+                const result = await this.rpcCall(endpoint, 'eth_call', [{
+                    to: '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E',
+                    data: data
+                }, 'latest']);
+
+                if (result && result !== '0x') {
+                    // 解析返回结果 (bool, uint8, uint64)
+                    // 3 * 32 bytes = 96 bytes (192 chars)
+                    const cleanResult = result.replace('0x', '');
+                    const isThreat = parseInt(cleanResult.substr(0, 64), 16) === 1;
+                    const riskLevel = parseInt(cleanResult.substr(64, 64), 16);
+                    const expiry = parseInt(cleanResult.substr(128, 64), 16);
+
+                    if (isThreat) {
+                        return {
+                            ip,
+                            risk_score: this.riskLevelToScore(riskLevel),
+                            risk_level: this.getRiskLevelStr(riskLevel),
+                            threat_type: 'Blockchain Verified',
+                            source: 'OraSRS Chain',
+                            expires_at: expiry,
+                            cached: false
+                        };
+                    } else {
+                        return {
+                            ip,
+                            risk_score: 0,
+                            risk_level: 'Safe',
+                            source: 'OraSRS Chain',
+                            cached: false
+                        };
+                    }
+                }
+            } catch (e) {
+                this.log(`RPC query failed on ${endpoint}: ${e.message}`, 'warn');
+            }
+        }
+
+        return { ip, risk_score: null, error: 'RPC failed' };
+    }
+
+    /**
+     * JSON-RPC 调用辅助函数
+     */
+    rpcCall(endpoint, method, params) {
+        return new Promise((resolve, reject) => {
+            const url = new URL(endpoint);
+            const options = {
+                hostname: url.hostname,
+                port: url.port || (url.protocol === 'https:' ? 443 : 80),
+                path: url.pathname === '/' ? '' : url.pathname, // Some RPCs use root, some subpath
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': 0 // Will be set later
+                },
+                timeout: 5000
+            };
+
+            const postData = JSON.stringify({
+                jsonrpc: '2.0',
+                method: method,
+                params: params,
+                id: Date.now()
+            });
+
+            options.headers['Content-Length'] = Buffer.byteLength(postData);
+
+            const protocol = url.protocol === 'https:' ? https : http;
+            const req = protocol.request(options, (res) => {
                 let data = '';
                 res.on('data', chunk => data += chunk);
                 res.on('end', () => {
                     try {
+                        if (res.statusCode !== 200) {
+                            reject(new Error(`HTTP ${res.statusCode}`));
+                            return;
+                        }
                         const parsed = JSON.parse(data);
-                        resolve(parsed.response || parsed);
+                        if (parsed.error) {
+                            reject(new Error(parsed.error.message));
+                        } else {
+                            resolve(parsed.result);
+                        }
                     } catch (e) {
                         reject(new Error('Invalid JSON response'));
                     }
@@ -434,10 +520,30 @@ class OraSRSLiteClient {
                 req.destroy();
                 reject(new Error('Request timeout'));
             });
+
+            req.write(postData);
+            req.end();
         });
     }
 
-    getRiskLevel(score) {
+    ipToHex(ip) {
+        const parts = ip.split('.');
+        if (parts.length !== 4) return null;
+        return parts.map(p => parseInt(p).toString(16).padStart(2, '0')).join('');
+    }
+
+    riskLevelToScore(level) {
+        // 0=Safe, 1=Low(20), 2=Medium(50), 3=High(80), 4=Critical(100)
+        const scores = [0, 20, 50, 80, 100];
+        return scores[level] || 0;
+    }
+
+    getRiskLevelStr(level) {
+        const levels = ['Safe', 'Low', 'Medium', 'High', 'Critical'];
+        return levels[level] || 'Unknown';
+    }
+
+    getRiskLevel(score) { // Keep for compatibility
         if (score >= 90) return 'Critical';
         if (score >= 70) return 'High';
         if (score >= 40) return 'Medium';
@@ -462,7 +568,7 @@ class OraSRSLiteClient {
                     await this.delay(delay);
                 }
 
-                this.log('Starting threat sync from blockchain...', 'info');
+                this.log('Starting threat sync from blockchain (RPC)...', 'info');
                 const success = await this.syncFromBlockchain();
 
                 if (success) {
@@ -496,46 +602,55 @@ class OraSRSLiteClient {
     }
 
     /**
-     * 从区块链同步威胁情报
+     * 从区块链同步威胁情报 (eth_getLogs)
      */
     async syncFromBlockchain() {
-        const endpoints = this.config.blockchainEndpoints || [
-            this.config.apiEndpoint,
-            'http://127.0.0.1:8545'
-        ];
+        const endpoints = this.config.blockchainEndpoints || ['https://api.orasrs.net'];
+        const contractAddress = '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E';
+        // ThreatUpdated(bytes4,uint8,uint64,uint8)
+        const topic = '0xbf9c82a2e49583ea8990e5994f020f8ff61f2a9a5ae067d4df0d0fe8d76b7863';
 
         for (const endpoint of endpoints) {
             try {
-                this.log(`Trying blockchain endpoint: ${endpoint}`, 'info');
-                const url = `${endpoint}/orasrs/v1/threats/list`;
-                const protocol = url.startsWith('https') ? https : http;
+                // Get latest block
+                const blockNumHex = await this.rpcCall(endpoint, 'eth_blockNumber', []);
+                const currentBlock = parseInt(blockNumHex, 16);
+                const fromBlock = Math.max(0, currentBlock - 5000); // Last 5000 blocks (~1 day on some chains)
 
-                const data = await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Request timeout'));
-                    }, 10000);
+                const logs = await this.rpcCall(endpoint, 'eth_getLogs', [{
+                    fromBlock: '0x' + fromBlock.toString(16),
+                    toBlock: 'latest',
+                    address: contractAddress,
+                    topics: [topic]
+                }]);
 
-                    protocol.get(url, (res) => {
-                        clearTimeout(timeout);
-                        let body = '';
-                        res.on('data', chunk => body += chunk);
-                        res.on('end', () => {
-                            try {
-                                resolve(JSON.parse(body));
-                            } catch (e) {
-                                reject(new Error('Invalid JSON response'));
-                            }
-                        });
-                    }).on('error', (err) => {
-                        clearTimeout(timeout);
-                        reject(err);
+                if (logs && Array.isArray(logs)) {
+                    const threats = logs.map(log => {
+                        // Parse log
+                        // topic[1] is IP (padded)
+                        const ipHex = log.topics[1].replace('0x', '').substr(0, 8);
+                        const ip = `${parseInt(ipHex.substr(0, 2), 16)}.${parseInt(ipHex.substr(2, 2), 16)}.${parseInt(ipHex.substr(4, 2), 16)}.${parseInt(ipHex.substr(6, 2), 16)}`;
+
+                        // data: riskLevel(32), expiry(32), mask(32)
+                        const data = log.data.replace('0x', '');
+                        const riskLevel = parseInt(data.substr(0, 64), 16);
+                        // const expiry = parseInt(data.substr(64, 64), 16); // We can use this or default
+
+                        return {
+                            ip,
+                            risk_score: this.riskLevelToScore(riskLevel),
+                            threat_type: 'Blockchain Event',
+                            source: 'OraSRS Chain'
+                        };
                     });
-                });
 
-                // 更新数据库
-                if (data.threats && Array.isArray(data.threats)) {
-                    await this.updateThreatDatabase(data.threats, 'Blockchain');
-                    return true;
+                    if (threats.length > 0) {
+                        await this.updateThreatDatabase(threats, 'Blockchain');
+                        return true;
+                    } else {
+                        this.log('No new threats in recent blocks', 'info');
+                        return true; // Success even if empty
+                    }
                 }
             } catch (error) {
                 this.log(`Endpoint ${endpoint} failed: ${error.message}`, 'warn');
@@ -676,7 +791,7 @@ class OraSRSLiteClient {
                     res.end(JSON.stringify({
                         status: 'healthy',
                         service: 'OraSRS Lite',
-                        version: '3.3.3',
+                        version: '3.3.4',
                         uptime: process.uptime(),
                         stats: this.stats,
                         dbType: this.db.type
