@@ -52,14 +52,34 @@ class EgressFilter:
             self.bpf.attach_xdp(self.interface, fn, 0)
             print(f"[OraSRS] eBPF filter attached to {self.interface} (Native/Driver Mode)")
         except Exception as e:
-            if "Operation not supported" in str(e) or "Invalid argument" in str(e):
+            err_msg = str(e)
+            if "File exists" in err_msg:
+                print(f"[OraSRS] XDP program already attached to {self.interface}. Detaching...")
+                try:
+                    self.bpf.remove_xdp(self.interface, 0)
+                except:
+                    pass
+                try:
+                    self.bpf.remove_xdp(self.interface, BPF.XDP_FLAGS_SKB_MODE)
+                except:
+                    pass
+                
+                # Retry Native
+                try:
+                    self.bpf.attach_xdp(self.interface, fn, 0)
+                    print(f"[OraSRS] eBPF filter attached to {self.interface} (Native/Driver Mode) - Retried")
+                    return
+                except Exception as e2:
+                    err_msg = str(e2) # Update error message for fallback check
+            
+            if "Operation not supported" in err_msg or "Invalid argument" in err_msg:
                 print(f"[OraSRS] Native XDP not supported on {self.interface}, falling back to Generic/SKB Mode...")
                 try:
                     # Fallback to Generic Mode (SKB)
                     self.bpf.attach_xdp(self.interface, fn, BPF.XDP_FLAGS_SKB_MODE)
                     print(f"[OraSRS] eBPF filter attached to {self.interface} (Generic/SKB Mode)")
-                except Exception as e2:
-                    raise RuntimeError(f"Failed to attach eBPF filter in Generic Mode: {e2}")
+                except Exception as e3:
+                    raise RuntimeError(f"Failed to attach eBPF filter in Generic Mode: {e3}")
             else:
                 raise e
         
