@@ -439,8 +439,8 @@ opkg upgrade orasrs-client
 ## 支持和反馈 / Support and Feedback
 
 - GitHub Issues: https://github.com/srs-protocol/OraSRS-protocol/issues
-- 技术文档: https://docs.orasrs.net
-- 社区论坛: https://forum.orasrs.net
+- 技术文档: https://docs.orasrs.net（暂时在git)
+- 社区论坛: https://forum.orasrs.net（暂时在git)
 
 ## 更多资源 / More Resources
 
