@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.5
+# Version: 3.2.6
 
 set -e
 
@@ -193,6 +193,10 @@ init_firewall_nft() {
     nft flush chain inet orasrs input 2>/dev/null || true
     nft flush chain inet orasrs forward 2>/dev/null || true
     
+    # 获取 SSH 端口
+    SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
+    SSH_PORT=${SSH_PORT:-22}
+    
     cat > /tmp/orasrs.nft << NFT
 table inet orasrs {
     set threats {
@@ -203,16 +207,27 @@ table inet orasrs {
     chain input {
         type filter hook input priority filter; policy accept;
         
-        # SYN Flood Protection
+        # 1. Accept Established/Related (关键：防止断连)
+        ct state established,related accept
+        
+        # 2. Drop Invalid
+        ct state invalid drop
+        
+        # 3. Whitelist SSH (关键：防止管理被锁死)
+        tcp dport $SSH_PORT accept
+        
+        # 4. SYN Flood Protection
         tcp flags syn limit rate $NFT_LIMIT burst $BURST counter packets return
         tcp flags syn counter drop
         
-        # Threat Blocking
+        # 5. Threat Blocking
         ip saddr @threats counter drop
     }
     
     chain forward {
         type filter hook forward priority filter; policy accept;
+        ct state established,related accept
+        ct state invalid drop
         ip saddr @threats counter drop
     }
 }
@@ -227,28 +242,43 @@ init_firewall_iptables() {
     modprobe ip_set_hash_net 2>/dev/null
     modprobe xt_set 2>/dev/null
     modprobe xt_limit 2>/dev/null
+    modprobe xt_conntrack 2>/dev/null
 
     IPSET_NAME="orasrs_threats"
     ipset create $IPSET_NAME hash:net -exist
     
-    iptables -N syn_flood 2>/dev/null || true
-    iptables -F syn_flood
-    iptables -A syn_flood -m limit --limit $LIMIT --limit-burst $BURST -j RETURN
-    iptables -A syn_flood -j DROP
+    # 获取 SSH 端口
+    SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
+    SSH_PORT=${SSH_PORT:-22}
     
-    if ! iptables -C INPUT -p tcp --syn -j syn_flood 2>/dev/null; then
-        iptables -I INPUT -p tcp --syn -j syn_flood
-    fi
+    # 清理旧规则
+    iptables -D INPUT -j orasrs_chain 2>/dev/null || true
+    iptables -F orasrs_chain 2>/dev/null || true
+    iptables -X orasrs_chain 2>/dev/null || true
     
-    if ! iptables -C INPUT -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null; then
-        iptables -I INPUT -m set --match-set $IPSET_NAME src -j DROP
-    fi
+    # 创建自定义链
+    iptables -N orasrs_chain
     
-    if ! iptables -C FORWARD -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null; then
-        iptables -I FORWARD -m set --match-set $IPSET_NAME src -j DROP
-    fi
+    # 1. Accept Established/Related
+    iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     
-    log "Firewall initialized (iptables). Limit: $LIMIT, Burst: $BURST"
+    # 2. Drop Invalid
+    iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
+    
+    # 3. Whitelist SSH
+    iptables -A orasrs_chain -p tcp --dport $SSH_PORT -j ACCEPT
+    
+    # 4. SYN Flood Protection
+    iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT --limit-burst $BURST -j RETURN
+    iptables -A orasrs_chain -p tcp --syn -j DROP
+    
+    # 5. Threat Blocking
+    iptables -A orasrs_chain -m set --match-set $IPSET_NAME src -j DROP
+    
+    # 插入到 INPUT 链顶部
+    iptables -I INPUT -j orasrs_chain
+    
+    log "Firewall initialized (iptables). Limit: $LIMIT, Burst: $BURST, SSH: $SSH_PORT"
 }
 
 init_firewall() {
@@ -477,7 +507,7 @@ install_orasrs() {
     if [ "$INSTALL_MODE" = "edge" ]; then
         generate_edge_client
     elif [ "$INSTALL_MODE" = "hybrid" ]; then
-        # Hybrid 模式暂不支持 nftables，回退到旧版生成逻辑或提示
+        # Hybrid 模式暂未适配 nftables，将使用 Edge 客户端替代..."
         # 为简化，这里复用 Edge 客户端逻辑（Edge 客户端其实足够强大）
         # 或者保留原有的 generate_hybrid_client (需自行添加 nft 支持)
         print_warning "Hybrid 模式暂未适配 nftables，将使用 Edge 客户端替代..."
@@ -570,7 +600,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.4"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.6"
     echo "========================================="
     
     check_environment
