@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.0.1
+# Version: 3.0.2
 
 set -e
 
@@ -77,10 +77,10 @@ select_mode() {
     MODE_UPPER=$(echo "$RECOMMENDED_MODE" | tr 'a-z' 'A-Z')
     print_info "根据硬件配置，推荐模式: ${GREEN}${MODE_UPPER}${NC}"
     
-    echo "请选择安装模式:"
-    echo "  1) Edge (原生边缘代理) - 内存 < 5MB, 纯 Shell/C, 适合所有路由器 [默认]"
-    echo "  2) Hybrid (混合模式) - 内存 ~30MB, Python驱动, 功能更强"
-    echo "  3) Full (完整节点) - 内存 ~90MB, Node.js, 仅限 x86 高性能路由"
+    echo "请选择安装模式 (直接回车将自动选择推荐模式):"
+    echo "  1) Edge   - 极简模式 (<5MB RAM, 适合所有设备)"
+    echo "  2) Hybrid - 混合模式 (~30MB RAM, 需Python支持)"
+    echo "  3) Full   - 完整模式 (~90MB RAM, 仅限x86设备)"
     
     # 如果有参数传入，直接使用
     if [ -n "$1" ]; then
@@ -91,23 +91,31 @@ select_mode() {
             *) print_error "无效的模式参数"; exit 1 ;;
         esac
     else
-        # 交互式选择 (设置超时自动选择默认)
-        # 注意: read -t 在某些极简 ash 中可能不支持，如果报错请移除 -t 10
-        echo "请输入选项 [1-3] (10秒后自动选择推荐模式): "
+        # 交互式选择
+        echo -n "请输入选项 [1-3] (10秒后自动选择): "
         if ! read -t 10 choice; then
             choice=""
+            echo "" # 换行
         fi
         
-        case "$choice" in
-            1) INSTALL_MODE="edge" ;;
-            2) INSTALL_MODE="hybrid" ;;
-            3) INSTALL_MODE="full" ;;
-            *) INSTALL_MODE="$RECOMMENDED_MODE" ;;
-        esac
+        if [ -z "$choice" ]; then
+            print_info "自动选择推荐模式..."
+            INSTALL_MODE="$RECOMMENDED_MODE"
+        else
+            case "$choice" in
+                1) INSTALL_MODE="edge" ;;
+                2) INSTALL_MODE="hybrid" ;;
+                3) INSTALL_MODE="full" ;;
+                *) 
+                    print_warning "无效输入，使用推荐模式"
+                    INSTALL_MODE="$RECOMMENDED_MODE" 
+                    ;;
+            esac
+        fi
     fi
     
     MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
-    print_info "已选择模式: ${GREEN}${MODE_UPPER}${NC}"
+    print_info "已确认安装模式: ${GREEN}${MODE_UPPER}${NC}"
 }
 
 # 3. 安装依赖
@@ -312,7 +320,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.0.1"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.0.2"
     echo "========================================="
     
     check_environment
