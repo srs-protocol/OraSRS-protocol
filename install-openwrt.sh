@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.0.2
+# Version: 3.0.3
 
 set -e
 
@@ -153,6 +153,17 @@ log() { echo "$(date): $1" >> $LOG_FILE; }
 
 init_firewall() {
     ipset create $IPSET_NAME hash:net -exist
+    
+    # SYN Flood Protection (Dynamic Rate Limiting)
+    # Limit: 20/sec, Burst: 50
+    iptables -N syn_flood 2>/dev/null || true
+    iptables -F syn_flood
+    iptables -A syn_flood -m limit --limit 20/s --limit-burst 50 -j RETURN
+    iptables -A syn_flood -j DROP
+    
+    # Apply to INPUT chain (Top priority)
+    iptables -I INPUT -p tcp --syn -j syn_flood
+    
     iptables -I INPUT -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null || true
     iptables -I FORWARD -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null || true
 }
@@ -221,6 +232,14 @@ def run_cmd(cmd):
 
 def init_firewall():
     run_cmd(f"ipset create {IPSET_NAME} hash:net -exist")
+    
+    # SYN Flood Protection
+    run_cmd("iptables -N syn_flood 2>/dev/null || true")
+    run_cmd("iptables -F syn_flood")
+    run_cmd("iptables -A syn_flood -m limit --limit 20/s --limit-burst 50 -j RETURN")
+    run_cmd("iptables -A syn_flood -j DROP")
+    run_cmd("iptables -I INPUT -p tcp --syn -j syn_flood")
+    
     run_cmd(f"iptables -I INPUT -m set --match-set {IPSET_NAME} src -j DROP")
     run_cmd(f"iptables -I FORWARD -m set --match-set {IPSET_NAME} src -j DROP")
 
@@ -320,7 +339,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.0.2"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.0.3"
     echo "========================================="
     
     check_environment
