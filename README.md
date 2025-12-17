@@ -452,6 +452,13 @@ orasrs-cli query 1.2.3.4
 /etc/init.d/orasrs status
 ```
 
+### 实战防御报告 / PoC Defense Report
+
+我们对 OpenWrt 客户端进行了极限压力测试，成功抵御了 1700万次 DDoS 攻击。
+We conducted extreme stress tests on the OpenWrt client, successfully defending against 17 million DDoS attacks.
+
+👉 [阅读完整报告 / Read Full Report](PoC_DEFENSE_REPORT.md)
+
 
 **核心特性 / Core Features:**
 
