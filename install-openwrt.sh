@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.2
+# Version: 3.2.3
 
 set -e
 
@@ -366,7 +366,19 @@ case "$1" in
         log "Cache cleared by user."
         echo "Cache cleared."
         ;;
-    *) echo "Usage: $0 {start|reload|check_ip|harden|relax|cache_stats|cache_list|cache_clear}" ;;
+    status)
+        echo "Backend: $BACKEND"
+        if [ "$BACKEND" = "iptables" ]; then
+            echo "--- IPTABLES (INPUT) ---"
+            iptables -nvL INPUT | grep -E "orasrs|syn_flood" || echo "No rules found in INPUT"
+            echo "--- IPSET ---"
+            ipset list orasrs_threats -t 2>/dev/null | grep "Number of entries" || echo "No ipset found"
+        else
+            echo "--- NFTABLES (inet orasrs) ---"
+            nft list table inet orasrs 2>/dev/null || echo "Table 'orasrs' not found"
+        fi
+        ;;
+    *) echo "Usage: $0 {start|reload|check_ip|harden|relax|cache_stats|cache_list|cache_clear|status}" ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-client
@@ -461,7 +473,8 @@ case "$1" in
             *) echo "Usage: orasrs-cli cache {stats|list|clear}" ;;
         esac
         ;;
-    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax|cache}" ;;
+    status) /usr/bin/orasrs-client status ;;
+    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax|cache|status}" ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-cli
@@ -525,7 +538,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.2"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.3"
     echo "========================================="
     
     check_environment
@@ -539,8 +552,10 @@ main() {
     echo "  模式: ${MODE_UPPER}"
     if [ "$HAS_NFT" -eq 1 ]; then
         echo "  后端: nftables (高性能)"
+        echo "  验证: orasrs-cli status (或 nft list table inet orasrs)"
     else
         echo "  后端: iptables (传统)"
+        echo "  验证: orasrs-cli status (或 iptables -nvL INPUT)"
     fi
     if [ "$INSTALL_LUCI" -eq 1 ]; then
         echo "  界面: 已安装 (Services -> OraSRS)"
