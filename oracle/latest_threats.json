@@ -1071,14 +1071,6 @@
     "risk_level": 3,
     "cidr": "45.135.232.0/24"
   },
-  "45.136.68.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "45.136.68.0/24"
-  },
   "45.138.16.0": {
     "sources": [
       "Spamhaus"
@@ -1792,14 +1784,6 @@
     "risk_level": 3,
     "cidr": "77.81.89.0/24"
   },
-  "77.83.207.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "77.83.207.0/24"
-  },
   "77.90.154.0": {
     "sources": [
       "Spamhaus"
@@ -1895,22 +1879,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "79.141.79.0/24"
-  },
-  "80.64.18.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "80.64.18.0/24"
-  },
-  "80.64.19.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "80.64.19.0/24"
   },
   "80.66.65.0": {
     "sources": [
@@ -2103,14 +2071,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "85.203.26.0/24"
-  },
-  "85.208.84.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "85.208.84.0/24"
   },
   "85.208.212.0": {
     "sources": [
@@ -2383,14 +2343,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "88.210.63.0/24"
-  },
-  "88.214.50.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "88.214.50.0/24"
   },
   "88.218.64.0": {
     "sources": [
@@ -2743,14 +2695,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "91.215.85.0/24"
-  },
-  "91.216.3.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "91.216.3.0/24"
   },
   "91.218.236.0": {
     "sources": [
@@ -3112,14 +3056,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "96.31.94.0/24"
-  },
-  "96.126.168.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "96.126.168.0/22"
   },
   "98.98.195.0": {
     "sources": [
@@ -3985,14 +3921,6 @@
     "risk_level": 3,
     "cidr": "107.182.240.0/20"
   },
-  "108.165.20.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "108.165.20.0/22"
-  },
   "109.107.146.0": {
     "sources": [
       "Spamhaus"
@@ -4008,14 +3936,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "109.120.136.0/24"
-  },
-  "109.202.246.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "109.202.246.0/24"
   },
   "109.236.50.0": {
     "sources": [
@@ -4962,14 +4882,6 @@
     "risk_level": 3,
     "cidr": "143.92.48.0/20"
   },
-  "144.31.160.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "144.31.160.0/22"
-  },
   "144.215.0.0": {
     "sources": [
       "Spamhaus"
@@ -4977,14 +4889,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "144.215.0.0/16"
-  },
-  "144.225.132.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "144.225.132.0/22"
   },
   "145.231.0.0": {
     "sources": [
@@ -9828,14 +9732,6 @@
     "risk_level": 3,
     "cidr": "203.171.224.0/20"
   },
-  "203.183.85.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "203.183.85.0/24"
-  },
   "203.191.64.0": {
     "sources": [
       "Spamhaus"
@@ -10700,14 +10596,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "205.175.160.0/19"
-  },
-  "205.186.84.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "205.186.84.0/22"
   },
   "205.189.71.0": {
     "sources": [
@@ -11732,14 +11620,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "213.209.157.0/24"
-  },
-  "213.226.113.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "213.226.113.0/24"
   },
   "216.7.96.0": {
     "sources": [
