@@ -336,6 +336,11 @@ install_node_client() {
     print_info "Downloading from $CLIENT_URL"
     curl -fsSL "$CLIENT_URL" -o /usr/lib/orasrs/orasrs-lite.js
     
+    # 下载 client-onboarding.js (用于初始化)
+    ONBOARDING_URL="${REPO_URL}/client-onboarding.js"
+    print_info "Downloading onboarding script from $ONBOARDING_URL"
+    curl -fsSL "$ONBOARDING_URL" -o /usr/lib/orasrs/client-onboarding.js
+
     if [ ! -s /usr/lib/orasrs/orasrs-lite.js ]; then
         print_error "下载失败，请检查网络连接"
         exit 1
@@ -371,6 +376,10 @@ EOF
 API_URL="http://localhost:3006"
 
 case "$1" in
+    init)
+        echo "Starting initialization..."
+        cd /usr/lib/orasrs && node client-onboarding.js
+        ;;
     query)
         curl -s "$API_URL/query?ip=$2"
         echo ""
