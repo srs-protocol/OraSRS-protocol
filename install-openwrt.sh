@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.1
+# Version: 3.2.2
 
 set -e
 
@@ -217,6 +217,12 @@ NFT
 }
 
 init_firewall_iptables() {
+    # 自动加载内核模块
+    modprobe ip_set 2>/dev/null
+    modprobe ip_set_hash_net 2>/dev/null
+    modprobe xt_set 2>/dev/null
+    modprobe xt_limit 2>/dev/null
+
     IPSET_NAME="orasrs_threats"
     ipset create $IPSET_NAME hash:net -exist
     
@@ -496,6 +502,15 @@ service_triggers() {
 }
 EOF
     chmod +x /etc/init.d/orasrs
+
+    # 生成防火墙 Hotplug 脚本 (防止规则在防火墙重启后丢失)
+    mkdir -p /etc/hotplug.d/firewall
+    cat > /etc/hotplug.d/firewall/99-orasrs << 'EOF'
+#!/bin/sh
+[ "$ACTION" = "reload" ] || [ "$ACTION" = "start" ] || exit 0
+/usr/bin/orasrs-client reload
+EOF
+    chmod +x /etc/hotplug.d/firewall/99-orasrs
     
     # 安装 LuCI
     if [ "$INSTALL_LUCI" -eq 1 ]; then
@@ -510,7 +525,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.1"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.2"
     echo "========================================="
     
     check_environment
