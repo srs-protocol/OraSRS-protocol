@@ -409,7 +409,8 @@ class OraSRSLiteClient {
     }
 
     /**
-     * 查询远程 API (改为直接查询区块链 RPC)
+     * 查询远程 API (优化版: 使用 getThreat 直接查询区块链)
+     * 参考 Linux 客户端 BlockchainConnector 实现
      */
     async queryRemote(ip) {
         // 转换 IP 为 bytes4 (hex)
@@ -417,9 +418,9 @@ class OraSRSLiteClient {
         if (!ipHex) return { ip, error: 'Invalid IP' };
 
         // 构造 eth_call 请求
-        // isThreat(bytes4) selector: 0x31cf4309
+        // getThreat(bytes4) selector: 0x5a92e589
         // 参数: ipHex (padded to 32 bytes)
-        const data = '0x31cf4309' + ipHex.padEnd(64, '0');
+        const data = '0x5a92e589' + ipHex.padEnd(64, '0');
 
         const endpoints = this.config.blockchainEndpoints || ['https://api.orasrs.net'];
 
@@ -431,24 +432,35 @@ class OraSRSLiteClient {
                 }, 'latest']);
 
                 if (result && result !== '0x') {
-                    // 解析返回结果 (bool, uint8, uint64)
-                    // 3 * 32 bytes = 96 bytes (192 chars)
-                    const cleanResult = result.replace('0x', '');
-                    const isThreat = parseInt(cleanResult.substr(0, 64), 16) === 1;
-                    const riskLevel = parseInt(cleanResult.substr(64, 64), 16);
-                    const expiry = parseInt(cleanResult.substr(128, 64), 16);
+                    // 解析返回结果: ThreatInfo struct (uint64 expiry, uint8 riskLevel, uint8 mask, uint16 sourceMask)
+                    // ABI 编码: 每个字段填充为 32 字节 (64 hex chars)
+                    // 总长度: 4 * 32 = 128 bytes (256 hex chars)
 
-                    if (isThreat) {
-                        return {
-                            ip,
-                            risk_score: this.riskLevelToScore(riskLevel),
-                            risk_level: this.getRiskLevelStr(riskLevel),
-                            threat_type: 'Blockchain Verified',
-                            source: 'OraSRS Chain',
-                            expires_at: expiry,
-                            cached: false
-                        };
-                    } else {
+                    const cleanResult = result.replace('0x', '');
+                    if (cleanResult.length < 256) {
+                        // 可能是旧合约或空数据
+                        return { ip, risk_score: 0, risk_level: 'Safe', source: 'OraSRS Chain', cached: false };
+                    }
+
+                    // 0-64 chars: expiry (uint64)
+                    const expiryHex = cleanResult.substr(0, 64);
+                    const expiry = parseInt(expiryHex, 16);
+
+                    // 64-128 chars: riskLevel (uint8)
+                    const riskLevelHex = cleanResult.substr(64, 64);
+                    const riskLevel = parseInt(riskLevelHex, 16);
+
+                    // 128-192 chars: mask (uint8)
+                    const maskHex = cleanResult.substr(128, 64);
+                    const mask = parseInt(maskHex, 16);
+
+                    // 192-256 chars: sourceMask (uint16)
+                    const sourceMaskHex = cleanResult.substr(192, 64);
+                    const sourceMask = parseInt(sourceMaskHex, 16);
+
+                    // 检查是否过期或无风险
+                    const now = Math.floor(Date.now() / 1000);
+                    if (expiry <= now || riskLevel === 0) {
                         return {
                             ip,
                             risk_score: 0,
@@ -457,72 +469,98 @@ class OraSRSLiteClient {
                             cached: false
                         };
                     }
+
+                    return {
+                        ip,
+                        risk_score: this.riskLevelToScore(riskLevel),
+                        risk_level: this.getRiskLevelStr(riskLevel),
+                        threat_type: 'Blockchain Verified',
+                        source: 'OraSRS Chain',
+                        expires_at: expiry,
+                        mask: mask,
+                        cached: false
+                    };
                 }
             } catch (e) {
                 this.log(`RPC query failed on ${endpoint}: ${e.message}`, 'warn');
+                // 如果是最后一个端点，返回具体错误
+                if (endpoint === endpoints[endpoints.length - 1]) {
+                    return { ip, risk_score: null, error: `RPC failed: ${e.message}` };
+                }
             }
         }
 
-        return { ip, risk_score: null, error: 'RPC failed' };
+        return { ip, risk_score: null, error: 'All RPC endpoints failed' };
     }
 
     /**
-     * JSON-RPC 调用辅助函数
+     * JSON-RPC 调用辅助函数 (增强版)
      */
     rpcCall(endpoint, method, params) {
         return new Promise((resolve, reject) => {
-            const url = new URL(endpoint);
-            const options = {
-                hostname: url.hostname,
-                port: url.port || (url.protocol === 'https:' ? 443 : 80),
-                path: url.pathname === '/' ? '' : url.pathname, // Some RPCs use root, some subpath
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': 0 // Will be set later
-                },
-                timeout: 5000
-            };
+            try {
+                const url = new URL(endpoint);
+                const options = {
+                    hostname: url.hostname,
+                    port: url.port || (url.protocol === 'https:' ? 443 : 80),
+                    path: url.pathname === '/' ? '' : url.pathname,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'OraSRS-OpenWrt-Client/3.3.5',
+                        'Connection': 'keep-alive'
+                    },
+                    timeout: 10000 // 增加超时时间
+                };
 
-            const postData = JSON.stringify({
-                jsonrpc: '2.0',
-                method: method,
-                params: params,
-                id: Date.now()
-            });
-
-            options.headers['Content-Length'] = Buffer.byteLength(postData);
-
-            const protocol = url.protocol === 'https:' ? https : http;
-            const req = protocol.request(options, (res) => {
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
-                    try {
-                        if (res.statusCode !== 200) {
-                            reject(new Error(`HTTP ${res.statusCode}`));
-                            return;
-                        }
-                        const parsed = JSON.parse(data);
-                        if (parsed.error) {
-                            reject(new Error(parsed.error.message));
-                        } else {
-                            resolve(parsed.result);
-                        }
-                    } catch (e) {
-                        reject(new Error('Invalid JSON response'));
-                    }
+                const postData = JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: method,
+                    params: params,
+                    id: Date.now()
                 });
-            });
 
-            req.on('error', reject);
-            req.on('timeout', () => {
-                req.destroy();
-                reject(new Error('Request timeout'));
-            });
+                options.headers['Content-Length'] = Buffer.byteLength(postData);
 
-            req.write(postData);
-            req.end();
+                const protocol = url.protocol === 'https:' ? https : http;
+                const req = protocol.request(options, (res) => {
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => {
+                        try {
+                            if (res.statusCode !== 200) {
+                                reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 100)}`));
+                                return;
+                            }
+                            // 检查空响应
+                            if (!data) {
+                                reject(new Error('Empty response from server'));
+                                return;
+                            }
+
+                            const parsed = JSON.parse(data);
+                            if (parsed.error) {
+                                reject(new Error(`RPC Error ${parsed.error.code}: ${parsed.error.message}`));
+                            } else {
+                                resolve(parsed.result);
+                            }
+                        } catch (e) {
+                            reject(new Error(`Invalid JSON response: ${e.message}`));
+                        }
+                    });
+                });
+
+                req.on('error', (e) => reject(new Error(`Network error: ${e.message}`)));
+                req.on('timeout', () => {
+                    req.destroy();
+                    reject(new Error('Request timeout'));
+                });
+
+                req.write(postData);
+                req.end();
+            } catch (e) {
+                reject(new Error(`URL Parse error: ${e.message}`));
+            }
         });
     }
 
@@ -791,7 +829,7 @@ class OraSRSLiteClient {
                     res.end(JSON.stringify({
                         status: 'healthy',
                         service: 'OraSRS Lite',
-                        version: '3.3.4',
+                        version: '3.3.5',
                         uptime: process.uptime(),
                         stats: this.stats,
                         dbType: this.db.type
