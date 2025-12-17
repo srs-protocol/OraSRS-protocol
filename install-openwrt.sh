@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.0
+# Version: 3.2.1
 
 set -e
 
@@ -336,7 +336,31 @@ case "$1" in
         ;;
     harden) harden_mode ;;
     relax) relax_mode ;;
-    *) echo "Usage: $0 {start|reload|check_ip|harden|relax}" ;;
+    cache_stats)
+        if [ "$BACKEND" = "iptables" ]; then
+            ipset list orasrs_threats -t 2>/dev/null | grep "Number of entries" || echo "Number of entries: 0"
+        else
+            # nftables stats (simple count)
+            nft list set inet orasrs threats | grep -c "\." || echo "0"
+        fi
+        ;;
+    cache_list)
+        if [ "$BACKEND" = "iptables" ]; then
+            ipset list orasrs_threats | head -n 20
+        else
+            nft list set inet orasrs threats | head -n 20
+        fi
+        ;;
+    cache_clear)
+        if [ "$BACKEND" = "iptables" ]; then
+            ipset flush orasrs_threats
+        else
+            nft flush set inet orasrs threats
+        fi
+        log "Cache cleared by user."
+        echo "Cache cleared."
+        ;;
+    *) echo "Usage: $0 {start|reload|check_ip|harden|relax|cache_stats|cache_list|cache_clear}" ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-client
@@ -423,7 +447,15 @@ case "$1" in
     sync) killall -USR1 orasrs-client 2>/dev/null || echo "Triggered sync" ;;
     harden) /usr/bin/orasrs-client harden ;;
     relax) /usr/bin/orasrs-client relax ;;
-    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax}" ;;
+    cache)
+        case "$2" in
+            stats) /usr/bin/orasrs-client cache_stats ;;
+            list) /usr/bin/orasrs-client cache_list ;;
+            clear) /usr/bin/orasrs-client cache_clear ;;
+            *) echo "Usage: orasrs-cli cache {stats|list|clear}" ;;
+        esac
+        ;;
+    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax|cache}" ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-cli
@@ -478,7 +510,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.0"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.1"
     echo "========================================="
     
     check_environment
