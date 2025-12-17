@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.0.3
+# Version: 3.1.0
 
 set -e
 
@@ -137,53 +137,102 @@ install_dependencies() {
     opkg install $PACKAGES || print_warning "部分包安装失败，尝试继续..."
 }
 
-# 4. 生成 Edge 客户端 (Shell 版本)
+# 4. 生成 Edge 客户端 (Shell 版本 - 工业级增强)
 generate_edge_client() {
     cat > /usr/bin/orasrs-client << 'EOF'
 #!/bin/sh
 # OraSRS Edge Client (Shell Version)
-# 极致轻量级威胁情报客户端
+# 工业级增强版: 原子更新、并发锁、动态调参
 
 CONFIG_FILE="/etc/config/orasrs"
 IPSET_NAME="orasrs_threats"
-THREAT_URL="https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/main/threat_data/latest.txt" # 示例源
+LOCK_FILE="/var/lock/orasrs.lock"
 LOG_FILE="/var/log/orasrs.log"
 
 log() { echo "$(date): $1" >> $LOG_FILE; }
 
+# 读取配置
+get_config() {
+    LIMIT=$(uci get orasrs.main.limit_rate 2>/dev/null || echo "20/s")
+    BURST=$(uci get orasrs.main.limit_burst 2>/dev/null || echo "50")
+    SYNC_INTERVAL=$(uci get orasrs.main.sync_interval 2>/dev/null || echo 3600)
+}
+
 init_firewall() {
+    get_config
+    
+    # 确保 ipset 存在
     ipset create $IPSET_NAME hash:net -exist
     
-    # SYN Flood Protection (Dynamic Rate Limiting)
-    # Limit: 20/sec, Burst: 50
+    # SYN Flood 防护 (动态可调)
     iptables -N syn_flood 2>/dev/null || true
     iptables -F syn_flood
-    iptables -A syn_flood -m limit --limit 20/s --limit-burst 50 -j RETURN
+    iptables -A syn_flood -m limit --limit $LIMIT --limit-burst $BURST -j RETURN
     iptables -A syn_flood -j DROP
     
-    # Apply to INPUT chain (Top priority)
-    iptables -I INPUT -p tcp --syn -j syn_flood
+    # 应用规则 (如果尚未应用)
+    if ! iptables -C INPUT -p tcp --syn -j syn_flood 2>/dev/null; then
+        iptables -I INPUT -p tcp --syn -j syn_flood
+    fi
     
-    iptables -I INPUT -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null || true
-    iptables -I FORWARD -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null || true
+    if ! iptables -C INPUT -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null; then
+        iptables -I INPUT -m set --match-set $IPSET_NAME src -j DROP
+    fi
+    
+    if ! iptables -C FORWARD -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null; then
+        iptables -I FORWARD -m set --match-set $IPSET_NAME src -j DROP
+    fi
+    
+    log "Firewall initialized. Limit: $LIMIT, Burst: $BURST"
 }
 
 sync_threats() {
-    log "Starting sync..."
-    # 下载威胁列表 (假设格式为每行一个IP)
-    # 这里使用 Abuse.ch Feodo Tracker 作为演示源
-    curl -s https://feodotracker.abuse.ch/downloads/ipblocklist.txt | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt
-    
-    if [ -s /tmp/orasrs_threats.txt ]; then
-        ipset flush $IPSET_NAME
-        while read ip; do
-            ipset add $IPSET_NAME $ip -exist
-        done < /tmp/orasrs_threats.txt
-        log "Sync completed. Rules updated."
-    else
-        log "Sync failed or empty list."
-    fi
-    rm -f /tmp/orasrs_threats.txt
+    (
+        flock -x 200
+        log "Starting sync..."
+        
+        # 下载到临时文件
+        if curl -s https://feodotracker.abuse.ch/downloads/ipblocklist.txt | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt; then
+            if [ -s /tmp/orasrs_threats.txt ]; then
+                # 原子更新: Create Temp -> Swap -> Destroy
+                ipset create ${IPSET_NAME}_tmp hash:net -exist
+                ipset flush ${IPSET_NAME}_tmp
+                
+                while read ip; do
+                    ipset add ${IPSET_NAME}_tmp $ip -exist
+                done < /tmp/orasrs_threats.txt
+                
+                ipset swap ${IPSET_NAME}_tmp $IPSET_NAME
+                ipset destroy ${IPSET_NAME}_tmp
+                
+                log "Sync completed. Rules updated atomically."
+            else
+                log "Sync failed: Empty list."
+            fi
+        else
+            log "Sync failed: Download error."
+        fi
+        rm -f /tmp/orasrs_threats.txt
+        
+    ) 200>$LOCK_FILE
+}
+
+harden_mode() {
+    log "Enabling HARDEN mode..."
+    uci set orasrs.main.limit_rate="5/s"
+    uci set orasrs.main.limit_burst="10"
+    uci commit orasrs
+    init_firewall
+    log "HARDEN mode enabled (5/s, burst 10)"
+}
+
+relax_mode() {
+    log "Enabling RELAX mode..."
+    uci set orasrs.main.limit_rate="20/s"
+    uci set orasrs.main.limit_burst="50"
+    uci commit orasrs
+    init_firewall
+    log "RELAX mode enabled (20/s, burst 50)"
 }
 
 case "$1" in
@@ -191,8 +240,12 @@ case "$1" in
         init_firewall
         while true; do
             sync_threats
-            sleep $(uci get orasrs.main.sync_interval 2>/dev/null || echo 3600)
+            get_config
+            sleep $SYNC_INTERVAL
         done &
+        ;;
+    reload)
+        init_firewall
         ;;
     check_ip)
         ipset test $IPSET_NAME $2 2>/dev/null && echo "THREAT" || echo "SAFE"
@@ -200,15 +253,21 @@ case "$1" in
     add_rule)
         ipset add $IPSET_NAME $2 -exist
         ;;
+    harden)
+        harden_mode
+        ;;
+    relax)
+        relax_mode
+        ;;
     *)
-        echo "Usage: $0 {start|check_ip|add_rule}"
+        echo "Usage: $0 {start|reload|check_ip|add_rule|harden|relax}"
         ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-client
 }
 
-# 5. 生成 Hybrid 客户端 (Python 版本)
+# 5. 生成 Hybrid 客户端 (Python 版本 - 适配新架构)
 generate_hybrid_client() {
     cat > /usr/bin/orasrs-client << 'EOF'
 #!/usr/bin/env python3
@@ -218,9 +277,10 @@ import time
 import subprocess
 import requests
 import sys
+import fcntl
 
 IPSET_NAME = "orasrs_threats"
-CONFIG_FILE = "/etc/config/orasrs"
+LOCK_FILE = "/var/lock/orasrs.lock"
 LOG_FILE = "/var/log/orasrs.log"
 
 def log(msg):
@@ -230,34 +290,57 @@ def log(msg):
 def run_cmd(cmd):
     subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+def get_config():
+    try:
+        limit = subprocess.check_output("uci get orasrs.main.limit_rate", shell=True).decode().strip()
+        burst = subprocess.check_output("uci get orasrs.main.limit_burst", shell=True).decode().strip()
+        return limit, burst
+    except:
+        return "20/s", "50"
+
 def init_firewall():
+    limit, burst = get_config()
     run_cmd(f"ipset create {IPSET_NAME} hash:net -exist")
     
     # SYN Flood Protection
     run_cmd("iptables -N syn_flood 2>/dev/null || true")
     run_cmd("iptables -F syn_flood")
-    run_cmd("iptables -A syn_flood -m limit --limit 20/s --limit-burst 50 -j RETURN")
+    run_cmd(f"iptables -A syn_flood -m limit --limit {limit} --limit-burst {burst} -j RETURN")
     run_cmd("iptables -A syn_flood -j DROP")
-    run_cmd("iptables -I INPUT -p tcp --syn -j syn_flood")
     
-    run_cmd(f"iptables -I INPUT -m set --match-set {IPSET_NAME} src -j DROP")
-    run_cmd(f"iptables -I FORWARD -m set --match-set {IPSET_NAME} src -j DROP")
+    # Check if rules exist before adding
+    res = subprocess.run("iptables -C INPUT -p tcp --syn -j syn_flood", shell=True)
+    if res.returncode != 0:
+        run_cmd("iptables -I INPUT -p tcp --syn -j syn_flood")
+        
+    run_cmd(f"iptables -I INPUT -m set --match-set {IPSET_NAME} src -j DROP 2>/dev/null || true")
+    run_cmd(f"iptables -I FORWARD -m set --match-set {IPSET_NAME} src -j DROP 2>/dev/null || true")
+    log(f"Firewall initialized. Limit: {limit}, Burst: {burst}")
 
 def sync_threats():
-    log("Starting sync...")
-    try:
-        # 示例：从 Abuse.ch 下载
-        r = requests.get("https://feodotracker.abuse.ch/downloads/ipblocklist.txt", timeout=30)
-        if r.status_code == 200:
-            ips = [line for line in r.text.splitlines() if line and not line.startswith("#")]
-            run_cmd(f"ipset flush {IPSET_NAME}")
-            for ip in ips:
-                run_cmd(f"ipset add {IPSET_NAME} {ip} -exist")
-            log(f"Sync completed. {len(ips)} IPs loaded.")
-        else:
-            log("Sync failed: HTTP error")
-    except Exception as e:
-        log(f"Sync failed: {e}")
+    with open(LOCK_FILE, 'w') as lock_f:
+        fcntl.flock(lock_f, fcntl.LOCK_EX)
+        log("Starting sync...")
+        try:
+            r = requests.get("https://feodotracker.abuse.ch/downloads/ipblocklist.txt", timeout=30)
+            if r.status_code == 200:
+                ips = [line for line in r.text.splitlines() if line and not line.startswith("#")]
+                
+                # Atomic Update
+                run_cmd(f"ipset create {IPSET_NAME}_tmp hash:net -exist")
+                run_cmd(f"ipset flush {IPSET_NAME}_tmp")
+                for ip in ips:
+                    run_cmd(f"ipset add {IPSET_NAME}_tmp {ip} -exist")
+                
+                run_cmd(f"ipset swap {IPSET_NAME}_tmp {IPSET_NAME}")
+                run_cmd(f"ipset destroy {IPSET_NAME}_tmp")
+                
+                log(f"Sync completed. {len(ips)} IPs loaded atomically.")
+            else:
+                log("Sync failed: HTTP error")
+        except Exception as e:
+            log(f"Sync failed: {e}")
+        fcntl.flock(lock_f, fcntl.LOCK_UN)
 
 def main_loop():
     init_firewall()
@@ -266,16 +349,32 @@ def main_loop():
         time.sleep(3600)
 
 if __name__ == "__main__":
+    if not os.path.exists(LOCK_FILE):
+        open(LOCK_FILE, 'a').close()
+        
     if len(sys.argv) > 1:
-        if sys.argv[1] == "start":
+        cmd = sys.argv[1]
+        if cmd == "start":
             main_loop()
-        elif sys.argv[1] == "check_ip":
+        elif cmd == "reload":
+            init_firewall()
+        elif cmd == "check_ip":
             res = subprocess.run(f"ipset test {IPSET_NAME} {sys.argv[2]}", shell=True)
             print("THREAT" if res.returncode == 0 else "SAFE")
-        elif sys.argv[1] == "add_rule":
-            run_cmd(f"ipset add {IPSET_NAME} {sys.argv[2]} -exist")
+        elif cmd == "harden":
+            run_cmd("uci set orasrs.main.limit_rate='5/s'")
+            run_cmd("uci set orasrs.main.limit_burst='10'")
+            run_cmd("uci commit orasrs")
+            init_firewall()
+            print("HARDEN mode enabled")
+        elif cmd == "relax":
+            run_cmd("uci set orasrs.main.limit_rate='20/s'")
+            run_cmd("uci set orasrs.main.limit_burst='50'")
+            run_cmd("uci commit orasrs")
+            init_firewall()
+            print("RELAX mode enabled")
     else:
-        print("Usage: orasrs-client {start|check_ip|add_rule}")
+        print("Usage: orasrs-client {start|reload|check_ip|harden|relax}")
 EOF
     chmod +x /usr/bin/orasrs-client
 }
@@ -301,7 +400,9 @@ case "$1" in
     query) /usr/bin/orasrs-client check_ip "$2" ;;
     add) /usr/bin/orasrs-client add_rule "$2" ;;
     sync) killall -USR1 orasrs-client 2>/dev/null || echo "Triggered sync" ;;
-    *) echo "Usage: orasrs-cli {query|add|sync}" ;;
+    harden) /usr/bin/orasrs-client harden ;;
+    relax) /usr/bin/orasrs-client relax ;;
+    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax}" ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-cli
@@ -313,20 +414,33 @@ config orasrs 'main'
     option enabled '1'
     option mode '$INSTALL_MODE'
     option sync_interval '3600'
+    option limit_rate '20/s'
+    option limit_burst '50'
 EOF
 
-    # 生成 Init 脚本
+    # 生成 Init 脚本 (Procd 增强版)
     cat > /etc/init.d/orasrs << 'EOF'
 #!/bin/sh /etc/rc.common
 START=99
 USE_PROCD=1
+
 start_service() {
     procd_open_instance
     procd_set_param command /usr/bin/orasrs-client start
-    procd_set_param respawn
+    procd_set_param respawn ${respawn_threshold:-3600} ${respawn_timeout:-5} ${respawn_retry:-5}
     procd_set_param stdout 1
     procd_set_param stderr 1
+    # Watchdog: 监控配置文件变化
+    procd_set_param file /etc/config/orasrs
     procd_close_instance
+}
+
+reload_service() {
+    /usr/bin/orasrs-client reload
+}
+
+service_triggers() {
+    procd_add_reload_trigger "orasrs"
 }
 EOF
     chmod +x /etc/init.d/orasrs
@@ -339,7 +453,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.0.3"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.1.0"
     echo "========================================="
     
     check_environment
@@ -352,6 +466,7 @@ main() {
     MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
     echo "  模式: ${MODE_UPPER}"
     echo "  CLI命令: orasrs-cli query <IP>"
+    echo "  应急命令: orasrs-cli harden (一键收紧)"
     echo "========================================="
 }
 
