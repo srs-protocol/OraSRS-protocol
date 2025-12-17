@@ -605,6 +605,17 @@ FWEOF
     chmod +x /etc/firewall.user
     print_info "/etc/firewall.user 已生成"
     
+    # 立即应用防火墙规则
+    print_step "应用防火墙规则..."
+    if [ -f /etc/firewall.user ]; then
+        /etc/firewall.user
+    fi
+    
+    # 重启防火墙服务以确保规则持久化
+    if [ -f /etc/init.d/firewall ]; then
+        /etc/init.d/firewall restart
+    fi
+    
     # 安装 LuCI
     if [ "$INSTALL_LUCI" -eq 1 ]; then
         generate_luci
