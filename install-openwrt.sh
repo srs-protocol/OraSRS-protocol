@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.3
+# Version: 3.2.4
 
 set -e
 
@@ -187,6 +187,11 @@ get_config() {
 init_firewall_nft() {
     # 转换为 nftables 格式 (20/s -> 20/second)
     NFT_LIMIT=$(echo $LIMIT | sed 's/s/second/')
+    
+    # 关键修复：先清空链，防止规则重复叠加
+    nft add table inet orasrs 2>/dev/null || true
+    nft flush chain inet orasrs input 2>/dev/null || true
+    nft flush chain inet orasrs forward 2>/dev/null || true
     
     cat > /tmp/orasrs.nft << NFT
 table inet orasrs {
@@ -538,7 +543,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.3"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.4"
     echo "========================================="
     
     check_environment
