@@ -609,7 +609,7 @@ FWEOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.3.0"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.3.2"
     echo "========================================="
     
     check_environment
