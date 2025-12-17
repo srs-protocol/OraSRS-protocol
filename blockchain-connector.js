@@ -822,6 +822,59 @@ class BlockchainConnector {
     ]);
     return iface.encodeFunctionData("getThreat", [this.ipToBytes4(ip)]);
   }
+  /**
+   * 获取全局白名单 (通过事件重建)
+   */
+  async getGlobalWhitelist() {
+    try {
+      if (!this.isConnected) {
+        await this.connect();
+      }
+
+      const address = await this.resolveContractAddress(this.config.contractNames.globalWhitelist);
+      if (!address) {
+        console.warn('⚠️ 无法解析 GlobalWhitelist 合约地址');
+        return [];
+      }
+
+      const whitelist = new Set();
+
+      // WhitelistAdded(string)
+      const addedTopic = ethers.id("WhitelistAdded(string)");
+      // WhitelistRemoved(string)
+      const removedTopic = ethers.id("WhitelistRemoved(string)");
+
+      const logs = await this.provider.getLogs({
+        address: address,
+        fromBlock: 0,
+        toBlock: 'latest',
+        topics: [[addedTopic, removedTopic]]
+      });
+
+      const iface = new ethers.Interface([
+        "event WhitelistAdded(string ip)",
+        "event WhitelistRemoved(string ip)"
+      ]);
+
+      for (const log of logs) {
+        try {
+          const parsed = iface.parseLog(log);
+          if (parsed.name === 'WhitelistAdded') {
+            whitelist.add(parsed.args.ip);
+          } else if (parsed.name === 'WhitelistRemoved') {
+            whitelist.delete(parsed.args.ip);
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+
+      return Array.from(whitelist);
+    } catch (error) {
+      console.error('❌ 获取白名单失败:', error.message);
+      return [];
+    }
+  }
 }
 
 export default BlockchainConnector;
