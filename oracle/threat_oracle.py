@@ -393,18 +393,53 @@ def update_contract(threat_data, contract_address, added_ips, removed_ips):
         with open("oracle/merkle_tree.json", "w") as f:
             json.dump(tree_data, f, indent=2)
 
+def resolve_contract_address(w3, registry_address, contract_name):
+    """Resolve contract address using ContractRegistry"""
+    try:
+        # getContractAddress(string) selector: 0x04433bbc
+        # We can use raw call or ABI
+        abi = [{
+            "inputs": [{"internalType": "string", "name": "name", "type": "string"}],
+            "name": "getContractAddress",
+            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+            "stateMutability": "view",
+            "type": "function"
+        }]
+        registry = w3.eth.contract(address=registry_address, abi=abi)
+        address = registry.functions.getContractAddress(contract_name).call()
+        if address == "0x0000000000000000000000000000000000000000":
+            return None
+        return address
+    except Exception as e:
+        print(f"Registry resolution failed: {e}")
+        return None
+
 if __name__ == "__main__":
     print("Starting Oracle...")
     data = fetch_threats()
     print(f"Processed {len(data)} unique IPs")
     
-    # Read contract address
-    try:
-        with open("oracle/contract_address.txt", "r") as f:
-            contract_address = f.read().strip()
-    except FileNotFoundError:
-        print("Contract address file not found. Please deploy contract first.")
+    # Connect to Web3
+    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    if not w3.is_connected():
+        print("Failed to connect to blockchain")
         exit(1)
+
+    # Resolve Contract Address
+    contract_address = None
+    registry_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3" # Deterministic local address
+    
+    print(f"Resolving OptimizedThreatRegistry via Registry ({registry_address})...")
+    contract_address = resolve_contract_address(w3, registry_address, "OptimizedThreatRegistry")
+    
+    if not contract_address:
+        print("Resolution failed, trying oracle/contract_address.txt...")
+        try:
+            with open("oracle/contract_address.txt", "r") as f:
+                contract_address = f.read().strip()
+        except FileNotFoundError:
+            print("Contract address file not found. Please deploy contract first.")
+            exit(1)
 
     print(f"Using Contract Address: {contract_address}")
     
