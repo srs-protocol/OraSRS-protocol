@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.3.1
+# Version: 3.3.2
 # Updated: 2025-12-18
 
 set -e
@@ -342,6 +342,17 @@ install_node_client() {
     fi
     
     chmod +x /usr/lib/orasrs/orasrs-lite.js
+    
+    # 创建 package.json (关键：启用 ESM 支持)
+    cat > /usr/lib/orasrs/package.json << 'EOF'
+{
+  "name": "orasrs-lite",
+  "version": "3.3.1",
+  "description": "OraSRS Lite Client",
+  "main": "orasrs-lite.js",
+  "type": "module"
+}
+EOF
     
     print_info "Node.js 客户端已安装 (使用 SQLite3 CLI 适配器)"
     

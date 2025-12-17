@@ -675,7 +675,7 @@ class OraSRSLiteClient {
                     res.end(JSON.stringify({
                         status: 'healthy',
                         service: 'OraSRS Lite',
-                        version: '3.3.1',
+                        version: '3.3.2',
                         uptime: process.uptime(),
                         stats: this.stats,
                         dbType: this.db.type
