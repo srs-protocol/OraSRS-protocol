@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.7
+# Version: 3.2.8
 
 set -e
 
@@ -196,8 +196,8 @@ init_firewall() {
     # 2. Drop Invalid
     iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
     
-    # 3. Whitelist SSH (关键：防止管理被锁死)
-    iptables -A orasrs_chain -p tcp --dport $SSH_PORT -j ACCEPT
+    # 3. Whitelist SSH SYN (关键：防止管理被锁死)
+    iptables -A orasrs_chain -p tcp --dport $SSH_PORT --syn -j ACCEPT
     
     # 4. SYN Flood Protection (用户提供的逻辑)
     iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT --limit-burst $BURST -j ACCEPT
@@ -472,7 +472,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.7"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.8"
     echo "========================================="
     
     check_environment

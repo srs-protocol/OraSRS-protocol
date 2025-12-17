@@ -34,8 +34,8 @@ iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # 2. Drop Invalid
 iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
 
-# 3. Whitelist SSH (关键：防止管理被锁死)
-iptables -A orasrs_chain -p tcp --dport $SSH_PORT -j ACCEPT
+# 3. Whitelist SSH SYN (关键：防止管理被锁死)
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT --syn -j ACCEPT
 
 # 4. SYN Flood Protection (用户验证的逻辑)
 iptables -A orasrs_chain -p tcp --syn -m limit --limit 20/s --limit-burst 50 -j ACCEPT
