@@ -73,7 +73,9 @@ select_mode() {
         RECOMMENDED_MODE="full" # 仅建议在强力软路由上
     fi
     
-    print_info "根据硬件配置，推荐模式: ${GREEN}${RECOMMENDED_MODE^^}${NC}"
+    # 显示模式名称（大写）
+    MODE_UPPER=$(echo "$RECOMMENDED_MODE" | tr 'a-z' 'A-Z')
+    print_info "根据硬件配置，推荐模式: ${GREEN}${MODE_UPPER}${NC}"
     
     echo "请选择安装模式:"
     echo "  1) Edge (原生边缘代理) - 内存 < 5MB, 纯 Shell/C, 适合所有路由器 [默认]"
@@ -90,7 +92,12 @@ select_mode() {
         esac
     else
         # 交互式选择 (设置超时自动选择默认)
-        read -t 10 -p "请输入选项 [1-3] (10秒后自动选择推荐模式): " choice || choice=""
+        # 注意: read -t 在某些极简 ash 中可能不支持，如果报错请移除 -t 10
+        echo "请输入选项 [1-3] (10秒后自动选择推荐模式): "
+        if ! read -t 10 choice; then
+            choice=""
+        fi
+        
         case "$choice" in
             1) INSTALL_MODE="edge" ;;
             2) INSTALL_MODE="hybrid" ;;
@@ -99,7 +106,8 @@ select_mode() {
         esac
     fi
     
-    print_info "已选择模式: ${GREEN}${INSTALL_MODE^^}${NC}"
+    MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
+    print_info "已选择模式: ${GREEN}${MODE_UPPER}${NC}"
 }
 
 # 3. 安装依赖
@@ -314,8 +322,8 @@ main() {
     
     echo ""
     echo "========================================="
-    echo "  安装成功！"
-    echo "  模式: ${INSTALL_MODE^^}"
+    MODE_UPPER=$(echo "$INSTALL_MODE" | tr 'a-z' 'A-Z')
+    echo "  模式: ${MODE_UPPER}"
     echo "  CLI命令: orasrs-cli query <IP>"
     echo "========================================="
 }
