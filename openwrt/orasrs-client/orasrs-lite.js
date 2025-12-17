@@ -235,13 +235,14 @@ class OraSRSLiteClient {
 
             uciData.split('\n').forEach(line => {
                 if (line.includes('=')) {
-                    const [key, value] = line.split('=');
+                    const [key, rawValue] = line.split('=');
+                    const value = rawValue.replace(/'/g, '').trim();
                     const keyParts = key.split('.');
 
                     if (keyParts[2] === 'enabled') {
                         config.enabled = value === '1';
                     } else if (keyParts[2] === 'api_endpoint') {
-                        config.apiEndpoint = value.replace(/'/g, '');
+                        config.apiEndpoint = value;
                     } else if (keyParts[2] === 'sync_interval') {
                         config.syncInterval = parseInt(value);
                     } else if (keyParts[2] === 'cache_size') {
@@ -250,7 +251,7 @@ class OraSRSLiteClient {
                         if (keyParts[2] === 'enabled') {
                             config.iotShield.enabled = value === '1';
                         } else if (keyParts[2] === 'shield_mode') {
-                            config.iotShield.mode = value.replace(/'/g, '');
+                            config.iotShield.mode = value;
                         } else if (keyParts[2] === 'block_threshold') {
                             config.iotShield.blockThreshold = parseInt(value);
                         }
@@ -675,7 +676,7 @@ class OraSRSLiteClient {
                     res.end(JSON.stringify({
                         status: 'healthy',
                         service: 'OraSRS Lite',
-                        version: '3.3.2',
+                        version: '3.3.3',
                         uptime: process.uptime(),
                         stats: this.stats,
                         dbType: this.db.type
