@@ -136,6 +136,30 @@ install_orasrs() {
     cp orasrs_client.sh /usr/bin/orasrs-client
     chmod +x /usr/bin/orasrs-client
     
+    # 创建 CLI 工具别名
+    cat > /usr/bin/orasrs-cli << 'CLIEOF'
+#!/bin/sh
+# OraSRS CLI Tool
+case "$1" in
+    query)
+        /usr/bin/orasrs-client check_ip "$2"
+        ;;
+    add)
+        /usr/bin/orasrs-client add_rule "$2" "$3" "$4"
+        ;;
+    *)
+        echo "OraSRS CLI Tool"
+        echo "Usage:"
+        echo "  orasrs-cli query <IP>     - Check if IP is a threat"
+        echo "  orasrs-cli add <IP> <REASON> [DURATION] - Add IP to block list"
+        echo ""
+        echo "Service management:"
+        echo "  /etc/init.d/orasrs start|stop|restart"
+        ;;
+esac
+CLIEOF
+    chmod +x /usr/bin/orasrs-cli
+    
     # 创建配置目录
     mkdir -p /etc/config
     mkdir -p /var/lib/orasrs
@@ -197,7 +221,7 @@ start_service() {
     }
     
     procd_open_instance
-    procd_set_param command /usr/bin/orasrs-client
+    procd_set_param command /usr/bin/orasrs-client start
     procd_set_param respawn
     procd_set_param stdout 1
     procd_set_param stderr 1
@@ -240,6 +264,10 @@ show_info() {
     echo "========================================="
     echo "  OraSRS OpenWrt 安装完成"
     echo "========================================="
+    echo ""
+    echo "CLI 命令:"
+    echo "  orasrs-cli query <IP>     - 查询 IP 威胁状态"
+    echo "  orasrs-cli add <IP> <原因> [时长] - 添加 IP 到黑名单"
     echo ""
     echo "服务管理命令:"
     echo "  启动: /etc/init.d/orasrs start"
