@@ -531,6 +531,7 @@ main() {
         echo "  界面: 已安装 (Services -> OraSRS)"
     fi
     echo "  CLI命令: orasrs-cli query <IP>"
+    echo "  缓存命令: orasrs-cli cache {stats|list|clear}"
     echo "  应急命令: orasrs-cli harden"
     echo "========================================="
 }

@@ -90,6 +90,24 @@ config orasrs 'main'
 | `enable_ipv6` | boolean | `1` | 启用 IPv6 支持 |
 | `block_mode` | string | `monitor` | 拦截模式：monitor, block |
 
+## 命令行工具 / CLI Usage
+
+OraSRS 提供了统一的 `orasrs-cli` 工具来管理服务。
+
+### 1. 基础命令
+- **查询 IP**: `orasrs-cli query <IP>`
+- **手动同步**: `orasrs-cli sync`
+- **添加规则**: `orasrs-cli add <IP>`
+
+### 2. 缓存管理 (Cache Management)
+- **查看统计**: `orasrs-cli cache stats`
+- **查看列表**: `orasrs-cli cache list` (显示前 20 条)
+- **清空缓存**: `orasrs-cli cache clear`
+
+### 3. 应急响应 (Emergency Response)
+- **一键加固**: `orasrs-cli harden` (限制 SYN 5/s)
+- **恢复默认**: `orasrs-cli relax` (限制 SYN 20/s)
+
 ### 高级配置 / Advanced Configuration
 
 ```
