@@ -432,16 +432,24 @@ OraSRS 支持 OpenWrt 路由器和 IoT 设备防护，为嵌入式设备提供�
 **快速安装 / Quick Installation:**
 
 ```bash
-# 方法1: 使用一键安装脚本 (推荐)
-# Method 1: Use one-click installation script (Recommended)
-wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/orasrs-lite-client/scripts/install.sh
-chmod +x install.sh
-sudo ./install.sh
+# 方法1: 使用 curl 一键安装 (推荐)
+# Method 1: Use curl one-click installation (Recommended)
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh | sh
 
-# 方法2: 从软件源安装 (开发中)
-# Method 2: Install from package repository (In development)
-# opkg update
-# opkg install orasrs-client
+# 方法2: 使用 wget 下载脚本
+# Method 2: Use wget to download script
+wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh
+sh install-openwrt.sh
+```
+
+**管理命令 / Management Commands:**
+
+```bash
+# 查询 IP / Query IP
+orasrs-cli query 1.2.3.4
+
+# 查看状态 / Check Status
+/etc/init.d/orasrs status
 ```
 
 

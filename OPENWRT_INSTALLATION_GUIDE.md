@@ -10,6 +10,14 @@
 
 ## 一键安装 / Quick Installation
 
+### 方法 1: 使用 curl（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh | sh
+```
+
+### 方法 2: 使用 wget
+
 ```bash
 # 下载安装脚本
 wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh
