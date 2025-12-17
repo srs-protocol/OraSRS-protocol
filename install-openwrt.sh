@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.4
+# Version: 3.2.5
 
 set -e
 
@@ -204,16 +204,16 @@ table inet orasrs {
         type filter hook input priority filter; policy accept;
         
         # SYN Flood Protection
-        tcp flags syn limit rate $NFT_LIMIT burst $BURST packets return
-        tcp flags syn drop
+        tcp flags syn limit rate $NFT_LIMIT burst $BURST counter packets return
+        tcp flags syn counter drop
         
         # Threat Blocking
-        ip saddr @threats drop
+        ip saddr @threats counter drop
     }
     
     chain forward {
         type filter hook forward priority filter; policy accept;
-        ip saddr @threats drop
+        ip saddr @threats counter drop
     }
 }
 NFT
@@ -383,7 +383,33 @@ case "$1" in
             nft list table inet orasrs 2>/dev/null || echo "Table 'orasrs' not found"
         fi
         ;;
-    *) echo "Usage: $0 {start|reload|check_ip|harden|relax|cache_stats|cache_list|cache_clear|status}" ;;
+    monitor)
+        while true; do
+            clear
+            echo "=== OraSRS Real-time Monitor ==="
+            echo "Time: $(date '+%H:%M:%S')"
+            echo "Load: $(uptime | awk -F'load average:' '{ print $2 }')"
+            echo "Mem:  $(free -m | awk '/Mem:/ { print $3"/"$2" MB" }')"
+            echo "--------------------------------"
+            if [ "$BACKEND" = "iptables" ]; then
+                SYN_DROP=$(iptables -nvL syn_flood 2>/dev/null | grep "DROP" | awk '{print $1}')
+                THREAT_DROP=$(iptables -nvL INPUT 2>/dev/null | grep "match-set" | awk '{print $1}')
+                echo "SYN Flood Dropped: ${SYN_DROP:-0}"
+                echo "Threats Dropped:   ${THREAT_DROP:-0}"
+            else
+                # Parse nftables counters
+                NFT_OUT=$(nft list table inet orasrs 2>/dev/null)
+                SYN_DROP=$(echo "$NFT_OUT" | grep "tcp flags syn counter packets 0 bytes 0 drop" | awk '{print $6}' | head -1)
+                # Note: parsing nft output is tricky as format varies. Showing raw stats for now.
+                echo "--- NFTABLES STATS ---"
+                nft list table inet orasrs | grep "packets" | sed 's/^/  /'
+            fi
+            echo "--------------------------------"
+            echo "Press Ctrl+C to exit"
+            sleep 1
+        done
+        ;;
+    *) echo "Usage: $0 {start|reload|check_ip|harden|relax|cache_stats|cache_list|cache_clear|status|monitor}" ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-client
@@ -479,7 +505,8 @@ case "$1" in
         esac
         ;;
     status) /usr/bin/orasrs-client status ;;
-    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax|cache|status}" ;;
+    monitor) /usr/bin/orasrs-client monitor ;;
+    *) echo "Usage: orasrs-cli {query|add|sync|harden|relax|cache|status|monitor}" ;;
 esac
 EOF
     chmod +x /usr/bin/orasrs-cli
@@ -566,6 +593,7 @@ main() {
         echo "  界面: 已安装 (Services -> OraSRS)"
     fi
     echo "  CLI命令: orasrs-cli query <IP>"
+    echo "  监控命令: orasrs-cli monitor"
     echo "  缓存命令: orasrs-cli cache {stats|list|clear}"
     echo "  应急命令: orasrs-cli harden"
     echo "========================================="
