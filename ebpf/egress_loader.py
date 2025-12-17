@@ -53,23 +53,26 @@ class EgressFilter:
             print(f"[OraSRS] eBPF filter attached to {self.interface} (Native/Driver Mode)")
         except Exception as e:
             err_msg = str(e)
+            print(f"[OraSRS] Initial attach failed: {err_msg}")
+            
             if "File exists" in err_msg:
                 print(f"[OraSRS] XDP program already attached to {self.interface}. Detaching...")
-                try:
-                    self.bpf.remove_xdp(self.interface, 0)
-                except:
-                    pass
-                try:
-                    self.bpf.remove_xdp(self.interface, BPF.XDP_FLAGS_SKB_MODE)
-                except:
-                    pass
+                # Force detach all possible modes
+                try: self.bpf.remove_xdp(self.interface, 0)
+                except: pass
+                try: self.bpf.remove_xdp(self.interface, BPF.XDP_FLAGS_SKB_MODE)
+                except: pass
+                try: self.bpf.remove_xdp(self.interface, BPF.XDP_FLAGS_DRV_MODE)
+                except: pass
                 
                 # Retry Native
+                print(f"[OraSRS] Retrying Native attach...")
                 try:
                     self.bpf.attach_xdp(self.interface, fn, 0)
                     print(f"[OraSRS] eBPF filter attached to {self.interface} (Native/Driver Mode) - Retried")
                     return
                 except Exception as e2:
+                    print(f"[OraSRS] Retry Native failed: {e2}")
                     err_msg = str(e2) # Update error message for fallback check
             
             if "Operation not supported" in err_msg or "Invalid argument" in err_msg:
