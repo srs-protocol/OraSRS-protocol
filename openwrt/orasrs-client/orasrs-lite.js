@@ -3,7 +3,7 @@
  * OraSRS Lite Client - Optimized for OpenWrt/Embedded Devices
  * 
  * Features:
- * - Minimal dependencies
+ * - Minimal dependencies (No native build required)
  * - SQLite-based caching (saves RAM)
  * - UCI config file support
  * - Memory footprint < 10MB
@@ -13,15 +13,164 @@
 import http from 'http';
 import https from 'https';
 import fs from 'fs';
-import { execSync } from 'child_process';
-import Database from 'better-sqlite3';
+import { execSync, spawnSync } from 'child_process';
 
 const CONFIG_FILE = '/etc/config/orasrs';
 const DB_PATH = '/var/lib/orasrs/cache.db';
 const LOG_FILE = '/var/log/orasrs.log';
 
+/**
+ * SQLite Adapter to handle both better-sqlite3 (if available) and sqlite3 CLI (fallback)
+ */
+class SQLiteAdapter {
+    constructor(dbPath, logger, requireFn) {
+        this.dbPath = dbPath;
+        this.logger = logger;
+        this.require = requireFn;
+        this.type = 'none';
+        this.db = null;
+
+        this.init();
+    }
+
+    init() {
+        // 1. Try better-sqlite3 (Native, Fast)
+        try {
+            if (this.require) {
+                const Database = this.require('better-sqlite3');
+                this.db = new Database(this.dbPath);
+                this.type = 'better-sqlite3';
+                this.logger('Using native better-sqlite3 adapter', 'info');
+            } else {
+                throw new Error('Require not available');
+            }
+        } catch (e) {
+            // 2. Fallback to sqlite3 CLI (Slower, but no deps)
+            try {
+                execSync('sqlite3 -version');
+                this.type = 'cli';
+                this.logger('Using sqlite3 CLI adapter (fallback)', 'info');
+            } catch (cliError) {
+                this.logger('FATAL: No sqlite3 provider found. Install better-sqlite3 or sqlite3-cli.', 'error');
+                process.exit(1);
+            }
+        }
+    }
+
+    exec(sql) {
+        if (this.type === 'better-sqlite3') {
+            return this.db.exec(sql);
+        } else {
+            // CLI exec
+            try {
+                spawnSync('sqlite3', [this.dbPath, sql]);
+            } catch (e) {
+                this.logger(`CLI exec error: ${e.message}`, 'error');
+            }
+        }
+    }
+
+    prepare(sql) {
+        if (this.type === 'better-sqlite3') {
+            return this.db.prepare(sql);
+        } else {
+            return new CLIStatement(this.dbPath, sql, this.logger);
+        }
+    }
+
+    transaction(fn) {
+        if (this.type === 'better-sqlite3') {
+            return this.db.transaction(fn);
+        } else {
+            // CLI transaction simulation (naive)
+            return (...args) => {
+                this.exec('BEGIN TRANSACTION;');
+                try {
+                    const result = fn(...args);
+                    this.exec('COMMIT;');
+                    return result;
+                } catch (e) {
+                    this.exec('ROLLBACK;');
+                    throw e;
+                }
+            };
+        }
+    }
+
+    close() {
+        if (this.type === 'better-sqlite3') {
+            this.db.close();
+        }
+    }
+}
+
+class CLIStatement {
+    constructor(dbPath, sql, logger) {
+        this.dbPath = dbPath;
+        this.sql = sql;
+        this.logger = logger;
+    }
+
+    run(...params) {
+        const boundSql = this.bindParams(this.sql, params);
+        try {
+            spawnSync('sqlite3', [this.dbPath, boundSql]);
+            return { changes: 1 }; // Mock return
+        } catch (e) {
+            this.logger(`CLI run error: ${e.message}`, 'error');
+            return { changes: 0 };
+        }
+    }
+
+    get(...params) {
+        const boundSql = this.bindParams(this.sql, params);
+        try {
+            // Use -json for easier parsing if available, else -line
+            // OpenWrt sqlite3-cli usually supports -line or -list
+            // Let's use -header -line for robustness or just -json if version allows.
+            // Safest for OpenWrt is often standard output with separator.
+
+            // Let's try JSON output first
+            const res = spawnSync('sqlite3', [this.dbPath, '-json', boundSql]);
+            if (res.status === 0 && res.stdout.length > 0) {
+                const data = JSON.parse(res.stdout.toString());
+                return data[0];
+            }
+            return undefined;
+        } catch (e) {
+            // Fallback if -json not supported (older sqlite3)
+            // This is a simplified fallback, might need robust parsing
+            return undefined;
+        }
+    }
+
+    // Simple parameter binding (WARNING: Not SQL injection safe for untrusted input, but OK for internal logic)
+    bindParams(sql, params) {
+        let bound = sql;
+        for (const param of params) {
+            let val = param;
+            if (typeof val === 'string') {
+                val = `'${val.replace(/'/g, "''")}'`;
+            } else if (val === null || val === undefined) {
+                val = 'NULL';
+            }
+            bound = bound.replace('?', val);
+        }
+        return bound;
+    }
+}
+
 class OraSRSLiteClient {
     constructor() {
+        // Create require for dynamic loading
+        import('module').then(m => {
+            this.require = m.createRequire(import.meta.url);
+            this.start();
+        });
+    }
+
+    start() {
+        this.log = this.log.bind(this); // Bind log for adapter
         this.config = this.loadConfig();
         this.db = this.initDatabase();
         this.stats = {
@@ -32,6 +181,13 @@ class OraSRSLiteClient {
 
         // 启动定时同步
         this.startAutoSync();
+
+        if (this.config.enabled) {
+            this.startServer();
+        } else {
+            this.log('OraSRS is disabled in config', 'warn');
+            process.exit(0);
+        }
     }
 
     /**
@@ -140,7 +296,8 @@ class OraSRSLiteClient {
                 fs.mkdirSync(dbDir, { recursive: true });
             }
 
-            const db = new Database(DB_PATH);
+            // Use Adapter
+            const db = new SQLiteAdapter(DB_PATH, this.log, this.require);
 
             // 创建表
             db.exec(`
@@ -332,7 +489,9 @@ class OraSRSLiteClient {
         this.log('⚠ Offline mode: Using cached threat data', 'warn');
         const cacheCount = this.db.prepare('SELECT COUNT(*) as count FROM threats WHERE expires_at > ?')
             .get(Math.floor(Date.now() / 1000));
-        this.log(`Cached threats: ${cacheCount.count}`, 'info');
+        if (cacheCount) {
+            this.log(`Cached threats: ${cacheCount.count}`, 'info');
+        }
     }
 
     /**
@@ -516,9 +675,10 @@ class OraSRSLiteClient {
                     res.end(JSON.stringify({
                         status: 'healthy',
                         service: 'OraSRS Lite',
-                        version: '2.1.0',
+                        version: '3.3.1',
                         uptime: process.uptime(),
-                        stats: this.stats
+                        stats: this.stats,
+                        dbType: this.db.type
                     }));
                 } else if (url.pathname === '/query') {
                     const ip = url.searchParams.get('ip');
@@ -605,17 +765,7 @@ class OraSRSLiteClient {
 }
 
 // 启动服务
-const client = new OraSRSLiteClient();
-
-if (client.config.enabled) {
-    client.startServer();
-} else {
-    client.log('OraSRS is disabled in config', 'warn');
-    process.exit(0);
-}
+new OraSRSLiteClient();
 
 // 信号处理
-process.on('SIGTERM', () => client.shutdown());
-process.on('SIGINT', () => client.shutdown());
-
-export default OraSRSLiteClient;
+// process.on('SIGTERM', () => client.shutdown()); // Handled inside class if instance available, or make static

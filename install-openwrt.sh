@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.3.0
+# Version: 3.3.1
 # Updated: 2025-12-18
 
 set -e
@@ -343,38 +343,7 @@ install_node_client() {
     
     chmod +x /usr/lib/orasrs/orasrs-lite.js
     
-    # 安装依赖 (better-sqlite3)
-    # 注意: 在 OpenWrt 上编译 native 模块很困难。
-    # 如果 orasrs-lite.js 依赖 better-sqlite3，我们需要确保环境支持。
-    # 这里我们尝试 npm install，如果失败则警告用户
-    print_step "配置 Node.js 依赖..."
-    cd /usr/lib/orasrs
-    
-    # 创建 package.json
-    cat > package.json << 'EOF'
-{
-  "name": "orasrs-lite",
-  "version": "3.3.0",
-  "description": "OraSRS Lite Client",
-  "main": "orasrs-lite.js",
-  "type": "module",
-  "dependencies": {
-    "better-sqlite3": "^9.0.0"
-  }
-}
-EOF
-    
-    if command -v npm >/dev/null 2>&1; then
-        print_info "运行 npm install..."
-        # 尝试安装，如果失败(常见于无编译环境)，提示用户
-        if ! npm install --production --no-audit --no-fund; then
-            print_warning "npm install 失败 (可能是缺少编译工具)"
-            print_warning "尝试使用 sqlite3 CLI 模式 (如果代码支持)..."
-            # 这里假设 orasrs-lite.js 有回退机制或用户已安装预编译包
-        fi
-    else
-        print_warning "未找到 npm，跳过依赖安装。请确保已安装必要的 Node 模块。"
-    fi
+    print_info "Node.js 客户端已安装 (使用 SQLite3 CLI 适配器)"
     
     # 创建 CLI 包装器
     cat > /usr/bin/orasrs-client << 'EOF'
