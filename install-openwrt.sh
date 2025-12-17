@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.2.8
+# Version: 3.2.9
 
 set -e
 
@@ -301,10 +301,21 @@ case "$1" in
             echo "Load: $(uptime | awk -F'load average:' '{ print $2 }')"
             echo "Mem:  $(free -m | awk '/Mem:/ { print $3"/"$2" MB" }')"
             echo "--------------------------------"
-            CHAIN_STATS=$(iptables -nvL orasrs_chain 2>/dev/null)
-            SYN_DROP=$(echo "$CHAIN_STATS" | grep "tcp dpt:syn DROP" | awk '{print $1}')
-            THREAT_DROP=$(echo "$CHAIN_STATS" | grep "match-set" | awk '{print $1}')
-            echo "SYN Flood Dropped: ${SYN_DROP:-0}"
+            # 获取 orasrs_chain 的统计信息
+            CHAIN_OUTPUT=$(iptables -nvL orasrs_chain 2>/dev/null)
+            # 解析 SYN DROP 规则 (第5行: tcp flags:0x17/0x02 DROP)
+            SYN_DROP=$(echo "$CHAIN_OUTPUT" | awk '/flags:0x17\/0x02.*DROP/ {print $1; exit}')
+            # 解析威胁 DROP 规则 (最后一行: match-set)
+            THREAT_DROP=$(echo "$CHAIN_OUTPUT" | awk '/match-set.*DROP/ {print $1; exit}')
+            # 计算 SYN 速率 (pps)
+            if [ -n "$PREV_SYN" ] && [ -n "$SYN_DROP" ]; then
+                SYN_RATE=$((SYN_DROP - PREV_SYN))
+            else
+                SYN_RATE=0
+            fi
+            PREV_SYN=$SYN_DROP
+            
+            echo "SYN Flood Dropped: ${SYN_DROP:-0} (${SYN_RATE}/s)"
             echo "Threats Dropped:   ${THREAT_DROP:-0}"
             echo "--------------------------------"
             echo "Press Ctrl+C to exit"
@@ -459,6 +470,98 @@ EOF
 EOF
     chmod +x /etc/hotplug.d/firewall/99-orasrs
     
+    # 生成 /etc/firewall.user (OpenWrt 防火墙自动加载)
+    print_step "生成 /etc/firewall.user 防火墙规则..."
+    cat > /etc/firewall.user << 'FWEOF'
+#!/bin/sh
+# =======================================================================================
+# OraSRS OpenWrt Firewall Rules - Complete Ruleset
+# 完整防火墙规则集 - 优化版
+# =======================================================================================
+# Version: 4.0.0
+# Purpose: Comprehensive DDoS protection with SSH safeguards and threat intelligence
+# Deployment: /etc/firewall.user (auto-loaded on firewall restart)
+# =======================================================================================
+
+# ===========================
+# 模块加载 (Kernel Modules)
+# ===========================
+modprobe ip_set 2>/dev/null || logger -t ORASRS "WARNING: ip_set module not available"
+modprobe ip_set_hash_net 2>/dev/null
+modprobe xt_set 2>/dev/null
+modprobe xt_limit 2>/dev/null
+modprobe xt_conntrack 2>/dev/null
+modprobe xt_recent 2>/dev/null
+
+# ===========================
+# 配置参数 (Configuration)
+# ===========================
+LIMIT_RATE=$(uci get orasrs.main.limit_rate 2>/dev/null || echo "20/s")
+LIMIT_BURST=$(uci get orasrs.main.limit_burst 2>/dev/null || echo "50")
+SSH_PORT=$(uci get dropbear.@dropbear[0].Port 2>/dev/null || echo "22")
+IPSET_NAME="orasrs_threats"
+
+# ===========================
+# IPSet 初始化
+# ===========================
+ipset create $IPSET_NAME hash:net family inet hashsize 4096 maxelem 65536 -exist 2>/dev/null
+
+# ===========================
+# 清理旧规则 (Cleanup)
+# ===========================
+iptables -D INPUT -j orasrs_chain 2>/dev/null
+iptables -D FORWARD -j orasrs_chain 2>/dev/null
+iptables -F orasrs_chain 2>/dev/null
+iptables -X orasrs_chain 2>/dev/null
+
+# ===========================
+# 创建自定义链 (Custom Chain)
+# ===========================
+iptables -N orasrs_chain
+
+# =======================================================================================
+# 核心规则 (Core Rules) - 按优先级排序
+# =======================================================================================
+
+# 1️⃣ 本地回环保护
+iptables -A orasrs_chain -i lo -j ACCEPT
+
+# 2️⃣ 连接状态跟踪
+iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
+
+# 3️⃣ 威胁情报拦截 (零容忍 - 必须在 SSH/SYN 防护之前)
+iptables -A orasrs_chain -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null
+
+# 4️⃣ SSH 保护 (三重保障)
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --set
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --update --seconds 60 --hitcount 4 -j DROP
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -j ACCEPT
+
+# 5️⃣ SYN Flood 防护
+iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT_RATE --limit-burst $LIMIT_BURST -j ACCEPT
+iptables -A orasrs_chain -p tcp --syn -j DROP
+
+# 6️⃣ ICMP 洪水防护
+iptables -A orasrs_chain -p icmp --icmp-type echo-request -m limit --limit 5/s --limit-burst 10 -j ACCEPT
+iptables -A orasrs_chain -p icmp --icmp-type echo-request -j DROP
+iptables -A orasrs_chain -p icmp --icmp-type destination-unreachable -j ACCEPT
+iptables -A orasrs_chain -p icmp --icmp-type time-exceeded -j ACCEPT
+
+# 7️⃣ 日志记录 (低频率)
+iptables -A orasrs_chain -m limit --limit 1/min --limit-burst 3 -j LOG --log-prefix "ORASRS-DROP: " --log-level 4
+
+# =======================================================================================
+# 应用规则 (Apply Rules)
+# =======================================================================================
+iptables -I INPUT 1 -j orasrs_chain
+
+logger -t ORASRS "Firewall rules loaded successfully | Limit: $LIMIT_RATE | Burst: $LIMIT_BURST | SSH: $SSH_PORT"
+FWEOF
+    chmod +x /etc/firewall.user
+    print_info "/etc/firewall.user 已生成 (防火墙重启时自动加载)"
+    
     # 安装 LuCI
     if [ "$INSTALL_LUCI" -eq 1 ]; then
         generate_luci
@@ -472,7 +575,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.2.8"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.2.9"
     echo "========================================="
     
     check_environment
