@@ -558,6 +558,11 @@ orasrs-cli cache status
 
 **完整文档 / Full Documentation:**
 
+- [OpenWrt Client Guide / OpenWrt 客户端完整指南](OPENWRT_CLIENT_GUIDE.md) **NEW!**
+- [T0-T3 Defense Mechanisms / T0-T3 防御机制详解](OPENWRT_T0_T3_MECHANISMS.md) **NEW!**
+- [T3 Module Optimization / T3 模块优化](OPENWRT_T3_OPTIMIZATION.md)
+- [Deployment Guide / 部署指南](OPENWRT_DEPLOYMENT_GUIDE.md)
+- [Quick Reference / 快速参考](QUICK_DEPLOY_REFERENCE.md)
 - [OpenWrt Installation Guide / OpenWrt 安装指南](OPENWRT_INSTALLATION_GUIDE.md)
 - [IoT Deployment Guide / IoT 部署指南](IOT_DEPLOYMENT_GUIDE.md)
 - [Transparent Proxy Setup / 透明代理设置](TRANSPARENT_PROXY_SETUP.md)
