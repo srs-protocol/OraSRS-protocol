@@ -1,7 +1,7 @@
 #!/bin/sh
 # OraSRS OpenWrt 智能安装脚本
 # OraSRS OpenWrt Intelligent Installation Script
-# Version: 3.0.0
+# Version: 3.0.1
 
 set -e
 
@@ -312,7 +312,7 @@ EOF
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 智能安装程序 v3.0"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.0.1"
     echo "========================================="
     
     check_environment
