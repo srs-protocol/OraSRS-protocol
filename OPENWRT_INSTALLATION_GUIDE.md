@@ -16,15 +16,29 @@
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh | sh
 ```
 
-### 方法 2: 使用 wget
+### 方法 2: 指定安装模式
+
+脚本支持自动检测硬件并选择最佳模式，您也可以手动指定：
 
 ```bash
-# 下载安装脚本
-wget https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh
+# 安装 Edge 模式 (适合 < 64MB 内存设备)
+curl -fsSL ... | sh -s -- edge
 
-# 运行安装
-sh install-openwrt.sh
+# 安装 Hybrid 模式 (适合 >= 64MB 内存设备)
+curl -fsSL ... | sh -s -- hybrid
 ```
+
+## 部署模式 / Deployment Modes
+
+OraSRS OpenWrt 插件支持三种部署模式，适应不同硬件环境：
+
+| 模式 | 适用场景 | 内存需求 | 核心组件 | 功能 |
+|------|----------|----------|----------|------|
+| **Edge (默认)** | IoT 设备、低配路由 | < 5 MB | Shell + ipset | 核心防护、自动更新、极低资源占用 |
+| **Hybrid** | 中高端路由器 | ~30 MB | Python + ipset | 完整 API 交互、更复杂的过滤逻辑 |
+| **Full** | x86 软路由 | ~90 MB | Node.js | 完整节点功能 (需手动配置) |
+
+脚本会自动检测您的硬件配置（内存、架构、Python支持）并推荐最佳模式。
 
 ## 手动安装 / Manual Installation（等更新）
 

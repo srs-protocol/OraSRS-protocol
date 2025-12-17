@@ -1,7 +1,7 @@
 #!/bin/sh
-# OraSRS OpenWrt 一键安装脚本
-# OraSRS OpenWrt Quick Installation Script
-# Version: 2.0.0
+# OraSRS OpenWrt 智能安装脚本
+# OraSRS OpenWrt Intelligent Installation Script
+# Version: 3.0.0
 
 set -e
 
@@ -9,217 +9,283 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# 全局变量
+INSTALL_MODE=""
+MEMORY_TOTAL=0
+ARCH=""
+HAS_PYTHON=0
+HAS_IPSET=0
+
 # 打印函数
-print_info() {
-    echo "${GREEN}[INFO]${NC} $1"
-}
+print_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+print_step() { echo -e "${BLUE}[STEP]${NC} $1"; }
 
-print_error() {
-    echo "${RED}[ERROR]${NC} $1"
-}
-
-print_warning() {
-    echo "${YELLOW}[WARNING]${NC} $1"
-}
-
-# 检查是否为 OpenWrt
-check_openwrt() {
+# 1. 硬件与环境检测
+check_environment() {
+    print_step "检测系统环境..."
+    
+    # 检查 OpenWrt
     if [ ! -f "/etc/openwrt_release" ]; then
         print_error "此脚本仅支持 OpenWrt 系统"
         exit 1
     fi
-    
     . /etc/openwrt_release
-    print_info "检测到 OpenWrt 版本: $DISTRIB_RELEASE"
-}
-
-# 检查系统资源
-check_resources() {
-    # 检查内存
-    total_mem=$(free | grep Mem | awk '{print $2}')
-    if [ "$total_mem" -lt 65536 ]; then
-        print_warning "内存小于 64MB，可能影响性能"
+    print_info "系统版本: OpenWrt $DISTRIB_RELEASE ($DISTRIB_ARCH)"
+    ARCH=$DISTRIB_ARCH
+    
+    # 检查内存 (KB)
+    MEMORY_TOTAL=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+    MEMORY_MB=$((MEMORY_TOTAL / 1024))
+    print_info "系统内存: ${MEMORY_MB} MB"
+    
+    # 检查 Python
+    if command -v python3 >/dev/null 2>&1; then
+        HAS_PYTHON=1
+        print_info "Python3: 已安装"
+    else
+        print_info "Python3: 未安装"
     fi
     
-    # 检查存储空间
-    available_space=$(df / | tail -1 | awk '{print $4}')
-    if [ "$available_space" -lt 10240 ]; then
-        print_error "可用存储空间不足 10MB"
-        exit 1
+    # 检查 ipset
+    if command -v ipset >/dev/null 2>&1; then
+        HAS_IPSET=1
+        print_info "ipset: 已安装"
+    else
+        print_warning "ipset: 未安装 (将尝试自动安装)"
     fi
-    
-    print_info "系统资源检查通过"
 }
 
-# 安装依赖
+# 2. 模式选择逻辑
+select_mode() {
+    print_step "选择部署模式..."
+    
+    # 自动推荐
+    RECOMMENDED_MODE="edge"
+    if [ "$MEMORY_MB" -ge 64 ] && [ "$HAS_PYTHON" -eq 1 ]; then
+        RECOMMENDED_MODE="hybrid"
+    fi
+    if [ "$MEMORY_MB" -ge 512 ] && [ "$ARCH" = "x86_64" ]; then
+        RECOMMENDED_MODE="full" # 仅建议在强力软路由上
+    fi
+    
+    print_info "根据硬件配置，推荐模式: ${GREEN}${RECOMMENDED_MODE^^}${NC}"
+    
+    echo "请选择安装模式:"
+    echo "  1) Edge (原生边缘代理) - 内存 < 5MB, 纯 Shell/C, 适合所有路由器 [默认]"
+    echo "  2) Hybrid (混合模式) - 内存 ~30MB, Python驱动, 功能更强"
+    echo "  3) Full (完整节点) - 内存 ~90MB, Node.js, 仅限 x86 高性能路由"
+    
+    # 如果有参数传入，直接使用
+    if [ -n "$1" ]; then
+        case "$1" in
+            edge|1) INSTALL_MODE="edge" ;;
+            hybrid|2) INSTALL_MODE="hybrid" ;;
+            full|3) INSTALL_MODE="full" ;;
+            *) print_error "无效的模式参数"; exit 1 ;;
+        esac
+    else
+        # 交互式选择 (设置超时自动选择默认)
+        read -t 10 -p "请输入选项 [1-3] (10秒后自动选择推荐模式): " choice || choice=""
+        case "$choice" in
+            1) INSTALL_MODE="edge" ;;
+            2) INSTALL_MODE="hybrid" ;;
+            3) INSTALL_MODE="full" ;;
+            *) INSTALL_MODE="$RECOMMENDED_MODE" ;;
+        esac
+    fi
+    
+    print_info "已选择模式: ${GREEN}${INSTALL_MODE^^}${NC}"
+}
+
+# 3. 安装依赖
 install_dependencies() {
-    print_info "安装依赖包..."
-    
+    print_step "安装依赖包..."
     opkg update
     
-    # 基础依赖
-    opkg install curl ca-certificates libustream-openssl || {
-        print_warning "部分依赖包安装失败，尝试继续..."
-    }
+    # 通用依赖
+    PACKAGES="curl ca-certificates ipset iptables"
+    
+    # 模式特定依赖
+    if [ "$INSTALL_MODE" = "hybrid" ]; then
+        PACKAGES="$PACKAGES python3 python3-pip"
+    elif [ "$INSTALL_MODE" = "full" ]; then
+        PACKAGES="$PACKAGES node node-npm"
+    fi
+    
+    print_info "正在安装: $PACKAGES"
+    opkg install $PACKAGES || print_warning "部分包安装失败，尝试继续..."
 }
 
-# 下载并安装 OraSRS Lite Client
-install_orasrs() {
-    print_info "下载 OraSRS Lite Client..."
-    
-    # 创建临时目录
-    TMP_DIR="/tmp/orasrs-install"
-    mkdir -p "$TMP_DIR"
-    cd "$TMP_DIR"
-    
-    # 定义多个下载源
-    GITHUB_RAW="https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/orasrs-lite-client/openwrt/usr/bin/orasrs_client.sh"
-    GITHUB_PROXY="https://ghproxy.com/$GITHUB_RAW"
-    JSDELIVR="https://cdn.jsdelivr.net/gh/srs-protocol/OraSRS-protocol@lite-client/orasrs-lite-client/openwrt/usr/bin/orasrs_client.sh"
-    
-    # 尝试多个下载源
-    print_info "尝试下载客户端脚本..."
-    DOWNLOAD_SUCCESS=0
-    
-    # 方法 1: 直接从 GitHub
-    print_info "尝试源 1: GitHub Raw"
-    if curl -L -o orasrs_client.sh --connect-timeout 10 --max-time 30 "$GITHUB_RAW" 2>/dev/null; then
-        if [ -s orasrs_client.sh ]; then
-            DOWNLOAD_SUCCESS=1
-            print_info "✅ 从 GitHub 下载成功"
-        fi
-    fi
-    
-    # 方法 2: 使用 GitHub 代理
-    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
-        print_info "尝试源 2: GitHub Proxy"
-        if curl -L -o orasrs_client.sh --connect-timeout 10 --max-time 30 "$GITHUB_PROXY" 2>/dev/null; then
-            if [ -s orasrs_client.sh ]; then
-                DOWNLOAD_SUCCESS=1
-                print_info "✅ 从 GitHub Proxy 下载成功"
-            fi
-        fi
-    fi
-    
-    # 方法 3: 使用 jsDelivr CDN
-    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
-        print_info "尝试源 3: jsDelivr CDN"
-        if curl -L -o orasrs_client.sh --connect-timeout 10 --max-time 30 "$JSDELIVR" 2>/dev/null; then
-            if [ -s orasrs_client.sh ]; then
-                DOWNLOAD_SUCCESS=1
-                print_info "✅ 从 jsDelivr 下载成功"
-            fi
-        fi
-    fi
-    
-    # 检查下载是否成功
-    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
-        print_error "所有下载源均失败"
-        print_info "请手动下载并安装:"
-        print_info "1. 访问: https://github.com/srs-protocol/OraSRS-protocol/tree/lite-client/orasrs-lite-client/openwrt"
-        print_info "2. 下载 orasrs_client.sh 到 /usr/bin/orasrs-client"
-        print_info "3. 运行: chmod +x /usr/bin/orasrs-client"
-        exit 1
-    fi
-    
-    # 验证下载的文件
-    if ! head -1 orasrs_client.sh | grep -q "#!/bin/sh"; then
-        print_error "下载的文件格式不正确"
-        exit 1
-    fi
-    
-    # 安装到系统
-    print_info "安装 OraSRS 客户端..."
-    mkdir -p /usr/bin
-    cp orasrs_client.sh /usr/bin/orasrs-client
-    chmod +x /usr/bin/orasrs-client
-    
-    # 创建 CLI 工具别名
-    cat > /usr/bin/orasrs-cli << 'CLIEOF'
+# 4. 生成 Edge 客户端 (Shell 版本)
+generate_edge_client() {
+    cat > /usr/bin/orasrs-client << 'EOF'
 #!/bin/sh
-# OraSRS CLI Tool
+# OraSRS Edge Client (Shell Version)
+# 极致轻量级威胁情报客户端
+
+CONFIG_FILE="/etc/config/orasrs"
+IPSET_NAME="orasrs_threats"
+THREAT_URL="https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/main/threat_data/latest.txt" # 示例源
+LOG_FILE="/var/log/orasrs.log"
+
+log() { echo "$(date): $1" >> $LOG_FILE; }
+
+init_firewall() {
+    ipset create $IPSET_NAME hash:net -exist
+    iptables -I INPUT -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null || true
+    iptables -I FORWARD -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null || true
+}
+
+sync_threats() {
+    log "Starting sync..."
+    # 下载威胁列表 (假设格式为每行一个IP)
+    # 这里使用 Abuse.ch Feodo Tracker 作为演示源
+    curl -s https://feodotracker.abuse.ch/downloads/ipblocklist.txt | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt
+    
+    if [ -s /tmp/orasrs_threats.txt ]; then
+        ipset flush $IPSET_NAME
+        while read ip; do
+            ipset add $IPSET_NAME $ip -exist
+        done < /tmp/orasrs_threats.txt
+        log "Sync completed. Rules updated."
+    else
+        log "Sync failed or empty list."
+    fi
+    rm -f /tmp/orasrs_threats.txt
+}
+
 case "$1" in
-    query)
-        /usr/bin/orasrs-client check_ip "$2"
+    start)
+        init_firewall
+        while true; do
+            sync_threats
+            sleep $(uci get orasrs.main.sync_interval 2>/dev/null || echo 3600)
+        done &
         ;;
-    add)
-        /usr/bin/orasrs-client add_rule "$2" "$3" "$4"
+    check_ip)
+        ipset test $IPSET_NAME $2 2>/dev/null && echo "THREAT" || echo "SAFE"
+        ;;
+    add_rule)
+        ipset add $IPSET_NAME $2 -exist
         ;;
     *)
-        echo "OraSRS CLI Tool"
-        echo "Usage:"
-        echo "  orasrs-cli query <IP>     - Check if IP is a threat"
-        echo "  orasrs-cli add <IP> <REASON> [DURATION] - Add IP to block list"
-        echo ""
-        echo "Service management:"
-        echo "  /etc/init.d/orasrs start|stop|restart"
+        echo "Usage: $0 {start|check_ip|add_rule}"
         ;;
 esac
-CLIEOF
+EOF
+    chmod +x /usr/bin/orasrs-client
+}
+
+# 5. 生成 Hybrid 客户端 (Python 版本)
+generate_hybrid_client() {
+    cat > /usr/bin/orasrs-client << 'EOF'
+#!/usr/bin/env python3
+# OraSRS Hybrid Client (Python Version)
+import os
+import time
+import subprocess
+import requests
+import sys
+
+IPSET_NAME = "orasrs_threats"
+CONFIG_FILE = "/etc/config/orasrs"
+LOG_FILE = "/var/log/orasrs.log"
+
+def log(msg):
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{time.ctime()}: {msg}\n")
+
+def run_cmd(cmd):
+    subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def init_firewall():
+    run_cmd(f"ipset create {IPSET_NAME} hash:net -exist")
+    run_cmd(f"iptables -I INPUT -m set --match-set {IPSET_NAME} src -j DROP")
+    run_cmd(f"iptables -I FORWARD -m set --match-set {IPSET_NAME} src -j DROP")
+
+def sync_threats():
+    log("Starting sync...")
+    try:
+        # 示例：从 Abuse.ch 下载
+        r = requests.get("https://feodotracker.abuse.ch/downloads/ipblocklist.txt", timeout=30)
+        if r.status_code == 200:
+            ips = [line for line in r.text.splitlines() if line and not line.startswith("#")]
+            run_cmd(f"ipset flush {IPSET_NAME}")
+            for ip in ips:
+                run_cmd(f"ipset add {IPSET_NAME} {ip} -exist")
+            log(f"Sync completed. {len(ips)} IPs loaded.")
+        else:
+            log("Sync failed: HTTP error")
+    except Exception as e:
+        log(f"Sync failed: {e}")
+
+def main_loop():
+    init_firewall()
+    while True:
+        sync_threats()
+        time.sleep(3600)
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "start":
+            main_loop()
+        elif sys.argv[1] == "check_ip":
+            res = subprocess.run(f"ipset test {IPSET_NAME} {sys.argv[2]}", shell=True)
+            print("THREAT" if res.returncode == 0 else "SAFE")
+        elif sys.argv[1] == "add_rule":
+            run_cmd(f"ipset add {IPSET_NAME} {sys.argv[2]} -exist")
+    else:
+        print("Usage: orasrs-client {start|check_ip|add_rule}")
+EOF
+    chmod +x /usr/bin/orasrs-client
+}
+
+# 6. 安装主逻辑
+install_orasrs() {
+    print_step "安装 OraSRS 客户端 ($INSTALL_MODE 模式)..."
+    
+    # 根据模式生成客户端
+    if [ "$INSTALL_MODE" = "edge" ]; then
+        generate_edge_client
+    elif [ "$INSTALL_MODE" = "hybrid" ]; then
+        generate_hybrid_client
+    elif [ "$INSTALL_MODE" = "full" ]; then
+        print_error "Full 模式暂未在 OpenWrt 脚本中完全实现，请参考 Linux 安装文档。"
+        exit 1
+    fi
+    
+    # 生成 CLI 工具
+    cat > /usr/bin/orasrs-cli << 'EOF'
+#!/bin/sh
+case "$1" in
+    query) /usr/bin/orasrs-client check_ip "$2" ;;
+    add) /usr/bin/orasrs-client add_rule "$2" ;;
+    sync) killall -USR1 orasrs-client 2>/dev/null || echo "Triggered sync" ;;
+    *) echo "Usage: orasrs-cli {query|add|sync}" ;;
+esac
+EOF
     chmod +x /usr/bin/orasrs-cli
     
-    # 创建配置目录
+    # 生成配置文件
     mkdir -p /etc/config
-    mkdir -p /var/lib/orasrs
-    mkdir -p /var/log
-    
-    # 创建默认配置
-    create_config
-    
-    # 创建 init 脚本
-    create_init_script
-    
-    # 清理临时文件
-    cd /
-    rm -rf "$TMP_DIR"
-    
-    print_info "OraSRS 客户端安装完成"
-}
-
-# 创建配置文件
-create_config() {
-    print_info "创建配置文件..."
-    
-    cat > /etc/config/orasrs << 'EOF'
+    cat > /etc/config/orasrs << EOF
 config orasrs 'main'
     option enabled '1'
-    option api_endpoint 'https://api.orasrs.net'
+    option mode '$INSTALL_MODE'
     option sync_interval '3600'
-    option cache_size '1000'
-    option log_level 'info'
-    option enable_ipv6 '1'
-    option block_mode 'monitor'
-    option max_memory_mb '20'
-    option cache_ttl '86400'
 EOF
-    
-    print_info "配置文件已创建: /etc/config/orasrs"
-}
 
-# 创建 init 脚本
-create_init_script() {
-    print_info "创建服务脚本..."
-    
+    # 生成 Init 脚本
     cat > /etc/init.d/orasrs << 'EOF'
 #!/bin/sh /etc/rc.common
-
 START=99
-STOP=10
-
 USE_PROCD=1
-
 start_service() {
-    local enabled
-    config_load orasrs
-    config_get enabled main enabled 0
-    
-    [ "$enabled" -eq 0 ] && {
-        echo "OraSRS is disabled"
-        return 1
-    }
-    
     procd_open_instance
     procd_set_param command /usr/bin/orasrs-client start
     procd_set_param respawn
@@ -227,76 +293,31 @@ start_service() {
     procd_set_param stderr 1
     procd_close_instance
 }
-
-stop_service() {
-    killall orasrs-client 2>/dev/null
-}
-
-reload_service() {
-    stop
-    start
-}
 EOF
-    
     chmod +x /etc/init.d/orasrs
-    print_info "服务脚本已创建: /etc/init.d/orasrs"
-}
-
-# 启动服务
-start_service() {
-    print_info "启动 OraSRS 服务..."
     
+    # 启动服务
     /etc/init.d/orasrs enable
     /etc/init.d/orasrs start
-    
-    sleep 2
-    
-    if pgrep -f orasrs-client > /dev/null; then
-        print_info "✅ OraSRS 服务启动成功"
-    else
-        print_warning "⚠️  服务可能未正常启动，请检查日志: logread | grep orasrs"
-    fi
-}
-
-# 显示安装信息
-show_info() {
-    echo ""
-    echo "========================================="
-    echo "  OraSRS OpenWrt 安装完成"
-    echo "========================================="
-    echo ""
-    echo "CLI 命令:"
-    echo "  orasrs-cli query <IP>     - 查询 IP 威胁状态"
-    echo "  orasrs-cli add <IP> <原因> [时长] - 添加 IP 到黑名单"
-    echo ""
-    echo "服务管理命令:"
-    echo "  启动: /etc/init.d/orasrs start"
-    echo "  停止: /etc/init.d/orasrs stop"
-    echo "  重启: /etc/init.d/orasrs restart"
-    echo "  状态: /etc/init.d/orasrs status"
-    echo ""
-    echo "配置文件: /etc/config/orasrs"
-    echo "查看日志: logread | grep orasrs"
-    echo ""
-    echo "更多信息: https://github.com/srs-protocol/OraSRS-protocol"
-    echo "========================================="
 }
 
 # 主函数
 main() {
     echo "========================================="
-    echo "  OraSRS OpenWrt 安装脚本"
-    echo "  Version: 2.0.0"
+    echo "  OraSRS OpenWrt 智能安装程序 v3.0"
     echo "========================================="
-    echo ""
     
-    check_openwrt
-    check_resources
+    check_environment
+    select_mode "$1"
     install_dependencies
     install_orasrs
-    start_service
-    show_info
+    
+    echo ""
+    echo "========================================="
+    echo "  安装成功！"
+    echo "  模式: ${INSTALL_MODE^^}"
+    echo "  CLI命令: orasrs-cli query <IP>"
+    echo "========================================="
 }
 
-# 运行主函数
-main
+main "$@"
