@@ -283,7 +283,8 @@ class OraSRSLiteClient {
                 enabled: false,
                 mode: 'monitor',
                 blockThreshold: 80
-            }
+            },
+            registryAddress: '0x5FbDB2315678afecb367f032d93F642f64180aa3'
         };
     }
 
@@ -409,6 +410,47 @@ class OraSRSLiteClient {
     }
 
     /**
+     * 解析合约地址 (通过 Registry)
+     */
+    async resolveContractAddress(contractName) {
+        // Registry Address (Local Hardhat / Configurable)
+        const registryAddress = this.config.registryAddress || '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+        const selector = '0x04433bbc'; // getContractAddress(string)
+
+        // ABI Encode string: offset(32) + length(32) + data(padded)
+        const nameHex = Buffer.from(contractName).toString('hex');
+        const lengthHex = (nameHex.length / 2).toString(16).padStart(64, '0');
+        const offsetHex = '0000000000000000000000000000000000000000000000000000000000000020'; // 32 bytes
+        const dataHex = nameHex.padEnd(Math.ceil(nameHex.length / 64) * 64, '0');
+
+        const callData = selector + offsetHex + lengthHex + dataHex;
+
+        const endpoints = this.config.blockchainEndpoints || ['https://api.orasrs.net'];
+
+        for (const endpoint of endpoints) {
+            try {
+                const result = await this.rpcCall(endpoint, 'eth_call', [{
+                    to: registryAddress,
+                    data: callData
+                }, 'latest']);
+
+                if (result && result !== '0x') {
+                    // Result is address (32 bytes padded), take last 20 bytes (40 chars)
+                    const address = '0x' + result.replace('0x', '').slice(-40);
+                    if (address !== '0x0000000000000000000000000000000000000000') {
+                        this.log(`Resolved ${contractName} -> ${address}`, 'info');
+                        return address;
+                    }
+                }
+            } catch (e) {
+                // Silent fail on individual endpoints
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * 查询远程 API (优化版: 使用 getThreat 直接查询区块链)
      * 参考 Linux 客户端 BlockchainConnector 实现
      */
@@ -416,6 +458,16 @@ class OraSRSLiteClient {
         // 转换 IP 为 bytes4 (hex)
         const ipHex = this.ipToHex(ip);
         if (!ipHex) return { ip, error: 'Invalid IP' };
+
+        // 动态解析合约地址
+        let contractAddress = this.config.contractAddress;
+        if (!contractAddress) {
+            contractAddress = await this.resolveContractAddress('OptimizedThreatRegistry');
+        }
+        // Fallback
+        if (!contractAddress) {
+            contractAddress = '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E';
+        }
 
         // 构造 eth_call 请求
         // getThreat(bytes4) selector: 0x5a92e589
@@ -427,7 +479,7 @@ class OraSRSLiteClient {
         for (const endpoint of endpoints) {
             try {
                 const result = await this.rpcCall(endpoint, 'eth_call', [{
-                    to: '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E',
+                    to: contractAddress,
                     data: data
                 }, 'latest']);
 
@@ -507,7 +559,7 @@ class OraSRSLiteClient {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'User-Agent': 'OraSRS-OpenWrt-Client/3.3.5',
+                        'User-Agent': 'OraSRS-OpenWrt-Client/3.3.6',
                         'Connection': 'keep-alive'
                     },
                     timeout: 10000 // 增加超时时间
@@ -644,7 +696,16 @@ class OraSRSLiteClient {
      */
     async syncFromBlockchain() {
         const endpoints = this.config.blockchainEndpoints || ['https://api.orasrs.net'];
-        const contractAddress = '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E';
+
+        // 动态解析合约地址
+        let contractAddress = this.config.contractAddress;
+        if (!contractAddress) {
+            contractAddress = await this.resolveContractAddress('OptimizedThreatRegistry');
+        }
+        if (!contractAddress) {
+            contractAddress = '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E';
+        }
+
         // ThreatUpdated(bytes4,uint8,uint64,uint8)
         const topic = '0xbf9c82a2e49583ea8990e5994f020f8ff61f2a9a5ae067d4df0d0fe8d76b7863';
 
@@ -829,7 +890,7 @@ class OraSRSLiteClient {
                     res.end(JSON.stringify({
                         status: 'healthy',
                         service: 'OraSRS Lite',
-                        version: '3.3.5',
+                        version: '3.3.6',
                         uptime: process.uptime(),
                         stats: this.stats,
                         dbType: this.db.type
