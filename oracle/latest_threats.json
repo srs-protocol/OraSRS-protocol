@@ -1256,14 +1256,6 @@
     "risk_level": 3,
     "cidr": "45.156.87.0/24"
   },
-  "45.159.23.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "45.159.23.0/24"
-  },
   "45.186.152.0": {
     "sources": [
       "Spamhaus"
@@ -2290,10 +2282,11 @@
   },
   "87.120.191.0": {
     "sources": [
-      "Spamhaus"
+      "Spamhaus",
+      "DShield"
     ],
     "priority": 3,
-    "risk_level": 3,
+    "risk_level": 4,
     "cidr": "87.120.191.0/24"
   },
   "87.121.79.0": {
@@ -4803,11 +4796,10 @@
   },
   "141.98.11.0": {
     "sources": [
-      "Spamhaus",
-      "DShield"
+      "Spamhaus"
     ],
     "priority": 3,
-    "risk_level": 4,
+    "risk_level": 3,
     "cidr": "141.98.11.0/24"
   },
   "141.98.84.0": {
@@ -4849,14 +4841,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "143.0.236.0/22"
-  },
-  "143.49.0.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "143.49.0.0/16"
   },
   "143.92.32.0": {
     "sources": [
@@ -5802,14 +5786,6 @@
     "risk_level": 3,
     "cidr": "168.80.0.0/15"
   },
-  "168.151.0.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "168.151.0.0/22"
-  },
   "168.151.4.0": {
     "sources": [
       "Spamhaus"
@@ -5817,38 +5793,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "168.151.4.0/23"
-  },
-  "168.151.6.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "168.151.6.0/24"
-  },
-  "168.151.9.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "168.151.9.0/24"
-  },
-  "168.151.11.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "168.151.11.0/24"
-  },
-  "168.151.16.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "168.151.16.0/24"
   },
   "168.151.21.0": {
     "sources": [
@@ -5858,14 +5802,6 @@
     "risk_level": 3,
     "cidr": "168.151.21.0/24"
   },
-  "168.151.28.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "168.151.28.0/24"
-  },
   "168.151.32.0": {
     "sources": [
       "Spamhaus"
@@ -5873,14 +5809,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "168.151.32.0/21"
-  },
-  "168.151.43.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "168.151.43.0/24"
   },
   "168.151.44.0": {
     "sources": [
@@ -6420,20 +6348,18 @@
   },
   "176.65.148.0": {
     "sources": [
-      "Spamhaus",
-      "DShield"
+      "Spamhaus"
     ],
     "priority": 3,
-    "risk_level": 4,
+    "risk_level": 3,
     "cidr": "176.65.148.0/22"
   },
   "176.65.149.0": {
     "sources": [
-      "Spamhaus",
-      "DShield"
+      "Spamhaus"
     ],
     "priority": 3,
-    "risk_level": 4,
+    "risk_level": 3,
     "cidr": "176.65.149.0/24"
   },
   "176.98.185.0": {
@@ -6475,14 +6401,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "176.117.107.0/24"
-  },
-  "176.126.111.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "176.126.111.0/24"
   },
   "176.126.192.0": {
     "sources": [
@@ -7819,14 +7737,6 @@
     "priority": 3,
     "risk_level": 3,
     "cidr": "193.30.144.0/20"
-  },
-  "193.31.127.0": {
-    "sources": [
-      "Spamhaus"
-    ],
-    "priority": 3,
-    "risk_level": 3,
-    "cidr": "193.31.127.0/24"
   },
   "193.32.66.0": {
     "sources": [
@@ -11821,85 +11731,29 @@
     "risk_level": 2,
     "cidr": "65.49.1.0/32"
   },
-  "193.163.125.0": {
+  "91.196.152.0": {
     "sources": [
       "DShield"
     ],
     "priority": 2,
     "risk_level": 2,
-    "cidr": "193.163.125.0/32"
+    "cidr": "91.196.152.0/32"
   },
-  "205.210.31.0": {
+  "45.194.92.0": {
     "sources": [
       "DShield"
     ],
     "priority": 2,
     "risk_level": 2,
-    "cidr": "205.210.31.0/32"
+    "cidr": "45.194.92.0/32"
   },
-  "91.230.168.0": {
+  "193.142.147.0": {
     "sources": [
       "DShield"
     ],
     "priority": 2,
     "risk_level": 2,
-    "cidr": "91.230.168.0/32"
-  },
-  "167.94.138.0": {
-    "sources": [
-      "DShield"
-    ],
-    "priority": 2,
-    "risk_level": 2,
-    "cidr": "167.94.138.0/32"
-  },
-  "198.235.24.0": {
-    "sources": [
-      "DShield"
-    ],
-    "priority": 2,
-    "risk_level": 2,
-    "cidr": "198.235.24.0/32"
-  },
-  "167.94.145.0": {
-    "sources": [
-      "DShield"
-    ],
-    "priority": 2,
-    "risk_level": 2,
-    "cidr": "167.94.145.0/32"
-  },
-  "206.168.34.0": {
-    "sources": [
-      "DShield"
-    ],
-    "priority": 2,
-    "risk_level": 2,
-    "cidr": "206.168.34.0/32"
-  },
-  "194.180.48.0": {
-    "sources": [
-      "DShield"
-    ],
-    "priority": 2,
-    "risk_level": 2,
-    "cidr": "194.180.48.0/32"
-  },
-  "64.62.197.0": {
-    "sources": [
-      "DShield"
-    ],
-    "priority": 2,
-    "risk_level": 2,
-    "cidr": "64.62.197.0/32"
-  },
-  "79.124.40.0": {
-    "sources": [
-      "DShield"
-    ],
-    "priority": 2,
-    "risk_level": 2,
-    "cidr": "79.124.40.0/32"
+    "cidr": "193.142.147.0/32"
   },
   "64.62.156.0": {
     "sources": [
@@ -11909,6 +11763,14 @@
     "risk_level": 2,
     "cidr": "64.62.156.0/32"
   },
+  "193.163.125.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "193.163.125.0/32"
+  },
   "185.242.226.0": {
     "sources": [
       "DShield"
@@ -11917,13 +11779,77 @@
     "risk_level": 2,
     "cidr": "185.242.226.0/32"
   },
-  "195.184.76.0": {
+  "167.94.138.0": {
     "sources": [
       "DShield"
     ],
     "priority": 2,
     "risk_level": 2,
-    "cidr": "195.184.76.0/32"
+    "cidr": "167.94.138.0/32"
+  },
+  "178.20.210.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "178.20.210.0/32"
+  },
+  "206.168.34.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "206.168.34.0/32"
+  },
+  "64.62.197.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "64.62.197.0/32"
+  },
+  "167.94.146.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "167.94.146.0/32"
+  },
+  "194.180.48.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "194.180.48.0/32"
+  },
+  "147.185.132.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "147.185.132.0/32"
+  },
+  "91.231.89.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "91.231.89.0/32"
+  },
+  "205.210.31.0": {
+    "sources": [
+      "DShield"
+    ],
+    "priority": 2,
+    "risk_level": 2,
+    "cidr": "205.210.31.0/32"
   },
   "15.204.219.215": {
     "sources": [

@@ -179,6 +179,9 @@ class ClientOnboarding {
     /**
    * Step 3: 申请 Gas 补助
    */
+    /**
+     * Step 3: 申请 Gas 补助
+     */
     async step3_RequestGasSubsidy() {
         console.log('\n⛽ Step 3: 检查余额并申请 Gas 补助...');
 
@@ -189,9 +192,8 @@ class ClientOnboarding {
             console.log('   正在申请 Gas 补助...');
 
             const gasSubsidyABI = [
-                "function requestSubsidy() external",
-                "function requestSubsidyFor(address user) external",
-                "function hasReceivedSubsidy(address user) external view returns (bool)"
+                "function subsidize(address user) external",
+                "function hasClaimed(address user) external view returns (bool)"
             ];
 
             // 获取中继器
@@ -204,13 +206,13 @@ class ClientOnboarding {
             );
 
             // 检查是否已经领取过
-            const hasReceived = await gasSubsidy.hasReceivedSubsidy(this.wallet.address);
+            const hasClaimed = await gasSubsidy.hasClaimed(this.wallet.address);
 
-            if (!hasReceived) {
+            if (!hasClaimed) {
                 console.log('   使用中继器申请 Gas 补助...');
 
                 // 中继器代替用户申请
-                const tx = await gasSubsidy.requestSubsidyFor(this.wallet.address, {
+                const tx = await gasSubsidy.subsidize(this.wallet.address, {
                     nonce: await this.getRelayerNonce()
                 });
                 await tx.wait();
@@ -257,8 +259,12 @@ class ClientOnboarding {
         console.log('\n💧 Step 4: 使用水龙头申请代币...');
 
         const faucetABI = [
-            "function claim() external",
-            "function hasClaimed(address user) external view returns (bool)",
+            "function withdrawTokens() external",
+            "function canWithdraw(address account) external view returns (bool)",
+            "function oraToken() external view returns (address)"
+        ];
+
+        const tokenABI = [
             "function balanceOf(address account) external view returns (uint256)"
         ];
 
@@ -268,19 +274,23 @@ class ClientOnboarding {
             this.wallet
         );
 
-        // 检查是否已经领取
-        const hasClaimed = await faucet.hasClaimed(this.wallet.address);
+        // 获取代币合约地址
+        const tokenAddress = await faucet.oraToken();
+        const token = new ethers.Contract(tokenAddress, tokenABI, this.wallet);
 
-        if (!hasClaimed) {
+        // 检查是否可以领取
+        const canWithdraw = await faucet.canWithdraw(this.wallet.address);
+
+        if (canWithdraw) {
             console.log('   正在申请代币...');
-            const tx = await faucet.claim();
+            const tx = await faucet.withdrawTokens();
             await tx.wait();
 
-            const balance = await faucet.balanceOf(this.wallet.address);
+            const balance = await token.balanceOf(this.wallet.address);
             console.log('   ✓ 代币已到账:', ethers.formatEther(balance), 'ORA');
         } else {
-            const balance = await faucet.balanceOf(this.wallet.address);
-            console.log('   ✓ 已领取代币，当前余额:', ethers.formatEther(balance), 'ORA');
+            const balance = await token.balanceOf(this.wallet.address);
+            console.log('   ✓ 暂时无法领取 (冷却中)，当前余额:', ethers.formatEther(balance), 'ORA');
         }
     }
 
