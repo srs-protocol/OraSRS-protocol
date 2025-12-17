@@ -1,4 +1,5 @@
 # 核心架构 / Core Architecture
+<img width="1024" height="559" alt="47f4b9dfc9849f605f62647fb0b0f917" src="https://github.com/user-attachments/assets/81492cea-400d-4781-88c1-f88a5390a6c1" />
 
 ## 📜 Protocol Specification (协议规范)
 
