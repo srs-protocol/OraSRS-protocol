@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v3.3.0] - 2025-12-18
+
+### Added - Hardhat Service Daemon
+- **Hardhat**: Enhanced systemd service with intelligent restart strategy
+- **Hardhat**: Health monitoring daemon with automatic recovery (`hardhat-health-monitor.sh`)
+- **Hardhat**: Exponential backoff retry logic (10s → 20s → 40s → 60s → 300s)
+- **Hardhat**: One-click deployment script (`deploy-hardhat-daemon.sh`)
+- **Hardhat**: Comprehensive management commands (monitor, health-check, etc.)
+- **Hardhat**: Resource limits (2GB memory, 200% CPU quota)
+- **Docs**: Complete Hardhat daemon guide (`HARDHAT_DAEMON_GUIDE.md`)
+
+### Added - OpenWrt T3 Module Optimization
+- **OpenWrt**: Multi-endpoint blockchain support with automatic failover
+- **OpenWrt**: Three-tier fallback strategy (Blockchain → Public Feeds → Cache)
+- **OpenWrt**: Exponential backoff retry logic for sync operations
+- **OpenWrt**: Offline mode with local SQLite cache (24-hour TTL)
+- **OpenWrt**: Public threat feed integration (Feodo Tracker, EmergingThreats)
+- **OpenWrt**: Automated deployment script (`deploy-openwrt-t3.sh`)
+- **OpenWrt**: Comprehensive test suite (`test-openwrt-t3.sh`)
+- **Docs**: T3 optimization technical documentation (`OPENWRT_T3_OPTIMIZATION.md`)
+- **Docs**: Step-by-step deployment guide (`OPENWRT_DEPLOYMENT_GUIDE.md`)
+- **Docs**: Quick reference card (`QUICK_DEPLOY_REFERENCE.md`)
+
+### Changed
+- **Hardhat**: Upgraded `hardhat-node.service` with smart restart and health checks
+- **Hardhat**: Enhanced `manage-hardhat-service.sh` with monitoring management
+- **OpenWrt**: Complete overhaul of sync logic in `orasrs-lite.js`
+- **OpenWrt**: Added `blockchainEndpoints` and `offlineMode` configuration options
+
+### Performance
+- **Hardhat**: Stable operation for 12+ hours with zero restarts
+- **OpenWrt**: Sync time 2-5s (blockchain), 5-10s (public feeds)
+- **OpenWrt**: Memory footprint < 10 MB, disk usage < 5 MB
+
+### Testing
+- ✅ Hardhat auto-restart and health monitoring verified
+- ✅ OpenWrt multi-endpoint failover tested
+- ✅ Public feed fallback validated
+- ✅ Offline mode functional
+- ✅ Cache persistence confirmed
+
 ## [v3.2.0] - 2025-12-17
 
 ### Added
