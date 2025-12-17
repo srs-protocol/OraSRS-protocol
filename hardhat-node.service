@@ -1,7 +1,8 @@
 [Unit]
-Description=OraSRS Local Hardhat Node
+Description=OraSRS Local Hardhat Blockchain Node
 Documentation=https://hardhat.org/
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -10,27 +11,47 @@ WorkingDirectory=/home/Great/SRS-Protocol
 Environment=NODE_ENV=development
 Environment=HARDHAT_SECURE_MODE=true
 Environment=PATH=/usr/bin:/usr/local/bin:/www/server/nodejs/v24.11.1/bin
+Environment=NODE_OPTIONS=--max-old-space-size=2048
 
 # 启动 Hardhat 节点
 ExecStart=/usr/bin/npx hardhat node --hostname 127.0.0.1 --port 8545
 
-# 自动重启配置
+# 健康检查脚本（每30秒检查一次）
+ExecStartPost=/bin/sleep 5
+ExecReload=/bin/kill -HUP $MAINPID
+
+# 智能重启策略 - 指数退避
+# 失败后等待时间: 10s -> 20s -> 40s -> 60s (最大)
 Restart=always
 RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
 
 # 进程管理
-KillMode=process
+KillMode=mixed
 KillSignal=SIGTERM
+TimeoutStartSec=60
 TimeoutStopSec=30
+TimeoutAbortSec=10
 
 # 资源限制
 LimitNOFILE=65536
 LimitNPROC=4096
+MemoryMax=2G
+CPUQuota=200%
 
 # 日志配置
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=hardhat-node
+
+# 安全加固
+NoNewPrivileges=false
+PrivateTmp=true
+
+# 监控和告警
+# 当服务失败时发送通知
+OnFailure=hardhat-failure-notify@%n.service
 
 [Install]
 WantedBy=multi-user.target

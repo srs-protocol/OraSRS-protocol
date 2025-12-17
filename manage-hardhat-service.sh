@@ -57,13 +57,26 @@ install_service() {
     cp "$SERVICE_FILE" "$SYSTEMD_SERVICE_PATH"
     print_success "服务文件已复制到: $SYSTEMD_SERVICE_PATH"
     
+    # 安装健康监控服务
+    if [ -f "$SCRIPT_DIR/hardhat-health-monitor.service" ]; then
+        print_info "安装健康监控服务..."
+        cp "$SCRIPT_DIR/hardhat-health-monitor.service" "/etc/systemd/system/hardhat-health-monitor.service"
+        print_success "健康监控服务已安装"
+    fi
+    
     # 重载 systemd 配置
     systemctl daemon-reload
     print_success "systemd 配置已重载"
     
     # 启用服务（开机自启）
     systemctl enable hardhat-node.service
-    print_success "服务已设置为开机自启"
+    print_success "Hardhat 服务已设置为开机自启"
+    
+    # 启用健康监控服务
+    if [ -f "/etc/systemd/system/hardhat-health-monitor.service" ]; then
+        systemctl enable hardhat-health-monitor.service
+        print_success "健康监控服务已设置为开机自启"
+    fi
     
     print_success "Hardhat 节点服务安装完成！"
     echo ""
@@ -73,28 +86,52 @@ install_service() {
     echo "  重启服务: sudo systemctl restart hardhat-node"
     echo "  查看状态: sudo systemctl status hardhat-node"
     echo "  查看日志: sudo journalctl -u hardhat-node -f"
+    echo ""
+    echo "健康监控服务:"
+    echo "  启动监控: sudo systemctl start hardhat-health-monitor"
+    echo "  查看监控: sudo systemctl status hardhat-health-monitor"
+    echo "  监控日志: sudo tail -f /var/log/hardhat-monitor.log"
 }
+
 
 # 卸载服务
 uninstall_service() {
     print_info "卸载 Hardhat 节点服务..."
     
-    # 停止服务
+    # 停止健康监控服务
+    if systemctl is-active --quiet hardhat-health-monitor.service 2>/dev/null; then
+        systemctl stop hardhat-health-monitor.service
+        print_success "健康监控服务已停止"
+    fi
+    
+    # 停止主服务
     if systemctl is-active --quiet hardhat-node.service; then
         systemctl stop hardhat-node.service
-        print_success "服务已停止"
+        print_success "Hardhat 服务已停止"
     fi
     
-    # 禁用服务
+    # 禁用健康监控服务
+    if systemctl is-enabled --quiet hardhat-health-monitor.service 2>/dev/null; then
+        systemctl disable hardhat-health-monitor.service
+        print_success "健康监控服务已禁用"
+    fi
+    
+    # 禁用主服务
     if systemctl is-enabled --quiet hardhat-node.service; then
         systemctl disable hardhat-node.service
-        print_success "服务已禁用"
+        print_success "Hardhat 服务已禁用"
     fi
     
-    # 删除服务文件
+    # 删除健康监控服务文件
+    if [ -f "/etc/systemd/system/hardhat-health-monitor.service" ]; then
+        rm "/etc/systemd/system/hardhat-health-monitor.service"
+        print_success "健康监控服务文件已删除"
+    fi
+    
+    # 删除主服务文件
     if [ -f "$SYSTEMD_SERVICE_PATH" ]; then
         rm "$SYSTEMD_SERVICE_PATH"
-        print_success "服务文件已删除"
+        print_success "Hardhat 服务文件已删除"
     fi
     
     # 重载 systemd 配置
@@ -194,19 +231,24 @@ show_help() {
     echo "用法: $0 [命令]"
     echo ""
     echo "命令:"
-    echo "  install       安装 Hardhat 节点服务"
-    echo "  uninstall     卸载 Hardhat 节点服务"
+    echo "  install       安装 Hardhat 节点服务和健康监控"
+    echo "  uninstall     卸载 Hardhat 节点服务和健康监控"
     echo "  start         启动服务"
     echo "  stop          停止服务"
     echo "  restart       重启服务"
     echo "  status        查看服务状态"
     echo "  logs          查看服务日志（实时）"
     echo "  test-restart  测试自动重启功能"
+    echo "  monitor       启动健康监控"
+    echo "  monitor-stop  停止健康监控"
+    echo "  monitor-status 查看监控状态"
+    echo "  health-check  执行健康检查"
     echo "  help          显示此帮助信息"
     echo ""
     echo "示例:"
-    echo "  sudo $0 install       # 安装服务"
+    echo "  sudo $0 install       # 安装服务和监控"
     echo "  sudo $0 start         # 启动服务"
+    echo "  sudo $0 monitor       # 启动健康监控"
     echo "  sudo $0 status        # 查看状态"
     echo "  sudo $0 logs          # 查看日志"
 }
@@ -243,6 +285,30 @@ main() {
         test-restart)
             check_root
             test_auto_restart
+            ;;
+        monitor)
+            check_root
+            print_info "启动健康监控服务..."
+            systemctl start hardhat-health-monitor.service
+            sleep 2
+            systemctl status hardhat-health-monitor.service --no-pager
+            ;;
+        monitor-stop)
+            check_root
+            print_info "停止健康监控服务..."
+            systemctl stop hardhat-health-monitor.service
+            print_success "健康监控服务已停止"
+            ;;
+        monitor-status)
+            systemctl status hardhat-health-monitor.service --no-pager
+            echo ""
+            if [ -f "/var/log/hardhat-monitor.log" ]; then
+                echo "最近的监控日志:"
+                tail -20 /var/log/hardhat-monitor.log
+            fi
+            ;;
+        health-check)
+            bash "$SCRIPT_DIR/hardhat-health-monitor.sh" test
             ;;
         help|--help|-h)
             show_help

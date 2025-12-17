@@ -113,10 +113,15 @@ class OraSRSLiteClient {
         return {
             enabled: true,
             apiEndpoint: 'https://api.orasrs.net',
+            blockchainEndpoints: [
+                'https://api.orasrs.net',
+                'http://127.0.0.1:8545'  // 本地 Hardhat 节点
+            ],
             syncInterval: 3600,
             cacheSize: 1000,
             logLevel: 'info',
             port: 3006,
+            offlineMode: 'auto',  // auto, enabled, disabled
             iotShield: {
                 enabled: false,
                 mode: 'monitor',
@@ -283,64 +288,202 @@ class OraSRSLiteClient {
     }
 
     /**
-     * 同步威胁情报
+     * 同步威胁情报 - 增强版
+     * 支持多端点、公共源回退、指数退避重试
      */
     async syncThreats() {
+        const maxRetries = 3;
+        const initialDelay = 1000; // 1秒
+
+        // 尝试从区块链同步
+        for (let retry = 0; retry < maxRetries; retry++) {
+            try {
+                if (retry > 0) {
+                    const delay = initialDelay * Math.pow(2, retry - 1);
+                    this.log(`Retry ${retry}/${maxRetries} after ${delay}ms...`, 'info');
+                    await this.delay(delay);
+                }
+
+                this.log('Starting threat sync from blockchain...', 'info');
+                const success = await this.syncFromBlockchain();
+
+                if (success) {
+                    this.log('✓ Blockchain sync successful', 'info');
+                    return;
+                }
+            } catch (error) {
+                this.log(`Blockchain sync attempt ${retry + 1} failed: ${error.message}`, 'warn');
+            }
+        }
+
+        // 回退到公共威胁源
+        this.log('Blockchain unavailable, falling back to public feeds...', 'warn');
         try {
-            this.log('Starting threat sync...', 'info');
+            const success = await this.syncFromPublicFeeds();
+            if (success) {
+                this.log('✓ Public feed sync successful', 'info');
+                return;
+            }
+        } catch (error) {
+            this.log(`Public feed sync failed: ${error.message}`, 'error');
+        }
 
-            const url = `${this.config.apiEndpoint}/orasrs/v1/threats/list`;
-            const protocol = url.startsWith('https') ? https : http;
+        // 离线模式 - 使用缓存数据
+        this.log('⚠ Offline mode: Using cached threat data', 'warn');
+        const cacheCount = this.db.prepare('SELECT COUNT(*) as count FROM threats WHERE expires_at > ?')
+            .get(Math.floor(Date.now() / 1000));
+        this.log(`Cached threats: ${cacheCount.count}`, 'info');
+    }
 
-            const data = await new Promise((resolve, reject) => {
-                protocol.get(url, { timeout: 30000 }, (res) => {
-                    let body = '';
-                    res.on('data', chunk => body += chunk);
-                    res.on('end', () => {
-                        try {
-                            resolve(JSON.parse(body));
-                        } catch (e) {
-                            reject(e);
-                        }
+    /**
+     * 从区块链同步威胁情报
+     */
+    async syncFromBlockchain() {
+        const endpoints = this.config.blockchainEndpoints || [
+            this.config.apiEndpoint,
+            'http://127.0.0.1:8545'
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                this.log(`Trying blockchain endpoint: ${endpoint}`, 'info');
+                const url = `${endpoint}/orasrs/v1/threats/list`;
+                const protocol = url.startsWith('https') ? https : http;
+
+                const data = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Request timeout'));
+                    }, 10000);
+
+                    protocol.get(url, (res) => {
+                        clearTimeout(timeout);
+                        let body = '';
+                        res.on('data', chunk => body += chunk);
+                        res.on('end', () => {
+                            try {
+                                resolve(JSON.parse(body));
+                            } catch (e) {
+                                reject(new Error('Invalid JSON response'));
+                            }
+                        });
+                    }).on('error', (err) => {
+                        clearTimeout(timeout);
+                        reject(err);
                     });
-                }).on('error', reject);
-            });
-
-            // 更新数据库
-            const now = Math.floor(Date.now() / 1000);
-            const expiresAt = now + (24 * 3600);
-
-            if (data.threats && Array.isArray(data.threats)) {
-                const stmt = this.db.prepare(`
-          INSERT OR REPLACE INTO threats 
-          (ip, risk_score, threat_type, source, first_seen, last_seen, expires_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `);
-
-                const insertMany = this.db.transaction((threats) => {
-                    for (const threat of threats) {
-                        stmt.run(
-                            threat.ip,
-                            threat.risk_score || 75,
-                            threat.threat_type || 'Unknown',
-                            threat.source || 'Remote',
-                            threat.first_seen || new Date().toISOString(),
-                            new Date().toISOString(),
-                            expiresAt
-                        );
-                    }
                 });
 
-                insertMany(data.threats);
-                this.log(`Synced ${data.threats.length} threats`, 'info');
+                // 更新数据库
+                if (data.threats && Array.isArray(data.threats)) {
+                    await this.updateThreatDatabase(data.threats, 'Blockchain');
+                    return true;
+                }
+            } catch (error) {
+                this.log(`Endpoint ${endpoint} failed: ${error.message}`, 'warn');
+                continue;
             }
-
-            // 清理过期记录
-            this.db.prepare('DELETE FROM threats WHERE expires_at < ?').run(now);
-
-        } catch (error) {
-            this.log(`Sync error: ${error.message}`, 'error');
         }
+
+        return false;
+    }
+
+    /**
+     * 从公共威胁源同步
+     */
+    async syncFromPublicFeeds() {
+        const feeds = [
+            'https://feodotracker.abuse.ch/downloads/ipblocklist.txt',
+            'https://rules.emergingthreats.net/blockrules/compromised-ips.txt'
+        ];
+
+        for (const feedUrl of feeds) {
+            try {
+                this.log(`Trying public feed: ${feedUrl}`, 'info');
+                const protocol = feedUrl.startsWith('https') ? https : http;
+
+                const data = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Request timeout'));
+                    }, 15000);
+
+                    protocol.get(feedUrl, (res) => {
+                        clearTimeout(timeout);
+                        let body = '';
+                        res.on('data', chunk => body += chunk);
+                        res.on('end', () => resolve(body));
+                    }).on('error', (err) => {
+                        clearTimeout(timeout);
+                        reject(err);
+                    });
+                });
+
+                // 解析 IP 列表
+                const ips = data.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line && !line.startsWith('#'))
+                    .filter(line => /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(line));
+
+                if (ips.length > 0) {
+                    const threats = ips.map(ip => ({
+                        ip: ip.split('/')[0], // 移除 CIDR 后缀
+                        risk_score: 80,
+                        threat_type: 'Public Feed',
+                        source: feedUrl.includes('feodo') ? 'Feodo Tracker' : 'EmergingThreats'
+                    }));
+
+                    await this.updateThreatDatabase(threats, 'Public Feed');
+                    return true;
+                }
+            } catch (error) {
+                this.log(`Public feed ${feedUrl} failed: ${error.message}`, 'warn');
+                continue;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 更新威胁数据库
+     */
+    async updateThreatDatabase(threats, source) {
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAt = now + (24 * 3600);
+
+        const stmt = this.db.prepare(`
+            INSERT OR REPLACE INTO threats 
+            (ip, risk_score, threat_type, source, first_seen, last_seen, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        const insertMany = this.db.transaction((threatList) => {
+            for (const threat of threatList) {
+                stmt.run(
+                    threat.ip,
+                    threat.risk_score || 75,
+                    threat.threat_type || 'Unknown',
+                    threat.source || source,
+                    threat.first_seen || new Date().toISOString(),
+                    new Date().toISOString(),
+                    expiresAt
+                );
+            }
+        });
+
+        insertMany(threats);
+        this.log(`✓ Updated ${threats.length} threats from ${source}`, 'info');
+
+        // 清理过期记录
+        const deleted = this.db.prepare('DELETE FROM threats WHERE expires_at < ?').run(now);
+        if (deleted.changes > 0) {
+            this.log(`Cleaned ${deleted.changes} expired threats`, 'info');
+        }
+    }
+
+    /**
+     * 延迟函数
+     */
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
