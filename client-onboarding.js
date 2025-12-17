@@ -297,13 +297,15 @@ class ClientOnboarding {
     /**
      * Step 5: 注册节点
      */
+    /**
+     * Step 5: 注册节点
+     */
     async step5_RegisterNode() {
         console.log('\n🖥️  Step 5: 注册节点...');
 
         const nodeRegistryABI = [
-            "function registerNode(string memory nodeId, string memory endpoint) external",
-            "function isNodeRegistered(address nodeAddress) external view returns (bool)",
-            "function getNodeInfo(address nodeAddress) external view returns (string memory nodeId, string memory endpoint, uint256 registeredAt, bool active)"
+            "function registerNode(string ip, uint16 port) external",
+            "function isNodeActive(address wallet) external view returns (bool)"
         ];
 
         const nodeRegistry = new ethers.Contract(
@@ -313,25 +315,27 @@ class ClientOnboarding {
         );
 
         // 检查是否已注册
-        const isRegistered = await nodeRegistry.isNodeRegistered(this.wallet.address);
+        const isActive = await nodeRegistry.isNodeActive(this.wallet.address);
 
-        if (!isRegistered) {
-            const nodeId = `node-${this.wallet.address.slice(2, 10)}`;
-            const endpoint = `http://${this.config.publicIP || 'localhost'}:${this.config.port || 3006}`;
+        if (!isActive) {
+            const ip = this.config.publicIP || '127.0.0.1';
+            const port = this.config.port || 3006;
 
-            console.log('   节点 ID:', nodeId);
-            console.log('   节点端点:', endpoint);
-            console.log('   正在注册...');
+            console.log(`   正在注册节点 (IP: ${ip}, Port: ${port})...`);
 
-            const tx = await nodeRegistry.registerNode(nodeId, endpoint);
-            await tx.wait();
-
-            console.log('   ✓ 节点注册成功');
+            try {
+                const tx = await nodeRegistry.registerNode(ip, port);
+                await tx.wait();
+                console.log('   ✓ 节点注册成功');
+            } catch (error) {
+                if (error.message.includes("IP already registered")) {
+                    console.log('   ⚠️  IP 已被其他地址注册');
+                } else {
+                    throw error;
+                }
+            }
         } else {
-            const nodeInfo = await nodeRegistry.getNodeInfo(this.wallet.address);
-            console.log('   ✓ 节点已注册');
-            console.log('   节点 ID:', nodeInfo.nodeId);
-            console.log('   端点:', nodeInfo.endpoint);
+            console.log('   ✓ 节点已注册且活跃');
         }
     }
 
