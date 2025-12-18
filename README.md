@@ -23,7 +23,7 @@
 OraSRS started as an advisory risk scoring service for assessing IP and domain threats. In the current final public release (v3.3.6), the project focus has converged into two parts:
 
 - **T0 Kernel-Level Local Defense Engine (OraSRS-Core)**:
-  This is the core deliverable. Designed for resource-constrained devices (e.g., OpenWrt routers with 512MB RAM), utilizing eBPF/Netfilter to achieve millisecond-level inbound rate limiting, state exhaustion protection, and C2 outbound blocking at the kernel level.
+  This is the core deliverable. Designed for resource-constrained devices (e.g., OpenWrt routers with 512MB RAM), utilizing eBPF/Netfilter to achieve sub-millisecond inbound rate limiting, state exhaustion protection, and C2 outbound blocking at the kernel level.
   
 - **Optional Advisory Risk Interface**:
   Provides "advisory" threat scores to upper-layer systems for policy decision support, rather than mandatory blocking.
@@ -58,30 +58,30 @@ iptables -nvL orasrs_chain
 
 ### 🧩 Architecture & Historical Components
 
-#### T0 Local Defense (Core/Active)
-High-frequency packet filter based on eBPF, running independently in the edge device kernel. Proven to maintain management channel availability under 40M PPS attacks.
+#### T0 Local Defense (Core / Active)
+High-frequency packet filter based on eBPF, running independently in the edge device kernel. Proven to maintain management channel availability (SSH + ping 0% packet loss) even under a sustained attack of ~40 million cumulative random-source SYN packets.
 
-#### Optional Distributed Ledger Integration (Experimental/Historical)
+#### Optional Distributed Ledger Integration (Experimental / Historical)
 In the early PoC phase, OraSRS used a protocol chain to record some threat intelligence on-chain to explore immutable auditing and multi-party consensus.
 > **Note**: In the v3.3.6 final release, this part is marked as an **experimental research direction** and **public chain nodes or RPC services are no longer provided by this repository**.
 
 #### Core Value Proposition
-1. **Defense Equity**: Empowering low-end hardware to withstand large-scale DDoS attacks.
-2. **Kernel Offloading**: Achieving < 0.04ms (measured 0.001ms) processing latency via eBPF.
-3. **Verifiable Design**: The protocol is designed to be compatible with multi-party consensus and verification via distributed ledgers, but the current public implementation only includes the T0 local defense core. The distribution/consensus layer is left for future research and vendor implementation.
+1. **Defense Equity**: Empowering low-end hardware (e.g., 512MB routers) to withstand large-scale DDoS attacks, instead of just unplugging the cable or relying on expensive cloud scrubbing.
+2. **Kernel Offloading**: Offloading decisions to the kernel via eBPF, achieving a measured query latency of ~**0.001ms**, far exceeding the 0.04ms target.
+3. **Verifiable Design**: The protocol is designed to be compatible with multi-party consensus and verification via distributed ledgers, but the current public implementation only includes the T0 local defense core. The distribution/consensus layer is left for future researchers and vendors to build themselves.
 
-### 🚀 Latest Updates (v3.3.6 Final) - Project Concluded
+### 🚀 Latest Updates (v3.3.6 Final) — Project Concluded
 
 - **T0 Kernel Defense Module Final Verification Completed**:
-  - **Extreme Survival Test**: On a 512MB OpenWrt device, withstood a 20-minute, ~**40 million (40M) PPS** random source SYN flood attack;
-  - **Business Continuity**: Maintained **0% packet loss** for SSH management connections and `ping 8.8.8.8` during the attack, with smooth system response;
-  - **Benchmark**: In Linux kernel acceleration benchmarks, eBPF query latency was as low as **0.001 ms**.
+  - **Extreme Survival Test**: On a 512MB OpenWrt device, withstood a ~20-minute attack with a cumulative total of ~**40 million random-source SYN flood packets**;
+  - **Business Continuity**: During the attack, SSH management connections and `ping 8.8.8.8` maintained **0% packet loss** with smooth system response;
+  - **Kernel Acceleration Benchmark**: In Linux environment kernel acceleration benchmarks, eBPF query latency was as low as **0.001 ms**.
 
 - **T2/T3 Modules (Decentralized Consensus): ⚠️ Experimental / Disabled by Default**
   - Early exploration of chain-based threat distribution and consensus, code currently serves as research reference only;
   - Disabled by default to ensure maximum stability and predictable behavior;
   - Can theoretically be enabled in `user-config.json` for local experiments, **but no support is provided, and no public RPC / protocol chain services are offered**;
-  - For distribution/consensus capabilities, it is recommended to implement a backend suitable for your scenario based on the DTSP protocol specification.
+  - For distribution/consensus capabilities, it is recommended to implement a backend suitable for your scenario (centralized DB, consortium chain, internal control service, etc.) based on the DTSP protocol specification.
 
 ## Documentation
 
@@ -105,4 +105,4 @@ For detailed information, please refer to the [documentation directory](docs/):
 > Innovation should start from reality, not from PPTs;
 > Papers shouldn't be fluff, protocols can be transparent, and security shouldn't be a privilege for the few.
 > 
-> —— Z. Luo (OraSRS Protocol Author), pushing IETF Draft-01 update
+> —— Z. Luo (OraSRS Protocol Author)
