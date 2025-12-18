@@ -18,15 +18,17 @@
 
 <img width="1589" height="921" alt="a0646081c5604d476c4e38b17e56dcb8" src="https://github.com/user-attachments/assets/51990e27-b6a8-4f6b-bbba-905455c7c446" />
 
-"The Reference Implementation of the IETF Decentralized Threat Signaling Protocol (DTSP). Achieving data-center-grade DDoS mitigation on resource-constrained IoT edge devices via kernel offloading."
+### 🛡️ OraSRS (Oracle Security Root Service)
 
-## Key Achievements
+OraSRS started as an advisory risk scoring service for assessing IP and domain threats. In the current final public release (v3.3.6), the project focus has converged into two parts:
 
-✅ **Mitigated 40M+ packets SYN Flood** in a 20-min sustained test.
+- **T0 Kernel-Level Local Defense Engine (OraSRS-Core)**:
+  This is the core deliverable. Designed for resource-constrained devices (e.g., OpenWrt routers with 512MB RAM), utilizing eBPF/Netfilter to achieve millisecond-level inbound rate limiting, state exhaustion protection, and C2 outbound blocking at the kernel level.
+  
+- **Optional Advisory Risk Interface**:
+  Provides "advisory" threat scores to upper-layer systems for policy decision support, rather than mandatory blocking.
 
-✅ **Maintained 0% packet loss** for legitimate traffic (Ping/SSH stable).
-
-✅ **Running on 512MB RAM** OpenWrt device.
+*Note: On-chain consensus and full-stack scoring systems were explored in early PoCs but are no longer mandatory components in the v3.3.6 final release, retained only as protocol design references.*
 
 ## Quick Start
 
@@ -53,11 +55,33 @@ Verify that OraSRS is protecting your device:
 
 iptables -nvL orasrs_chain
 ```
-## 🚧 Project Status
 
-- **T0 Module (Local Enforcement):** ✅ **Stable & Active** (As seen in the demo video)
-- **T1-T3 Modules (Decentralized Consensus):** ⚠️ **Experimental / Disabled by Default**
-    - *The logic for blockchain querying and risk IP consensus is implemented but currently disabled to ensure client stability on resource-constrained devices.*
+### 🧩 Architecture & Historical Components
+
+#### T0 Local Defense (Core/Active)
+High-frequency packet filter based on eBPF, running independently in the edge device kernel. Proven to maintain management channel availability under 40M PPS attacks.
+
+#### Optional Distributed Ledger Integration (Experimental/Historical)
+In the early PoC phase, OraSRS used a protocol chain to record some threat intelligence on-chain to explore immutable auditing and multi-party consensus.
+> **Note**: In the v3.3.6 final release, this part is marked as an **experimental research direction** and **public chain nodes or RPC services are no longer provided by this repository**.
+
+#### Core Value Proposition
+1. **Defense Equity**: Empowering low-end hardware to withstand large-scale DDoS attacks.
+2. **Kernel Offloading**: Achieving < 0.04ms (measured 0.001ms) processing latency via eBPF.
+3. **Verifiable Design**: The protocol is designed to be compatible with multi-party consensus and verification via distributed ledgers, but the current public implementation only includes the T0 local defense core. The distribution/consensus layer is left for future research and vendor implementation.
+
+### 🚀 Latest Updates (v3.3.6 Final) - Project Concluded
+
+- **T0 Kernel Defense Module Final Verification Completed**:
+  - **Extreme Survival Test**: On a 512MB OpenWrt device, withstood a 20-minute, ~**40 million (40M) PPS** random source SYN flood attack;
+  - **Business Continuity**: Maintained **0% packet loss** for SSH management connections and `ping 8.8.8.8` during the attack, with smooth system response;
+  - **Benchmark**: In Linux kernel acceleration benchmarks, eBPF query latency was as low as **0.001 ms**.
+
+- **T2/T3 Modules (Decentralized Consensus): ⚠️ Experimental / Disabled by Default**
+  - Early exploration of chain-based threat distribution and consensus, code currently serves as research reference only;
+  - Disabled by default to ensure maximum stability and predictable behavior;
+  - Can theoretically be enabled in `user-config.json` for local experiments, **but no support is provided, and no public RPC / protocol chain services are offered**;
+  - For distribution/consensus capabilities, it is recommended to implement a backend suitable for your scenario based on the DTSP protocol specification.
 
 ## Documentation
 
@@ -72,18 +96,13 @@ For detailed information, please refer to the [documentation directory](docs/):
 *   [**Integrations**](docs/05-integrations.md)
 *   [**Academic & Performance**](docs/06-academic-perf.md)
 
-> [!IMPORTANT]
-> **📌 T0 Module Status**
+## 👨‍💻 Developer Note
+
+> It turns out that as long as you start from the real problem, you can get things done even with limited resources.
+> OraSRS started as "a 512MB device that had to be unplugged due to DDoS",
+> and ended as a verified, publicly standardized T0 kernel defense protocol implementation.
 >
-> - **T0 Module (Local Enforcement):** ✅ **Production Ready**
->   - Fully validated with 0.001ms query latency
->   - 40M PPS mitigation capability on 512MB devices
->   - 100% success rate (38,766 requests, 0 failures)
->   - Memory footprint: < 50MB (Hybrid) or < 5MB (Native)
->
-> - **T2/T3 Modules (Decentralized Consensus):** ⚠️ **Experimental / Disabled by Default**
->   - Optional blockchain-based consensus layer
->   - Disabled by default for maximum stability
->   - Can be enabled in `user-config.json` for research purposes
->
-> **Note:** Public RPC service has been discontinued. T0 operates independently without external dependencies.
+> Innovation should start from reality, not from PPTs;
+> Papers shouldn't be fluff, protocols can be transparent, and security shouldn't be a privilege for the few.
+> 
+> —— Z. Luo (OraSRS Protocol Author), pushing IETF Draft-01 update
