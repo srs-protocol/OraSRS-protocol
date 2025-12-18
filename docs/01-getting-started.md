@@ -1,54 +1,56 @@
-# 快速开始 / Getting Started
+# Getting Started
 
-## ⚠️ 测试阶段声明 / Beta Disclaimer
+> 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./01-getting-started_zh-CN.md)**
 
-> **测试阶段声明**: 本项目处于 Beta 测试阶段，部分功能（如出站审查）默认为监控模式。
-> **威胁情报源声明**: 在测试阶段，OraSRS 集成了 Spamhaus DROP, DShield, Abuse.ch Feodo Tracker 等开源威胁情报源。
-> **生产环境建议**: 部署前请根据实际业务需求评估这些数据源，并配置本地白名单以避免误拦截。
-> **测试节点地域政策**: OraSRS Alpha 测试目前仅面向中国大陆以外的节点开放。
+## ⚠️ Beta Disclaimer
 
-## 🚀 部署模式与资源需求 / Deployment Modes
+> **Beta Phase**: This project is in Beta. Some features (like egress filtering) default to monitor mode.
+> **Threat Intelligence Sources**: During the Beta phase, OraSRS integrates open-source threat intelligence feeds such as Spamhaus DROP, DShield, and Abuse.ch Feodo Tracker.
+> **Production Advice**: Please evaluate these data sources against your business needs and configure local whitelists to avoid false positives before deploying in production.
+> **Regional Policy**: OraSRS Alpha testing is currently open only to nodes outside of Mainland China.
 
-OraSRS 提供三种灵活的部署模式，以适应从云服务器到 IoT 设备的各种环境：
+## 🚀 Deployment Modes & Resource Requirements
 
-| 模式 | 适用场景 | 内存需求 | 核心组件 | 功能 |
-|------|----------|----------|----------|------|
-| **完整管理节点 (Full)** | 云服务器、网关 | ~90 MB | Node.js + eBPF | 完整 API、区块链交互、可视化、CLI |
-| **混合模式 (Hybrid)** | 边缘网关、路由器 | ~30 MB | Python + eBPF | 核心防护、有限 API、自动同步 |
-| **原生边缘代理 (Edge)** | IoT 设备、传感器 | **< 5 MB** | Native C + eBPF | 仅核心防护、被动更新、极致轻量 |
+OraSRS offers three flexible deployment modes to suit environments ranging from cloud servers to IoT devices:
 
-**注意**: 论文中提到的 "<5MB" 内存指标特指 **原生边缘代理 (Native Edge Agent)** 模式。默认安装脚本会自动检测设备内存并推荐合适的模式。
+| Mode | Use Case | Memory Req | Core Components | Features |
+|------|----------|------------|-----------------|----------|
+| **Full Management Node (Full)** | Cloud Servers, Gateways | ~90 MB | Node.js + eBPF | Full API, Blockchain Interaction, Visualization, CLI |
+| **Hybrid Mode (Hybrid)** | Edge Gateways, Routers | ~30 MB | Python + eBPF | Core Protection, Limited API, Auto-Sync |
+| **Native Edge Agent (Edge)** | IoT Devices, Sensors | **< 5 MB** | Native C + eBPF | Core Protection Only, Passive Updates, Extremely Lightweight |
 
-## 方式 1: 一键安装 (Linux)
+**Note**: The "<5MB" memory metric mentioned in the paper specifically refers to the **Native Edge Agent** mode. The default installation script will automatically detect device memory and recommend the appropriate mode.
 
-使用以下命令一键安装 OraSRS Linux 客户端：
+## Method 1: One-Click Installation (Linux)
+
+Use the following command to install the OraSRS Linux client:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
 ```
 
-或
+Or:
 
 ```bash
 wget -O - https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
 ```
 
-### 传统服务管理命令
+### Service Management Commands
 
 ```bash
-# 启动服务
+# Start Service
 sudo systemctl start orasrs-client
 
-# 停止服务
+# Stop Service
 sudo systemctl stop orasrs-client
 
-# 重启服务
+# Restart Service
 sudo systemctl restart orasrs-client
 
-# 查看服务状态
+# Check Service Status
 sudo systemctl status orasrs-client
 ```
 
-## 方式 3: 手动安装 (Docker)
+## Method 3: Manual Installation (Docker)
 
-*(待补充详细 Docker 安装步骤)*
+*(Detailed Docker installation steps to be added)*

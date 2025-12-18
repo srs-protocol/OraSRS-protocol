@@ -1,59 +1,61 @@
-# OpenWrt 与 IoT 支持 / OpenWrt & IoT Support
+# OpenWrt & IoT Support
 
-## OpenWrt Support / OpenWrt 支持
+> 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./03-openwrt-iot_zh-CN.md)**
 
-OraSRS 支持 OpenWrt 路由器和 IoT 设备防护，为嵌入式设备提供轻量级威胁情报。
+## OpenWrt Support
 
-**快速安装 / Quick Installation:**
+OraSRS supports OpenWrt routers and IoT devices, providing lightweight threat intelligence for embedded devices.
+
+**Quick Installation:**
 
 ```bash
-# 方法1: 使用 curl 一键安装 (推荐)
+# Method 1: One-click installation via curl (Recommended)
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh | sh
 ```
 
-**管理命令 / Management Commands:**
+**Management Commands:**
 
 ```bash
-# 查询 IP / Query IP
+# Query IP
 orasrs-cli query 1.2.3.4
 
-# 查看状态 / Check Status
+# Check Status
 /etc/init.d/orasrs status
 ```
 
-## 🛡️ OraSRS IoT Shield (物联网护盾)
+## 🛡️ OraSRS IoT Shield
 
-对于无法修改固件的摄像头、传感器等设备，OraSRS 提供"透明清洗层"方案：
-- **原理**: 在网关部署 OraSRS + Nginx，实行"先查询后放行"。
-- **效果**: 隐藏服务入口，利用全球威胁情报保护终端安全。
+For devices where firmware cannot be modified (e.g., cameras, sensors), OraSRS provides a "Transparent Scrubbing Layer" solution:
+- **Principle**: Deploy OraSRS + Nginx at the gateway to implement "Query then Forward".
+- **Effect**: Hides service entry points and protects terminals using global threat intelligence.
 
-**IoT 透明防护 / IoT Transparent Protection:**
+**IoT Transparent Protection:**
 
-OraSRS 可以在不修改 IoT 设备配置的情况下，通过网关层面拦截和检测威胁：
+OraSRS can intercept and detect threats at the gateway level without modifying IoT device configurations:
 
 ```
-IoT 设备 (摄像头/传感器/智能家居)
+IoT Device (Camera/Sensor/Smart Home)
     ↓
-OpenWrt 路由器 + OraSRS (透明检测)
-    ↓ 风险评分 < 80: 放行
-    ↓ 风险评分 ≥ 80: 拦截
-互联网
+OpenWrt Router + OraSRS (Transparent Inspection)
+    ↓ Risk Score < 80: Allow
+    ↓ Risk Score ≥ 80: Block
+Internet
 ```
 
-**威胁情报源 / Threat Intelligence Sources:**
+**Threat Intelligence Sources:**
 
-专门针对 IoT 设备的威胁数据：
-- **URLhaus** - IoT 恶意软件分发 URL（Mirai, Mozi等）
-- **ThreatFox** - IoT 僵尸网络 C2 指标
-- **Feodo Tracker** - 僵尸网络 C2 服务器
+Threat data specifically targeting IoT devices:
+- **URLhaus** - IoT malware distribution URLs (Mirai, Mozi, etc.)
+- **ThreatFox** - IoT Botnet C2 indicators
+- **Feodo Tracker** - Botnet C2 servers
 
-**LuCI Web 界面 / LuCI Web Interface:**
+**LuCI Web Interface:**
 
-安装后访问：`http://your-router-ip/cgi-bin/luci/admin/services/orasrs`
+After installation, access: `http://your-router-ip/cgi-bin/luci/admin/services/orasrs`
 
 <img src="images/luci-orasrs-status.png" alt="LuCI Interface" width="600"/>
 
-**配置示例 / Configuration Example:**
+**Configuration Example:**
 
 ```
 config orasrs 'main'
@@ -64,23 +66,23 @@ config orasrs 'main'
     option log_level 'info'
 
 config iot_shield 'main'
-    option enabled '1'              # 启用 IoT Shield
-    option shield_mode 'block'      # monitor 或 block
-    option iot_network '192.168.2.0/24'  # IoT 设备网段
-    option protected_ports '80 443 1883 8883'  # 受保护端口
+    option enabled '1'              # Enable IoT Shield
+    option shield_mode 'block'      # monitor or block
+    option iot_network '192.168.2.0/24'  # IoT device subnet
+    option protected_ports '80 443 1883 8883'  # Protected ports
     option auto_block '1'
-    option block_threshold '80'     # 风险阈值
+    option block_threshold '80'     # Risk threshold
 ```
 
-**支持的 IoT 设备类型 / Supported IoT Device Types:**
-- 📷 IP 摄像头 / IP cameras
-- 🏠 智能家居设备 / Smart home devices  
-- 🔌 智能插座 / Smart plugs
-- 🌡️ 传感器 / Sensors
-- 🔊 智能音箱 / Smart speakers
-- 🏭 工业控制器（PLC/SCADA）/ Industrial controllers
+**Supported IoT Device Types:**
+- 📷 IP cameras
+- 🏠 Smart home devices
+- 🔌 Smart plugs
+- 🌡️ Sensors
+- 🔊 Smart speakers
+- 🏭 Industrial controllers (PLC/SCADA)
 
-**相关文档 / Related Documentation:**
-- [OpenWrt Client Guide / OpenWrt 客户端完整指南](../OPENWRT_CLIENT_GUIDE.md)
-- [T0-T3 Defense Mechanisms / T0-T3 防御机制详解](../OPENWRT_T0_T3_MECHANISMS.md)
-- [IoT Shield Design / IoT 护盾设计](../IOT_SHIELD.md)
+**Related Documentation:**
+- [OpenWrt Client Guide](../OPENWRT_CLIENT_GUIDE.md)
+- [T0-T3 Defense Mechanisms](../OPENWRT_T0_T3_MECHANISMS.md)
+- [IoT Shield Design](../IOT_SHIELD.md)

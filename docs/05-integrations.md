@@ -1,57 +1,59 @@
-# 高级集成 / Advanced Integrations
+# Advanced Integrations
 
-## Wazuh + OraSRS 集成安装 (高级安全)
+> 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./05-integrations_zh-CN.md)**
 
-如果您希望将 OraSRS 集成到 Wazuh 安全平台，实现自动威胁阻断：
+## Wazuh + OraSRS Integration (Advanced Security)
+
+If you wish to integrate OraSRS into the Wazuh security platform for automated threat blocking:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-wazuh-orasrs.sh | bash
 ```
 
-此脚本将：
-1. 安装/更新 OraSRS 客户端（限制为本地访问）。
-2. 安装 Wazuh Agent。
+This script will:
+1. Install/Update the OraSRS client (restricted to local access).
+2. Install the Wazuh Agent.
 
-**工作原理 (先风控后查询):**
-- **Wazuh 发现威胁**: 触发集成脚本调用 OraSRS 接口 `/v1/threats/process`。
-- **OraSRS 决策**:
-  - **白名单**: 直接放行。
-  - **动态风控**: 根据威胁等级计算封禁时长（高危 3天，严重 7天，默认 24小时）。
-  - **本地/链上协同**: 优先查询本地缓存（若命中则叠加时长），其次查询链上数据（若命中则最大封禁）。
-  - **新威胁**: 写入本地缓存并异步上报链上。
-- **Active Response**: Wazuh 根据 OraSRS 返回的指令执行 `firewall-drop`。
+**How it Works (Risk Control First):**
+- **Wazuh Detects Threat**: Triggers integration script to call OraSRS endpoint `/v1/threats/process`.
+- **OraSRS Decision**:
+  - **Whitelist**: Allow immediately.
+  - **Dynamic Risk Control**: Calculate ban duration based on threat level (High: 3 days, Critical: 7 days, Default: 24 hours).
+  - **Local/Chain Collaboration**: Prioritize local cache (stack duration if hit), then query on-chain data (max ban if hit).
+  - **New Threat**: Write to local cache and report asynchronously to the blockchain.
+- **Active Response**: Wazuh executes `firewall-drop` based on OraSRS instructions.
 
-## 🛡️ 高价值资产保护 (HVAP) 配置
+## 🛡️ High Value Asset Protection (HVAP) Configuration
 
-针对 SSH/MySQL 等关键服务，启用基于 OraSRS 评分的动态访问控制：
+For critical services like SSH/MySQL, enable dynamic access control based on OraSRS scores:
 
-1. **安装 PAM 模块** (已包含在上述脚本中)
-2. **启用 SSH 保护**:
-   编辑 `/etc/pam.d/sshd`，在文件顶部添加：
+1. **Install PAM Module** (Included in the script above)
+2. **Enable SSH Protection**:
+   Edit `/etc/pam.d/sshd` and add the following to the top of the file:
    ```bash
    auth required pam_exec.so /opt/orasrs/pam/pam_orasrs.py
    ```
-   这将拦截高风险 IP (Score >= 80) 的登录尝试，有效防御 0-day 攻击探测。
+   This will intercept login attempts from high-risk IPs (Score >= 80), effectively defending against 0-day probes.
 
-**HVAP 防御逻辑:**
-- **L1 (Score < 40)**: 正常放行。
-- **L2 (40 <= Score < 80)**: 警告/建议 MFA。
-- **L3 (Score >= 80)**: **直接拦截** (拒绝访问)。
+**HVAP Defense Logic:**
+- **L1 (Score < 40)**: Allow.
+- **L2 (40 <= Score < 80)**: Warning / Suggest MFA.
+- **L3 (Score >= 80)**: **Block** (Access Denied).
 
-**应急响应 (人工确认):**
-若需临时放行被误拦的 IP，管理员可调用临时白名单接口：
+**Emergency Response (Manual Override):**
+If you need to temporarily allow a blocked IP, administrators can call the temporary whitelist endpoint:
 ```bash
 curl -X POST http://127.0.0.1:3006/orasrs/v1/whitelist/temp \
   -H "Content-Type: application/json" \
   -d '{"ip":"1.2.3.4", "duration":300}'
 ```
-此操作将允许该 IP 在 5 分钟内绕过 HVAP 拦截。
+This will allow the IP to bypass HVAP interception for 5 minutes.
 
-## 浏览器扩展
+## Browser Extension
 
-我们还提供浏览器扩展插件，可直接从浏览器保护您的网络安全：
+We also provide a browser extension to protect your web security directly from the browser:
 
-- 支持 Chrome 和 Firefox
-- 实时威胁防护
-- 基于 OraSRS 协议链的去中心化威胁情报
-- 隐私保护设计
+- Supports Chrome and Firefox
+- Real-time threat protection
+- Decentralized threat intelligence based on OraSRS protocol chain
+- Privacy-preserving design

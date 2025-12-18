@@ -1,289 +1,291 @@
-# Hardhat 服务守护进程部署指南
+# Hardhat Service Daemon Deployment Guide
 
-## 概述
+> 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./07-hardhat-service_zh-CN.md)**
 
-为 OraSRS 本地 Hardhat 区块链节点创建了完整的守护进程解决方案，包括：
+## Overview
 
-1. **增强的 systemd 服务** - 自动重启和资源管理
-2. **健康监控守护进程** - 主动监控和智能恢复
-3. **指数退避重试** - 防止服务频繁重启
-4. **完整的管理工具** - 简化运维操作
+A complete daemon solution has been created for the OraSRS local Hardhat blockchain node, including:
 
-## 核心功能
+1. **Enhanced systemd Service** - Automatic restart and resource management.
+2. **Health Monitor Daemon** - Proactive monitoring and intelligent recovery.
+3. **Exponential Backoff Retry** - Prevents frequent service restarts.
+4. **Complete Management Tools** - Simplifies operations.
 
-### 1. 自动重启策略
+## Core Features
 
-**systemd 配置** (`hardhat-node.service`):
-- ✅ 服务崩溃后自动重启
-- ✅ 指数退避延迟: 10s → 20s → 40s → 60s (最大)
-- ✅ 5分钟内最多重启5次（防止无限重启）
-- ✅ 资源限制: 2GB 内存, 200% CPU
+### 1. Automatic Restart Strategy
 
-### 2. 健康监控
+**systemd Configuration** (`hardhat-node.service`):
+- ✅ Auto-restart after service crash.
+- ✅ Exponential backoff delay: 10s → 20s → 40s → 60s (Max).
+- ✅ Max 5 restarts in 5 minutes (prevents restart loops).
+- ✅ Resource limits: 2GB Memory, 200% CPU.
 
-**监控守护进程** (`hardhat-health-monitor.sh`):
-- ✅ 每30秒检查一次服务健康状态
-- ✅ RPC 端点响应性检测
-- ✅ 自动重启失败的服务
-- ✅ 详细日志记录到 `/var/log/hardhat-monitor.log`
+### 2. Health Monitoring
 
-### 3. 智能重试逻辑
+**Monitor Daemon** (`hardhat-health-monitor.sh`):
+- ✅ Checks service health every 30 seconds.
+- ✅ RPC endpoint responsiveness detection.
+- ✅ Automatically restarts failed services.
+- ✅ Detailed logging to `/var/log/hardhat-monitor.log`.
 
-**指数退避算法**:
+### 3. Intelligent Retry Logic
+
+**Exponential Backoff Algorithm**:
 ```
-重试次数 0: 立即重启
-重试次数 1: 等待 10 秒
-重试次数 2: 等待 20 秒
-重试次数 3: 等待 40 秒
-重试次数 4+: 等待 60 秒 (最大值)
+Retry 0: Immediate restart
+Retry 1: Wait 10 seconds
+Retry 2: Wait 20 seconds
+Retry 3: Wait 40 seconds
+Retry 4+: Wait 60 seconds (Max)
 ```
 
-## 快速开始
+## Quick Start
 
-### 一键部署
+### One-Click Deployment
 
 ```bash
-# 自动安装和启动所有服务
+# Automatically install and start all services
 sudo bash /home/Great/SRS-Protocol/deploy-hardhat-daemon.sh
 ```
 
-### 手动部署
+### Manual Deployment
 
 ```bash
-# 1. 安装服务
+# 1. Install Service
 sudo bash /home/Great/SRS-Protocol/manage-hardhat-service.sh install
 
-# 2. 启动 Hardhat 节点
+# 2. Start Hardhat Node
 sudo systemctl start hardhat-node
 
-# 3. 启动健康监控
+# 3. Start Health Monitor
 sudo systemctl start hardhat-health-monitor
 
-# 4. 检查状态
+# 4. Check Status
 sudo systemctl status hardhat-node
 sudo systemctl status hardhat-health-monitor
 ```
 
-## 管理命令
+## Management Commands
 
-### Hardhat 节点服务
+### Hardhat Node Service
 
 ```bash
-# 启动服务
+# Start Service
 sudo systemctl start hardhat-node
 
-# 停止服务
+# Stop Service
 sudo systemctl stop hardhat-node
 
-# 重启服务
+# Restart Service
 sudo systemctl restart hardhat-node
 
-# 查看状态
+# View Status
 sudo systemctl status hardhat-node
 
-# 查看日志
+# View Logs
 sudo journalctl -u hardhat-node -f
 
-# 查看最近50行日志
+# View last 50 lines of logs
 sudo journalctl -u hardhat-node -n 50
 ```
 
-### 健康监控服务
+### Health Monitor Service
 
 ```bash
-# 启动监控
+# Start Monitor
 sudo bash manage-hardhat-service.sh monitor
 
-# 停止监控
+# Stop Monitor
 sudo bash manage-hardhat-service.sh monitor-stop
 
-# 查看监控状态
+# View Monitor Status
 sudo bash manage-hardhat-service.sh monitor-status
 
-# 执行健康检查
+# Execute Health Check
 sudo bash manage-hardhat-service.sh health-check
 
-# 查看监控日志
+# View Monitor Logs
 sudo tail -f /var/log/hardhat-monitor.log
 ```
 
-### 测试自动重启
+### Test Automatic Restart
 
 ```bash
-# 测试自动重启功能
+# Test auto-restart function
 sudo bash manage-hardhat-service.sh test-restart
 ```
 
-## 健康检查机制
+## Health Check Mechanism
 
-### 检查项目
+### Check Items
 
-1. **服务状态检查**
-   - 验证 systemd 服务是否运行
-   - 检查进程是否存活
+1. **Service Status Check**
+   - Verify systemd service is running.
+   - Check if process is alive.
 
-2. **RPC 响应检查**
-   - 调用 `eth_blockNumber` 方法
-   - 验证 JSON-RPC 响应
-   - 5秒超时限制
+2. **RPC Response Check**
+   - Call `eth_blockNumber` method.
+   - Verify JSON-RPC response.
+   - 5-second timeout limit.
 
-3. **综合健康评估**
-   - 结合服务状态和 RPC 响应
-   - 连续失败计数
-   - 自动触发重启
+3. **Comprehensive Health Assessment**
+   - Combine service status and RPC response.
+   - Consecutive failure count.
+   - Trigger auto-restart.
 
-### 健康检查日志示例
+### Health Check Log Example
 
 ```
-2025-12-18 02:48:00 [INFO] Hardhat 健康监控已启动
-2025-12-18 02:48:00 [INFO] 检查间隔: 30s
-2025-12-18 02:48:00 [INFO] RPC 端点: http://127.0.0.1:8545
-2025-12-18 02:48:30 [INFO] 服务运行正常 (总重启次数: 0)
-2025-12-18 02:49:00 [ERROR] 健康检查失败 (连续失败次数: 1)
-2025-12-18 02:49:00 [WARNING] 准备重启 Hardhat 服务 (重试次数: 1, 延迟: 10s)
-2025-12-18 02:49:10 [SUCCESS] Hardhat 服务重启成功
-2025-12-18 02:49:20 [SUCCESS] Hardhat 服务健康检查通过
+2025-12-18 02:48:00 [INFO] Hardhat Health Monitor Started
+2025-12-18 02:48:00 [INFO] Check Interval: 30s
+2025-12-18 02:48:00 [INFO] RPC Endpoint: http://127.0.0.1:8545
+2025-12-18 02:48:30 [INFO] Service Running Normally (Total Restarts: 0)
+2025-12-18 02:49:00 [ERROR] Health Check Failed (Consecutive Failures: 1)
+2025-12-18 02:49:00 [WARNING] Preparing to Restart Hardhat Service (Retry: 1, Delay: 10s)
+2025-12-18 02:49:10 [SUCCESS] Hardhat Service Restarted Successfully
+2025-12-18 02:49:20 [SUCCESS] Hardhat Service Health Check Passed
 ```
 
-## 文件结构
+## File Structure
 
 ```
 /home/Great/SRS-Protocol/
-├── hardhat-node.service              # systemd 服务配置
-├── hardhat-health-monitor.service    # 监控服务配置
-├── hardhat-health-monitor.sh         # 健康监控守护进程
-├── manage-hardhat-service.sh         # 服务管理脚本
-├── deploy-hardhat-daemon.sh          # 一键部署脚本
-└── start-secure-hardhat-node.sh      # 安全启动脚本（旧版）
+├── hardhat-node.service              # systemd service config
+├── hardhat-health-monitor.service    # monitor service config
+├── hardhat-health-monitor.sh         # health monitor daemon
+├── manage-hardhat-service.sh         # service management script
+├── deploy-hardhat-daemon.sh          # one-click deployment script
+└── start-secure-hardhat-node.sh      # secure start script (legacy)
 
 /etc/systemd/system/
-├── hardhat-node.service              # 已安装的服务
-└── hardhat-health-monitor.service    # 已安装的监控服务
+├── hardhat-node.service              # installed service
+└── hardhat-health-monitor.service    # installed monitor service
 
 /var/log/
-└── hardhat-monitor.log               # 监控日志
+└── hardhat-monitor.log               # monitor log
 
 /var/run/
-└── hardhat-monitor.pid               # 监控进程 PID
+└── hardhat-monitor.pid               # monitor process PID
 ```
 
-## 配置说明
+## Configuration
 
-### systemd 服务配置
+### systemd Service Configuration
 
-**关键参数**:
-- `Restart=always` - 总是自动重启
-- `RestartSec=10` - 初始重启延迟10秒
-- `StartLimitInterval=300` - 5分钟时间窗口
-- `StartLimitBurst=5` - 最多重启5次
-- `MemoryMax=2G` - 最大内存限制
-- `CPUQuota=200%` - CPU 配额（2核）
+**Key Parameters**:
+- `Restart=always` - Always auto-restart.
+- `RestartSec=10` - Initial restart delay 10s.
+- `StartLimitInterval=300` - 5-minute window.
+- `StartLimitBurst=5` - Max 5 restarts.
+- `MemoryMax=2G` - Max memory limit.
+- `CPUQuota=200%` - CPU quota (2 cores).
 
-### 监控配置
+### Monitor Configuration
 
-**可调参数** (在 `hardhat-health-monitor.sh` 中):
+**Tunable Parameters** (in `hardhat-health-monitor.sh`):
 ```bash
-CHECK_INTERVAL=30          # 健康检查间隔（秒）
-MAX_RETRY_DELAY=300        # 最大重试延迟（秒）
-INITIAL_RETRY_DELAY=10     # 初始重试延迟（秒）
+CHECK_INTERVAL=30          # Health check interval (seconds)
+MAX_RETRY_DELAY=300        # Max retry delay (seconds)
+INITIAL_RETRY_DELAY=10     # Initial retry delay (seconds)
 ```
 
-## 故障排查
+## Troubleshooting
 
-### 服务无法启动
+### Service Fails to Start
 
 ```bash
-# 查看详细错误日志
+# View detailed error logs
 sudo journalctl -u hardhat-node -n 50 --no-pager
 
-# 检查端口占用
+# Check port usage
 sudo lsof -i :8545
 
-# 手动测试启动
+# Manual start test
 cd /home/Great/SRS-Protocol
 npx hardhat node --hostname 127.0.0.1 --port 8545
 ```
 
-### 监控服务异常
+### Monitor Service Abnormal
 
 ```bash
-# 查看监控日志
+# View monitor logs
 sudo tail -100 /var/log/hardhat-monitor.log
 
-# 手动执行健康检查
+# Manual health check
 sudo bash hardhat-health-monitor.sh test
 
-# 重启监控服务
+# Restart monitor service
 sudo systemctl restart hardhat-health-monitor
 ```
 
-### 频繁重启
+### Frequent Restarts
 
-如果服务频繁重启，检查：
-1. 系统资源是否充足（内存、CPU）
-2. Node.js 版本是否兼容
-3. Hardhat 配置是否正确
-4. 网络端口是否冲突
+If the service restarts frequently, check:
+1. System resources (Memory, CPU).
+2. Node.js version compatibility.
+3. Hardhat configuration.
+4. Network port conflicts.
 
 ```bash
-# 查看系统资源
+# Check system resources
 free -h
 top -bn1 | head -20
 
-# 查看 Node.js 版本
+# Check Node.js version
 node --version
 
-# 检查配置文件
+# Check config file
 cat hardhat.config.cjs
 ```
 
-## 性能优化
+## Performance Optimization
 
-### 资源限制调整
+### Adjust Resource Limits
 
-如果需要调整资源限制，编辑 `hardhat-node.service`:
+If you need to adjust resource limits, edit `hardhat-node.service`:
 
 ```ini
-# 增加内存限制到 4GB
+# Increase memory limit to 4GB
 MemoryMax=4G
 
-# 增加 CPU 配额到 4核
+# Increase CPU quota to 4 cores
 CPUQuota=400%
 ```
 
-然后重新加载配置:
+Then reload configuration:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart hardhat-node
 ```
 
-### 监控间隔调整
+### Adjust Monitor Interval
 
-编辑 `hardhat-health-monitor.sh`:
+Edit `hardhat-health-monitor.sh`:
 ```bash
-# 减少检查间隔到15秒（更敏感）
+# Reduce interval to 15s (More sensitive)
 CHECK_INTERVAL=15
 
-# 或增加到60秒（减少开销）
+# Or increase to 60s (Reduce overhead)
 CHECK_INTERVAL=60
 ```
 
-## 安全建议
+## Security Recommendations
 
-1. **仅监听本地地址** - Hardhat 节点绑定到 `127.0.0.1`，不暴露到公网
-2. **日志轮转** - 配置 logrotate 防止日志文件过大
-3. **资源限制** - systemd 限制内存和 CPU 使用
-4. **权限控制** - 服务以 root 运行（生产环境建议使用专用用户）
+1. **Listen on Localhost Only** - Bind Hardhat node to `127.0.0.1`, do not expose to public internet.
+2. **Log Rotation** - Configure logrotate to prevent large log files.
+3. **Resource Limits** - systemd limits memory and CPU usage.
+4. **Access Control** - Service runs as root (dedicated user recommended for production).
 
-## 下一步
+## Next Steps
 
-- [ ] 配置日志轮转 (`/etc/logrotate.d/hardhat`)
-- [ ] 添加告警通知（邮件/Webhook）
-- [ ] 集成 Prometheus 监控
-- [ ] 创建备份脚本
+- [ ] Configure log rotation (`/etc/logrotate.d/hardhat`)
+- [ ] Add alert notifications (Email/Webhook)
+- [ ] Integrate Prometheus monitoring
+- [ ] Create backup scripts
 
-## 相关文档
+## Related Documentation
 
-- [Hardhat 官方文档](https://hardhat.org/)
-- [systemd 服务管理](https://www.freedesktop.org/software/systemd/man/systemd.service.html)
-- [OraSRS 协议文档](../README.md)
+- [Hardhat Official Documentation](https://hardhat.org/)
+- [systemd Service Management](https://www.freedesktop.org/software/systemd/man/systemd.service.html)
+- [OraSRS Protocol Documentation](../README.md)
