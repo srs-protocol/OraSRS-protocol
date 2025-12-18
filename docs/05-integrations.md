@@ -1,4 +1,4 @@
-# Advanced Integrations
+# Advanced Integrations（Reference Study）
 
 > 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./05-integrations_zh-CN.md)**
 
