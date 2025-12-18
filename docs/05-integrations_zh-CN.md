@@ -1,4 +1,4 @@
-# 高级集成 / Advanced Integrations
+# 高级集成 / Advanced Integrations（研究参考）
 
 > 🇺🇸 **English Version: [Click here for the English Documentation](./05-integrations.md)**
 
