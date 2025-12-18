@@ -302,18 +302,18 @@ install_node_dependencies() {
     npm install
     
     # 确保所有必要的文件都存在
-    if [[ ! -f "/opt/orasrs/orasrs-simple-client.js" ]]; then
+    if [[ ! -f "/opt/orasrs/src/orasrs-simple-client.js" ]]; then
         print_error "OraSRS简单客户端文件不存在"
         exit 1
     fi
     
     # 安装CLI工具
     print_info "安装OraSRS CLI工具..."
-    chmod +x /opt/orasrs/orasrs-cli.js
+    chmod +x /opt/orasrs/src/orasrs-cli.js
     
     # 创建符号链接到 /usr/local/bin
-    if [ -f /opt/orasrs/orasrs-cli.js ]; then
-        ln -sf /opt/orasrs/orasrs-cli.js /usr/local/bin/orasrs-cli
+    if [ -f /opt/orasrs/src/orasrs-cli.js ]; then
+        ln -sf /opt/orasrs/src/orasrs-cli.js /usr/local/bin/orasrs-cli
         print_success "CLI工具已安装: orasrs-cli"
     fi
     
@@ -343,7 +343,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/orasrs
-ExecStart=/usr/bin/node /opt/orasrs/orasrs-simple-client.js
+ExecStart=/usr/bin/node /opt/orasrs/src/orasrs-simple-client.js
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
@@ -367,7 +367,7 @@ EOF
         fi
     else
         print_warning "系统不支持systemd，跳过服务配置"
-        print_info "可以手动启动服务: cd /opt/orasrs && node orasrs-simple-client.js &"
+        print_info "可以手动启动服务: cd /opt/orasrs && node src/orasrs-simple-client.js &"
     fi
 }
 
@@ -390,10 +390,10 @@ download_threat_intelligence() {
         print_success "威胁情报数据已加载: $(du -h /opt/orasrs/oracle/threats_compact.json | cut -f1)"
         
         # 初始化客户端缓存
-        if [ -f /opt/orasrs/threat-data-loader.js ]; then
+        if [ -f /opt/orasrs/scripts/tools/threat-data-loader.js ]; then
             print_info "初始化威胁情报缓存..."
             cd /opt/orasrs
-            node threat-data-loader.js > /dev/null 2>&1 || print_warning "威胁情报缓存初始化失败（服务启动时会自动重试）"
+            node scripts/tools/threat-data-loader.js > /dev/null 2>&1 || print_warning "威胁情报缓存初始化失败（服务启动时会自动重试）"
         fi
     else
         print_warning "威胁情报数据文件不存在"
@@ -446,7 +446,7 @@ start_service() {
             print_warning "systemd服务可能未启动，尝试手动启动..."
             cd /opt/orasrs
             # 在后台启动服务并输出到日志
-            nohup node orasrs-simple-client.js > orasrs-client.log 2>&1 &
+            nohup node src/orasrs-simple-client.js > orasrs-client.log 2>&1 &
             sleep 5
             
             # 检查进程是否启动
@@ -462,7 +462,7 @@ start_service() {
         print_warning "系统不支持systemd，尝试手动启动服务..."
         cd /opt/orasrs
         # 在后台启动服务并输出到日志
-        nohup node orasrs-simple-client.js > orasrs-client.log 2>&1 &
+        nohup node src/orasrs-simple-client.js > orasrs-client.log 2>&1 &
         sleep 5
         
         # 检查进程是否启动
