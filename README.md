@@ -40,9 +40,25 @@ One-click installation for Linux/OpenWrt:
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
 ```
 
+**🔒 What Gets Installed:**
+- ✅ **T0 Kernel Defense**: iptables/ipset-based threat blocking + SYN flood protection
+- ✅ **Public Threat Feeds**: Auto-sync from Feodo Tracker + EmergingThreats
+- ❌ **NO Node.js/Blockchain**: Pure kernel-level defense, no external dependencies
+- ❌ **NO T2/T3**: Blockchain and consensus layers disabled (research reference only)
+
 ### ⚠️ Activation & Verification (Important)
 
-Currently, for the OpenWrt client, you need to manually activate the firewall rules after installation:
+**For Linux:**
+```bash
+# Check service status
+systemctl status orasrs
+
+# Verify protection is active
+orasrs-client status
+```
+
+**For OpenWrt:**
+Currently, the OpenWrt client requires manual activation of firewall rules after installation:
 
 ```bash
 # 1. Load the firewall rules
@@ -51,10 +67,9 @@ sh /etc/firewall.user
 # 2. Restart firewall to apply changes
 /etc/init.d/firewall restart
 ```
-Verify that OraSRS is protecting your device:
 
-```Bash
-
+**Verify Protection (Both Platforms):**
+```bash
 iptables -nvL orasrs_chain
 ```
 

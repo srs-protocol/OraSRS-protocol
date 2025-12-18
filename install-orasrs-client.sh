@@ -1,581 +1,353 @@
 #!/bin/bash
 
-# OraSRS Installation Script - Final Version (v3.3.6)
+# OraSRS Linux Client Installation Script - T0 Only (v3.3.6 Final)
 # -----------------------------------------------------------------------
 # [IMPORTANT] Project Status: CONCLUDED / 已结项
-# This is the final stable version of the OraSRS Hybrid. 
-# Optimized for Kernel T0 Defense (40M PPS @ 512MB RAM).
+# This is the final T0-focused version. NO blockchain/T2/T3 features.
+# Pure kernel-level defense using iptables/ipset + public threat feeds.
 # -----------------------------------------------------------------------
-# 说明：本项目已达成科研目标，即日起停止代码更新及公网 RPC 服务。
-# 核心逻辑已定格为 IETF 草案标准：draft-luo-orasrs-decentralized-threat-signaling-01
 # Scientific Reference: DOI 10.31224/5985
+# IETF Draft: draft-luo-orasrs-decentralized-threat-signaling-01
 # -----------------------------------------------------------------------
 
-set -e  # 遇到错误时退出
+set -e
 
-# 颜色定义
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# 打印带颜色的信息
-print_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# Print functions
+print_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# 检查是否为root用户
+# Check root
 check_root() {
-    if [[ $EUID -eq 0 ]]; then
-        print_info "当前为root用户，继续安装"
-    else
-        print_error "请使用root权限运行此脚本"
+    if [[ $EUID -ne 0 ]]; then
+        print_error "请使用root权限运行此脚本 / Please run as root"
         exit 1
     fi
 }
 
-# 智能设备检测
-detect_device_type() {
-    if [ -f /proc/meminfo ]; then
-        TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-        TOTAL_MEM_MB=$((TOTAL_MEM / 1024))
-    else
-        # Fallback for systems without /proc/meminfo
-        TOTAL_MEM_MB=1024 
-    fi
-    
-    if [ $TOTAL_MEM_MB -lt 16 ]; then
-        echo "ultra-low"  # <16MB: Ultra-Low Mode (Pure eBPF)
-    elif [ $TOTAL_MEM_MB -lt 256 ]; then
-        echo "edge"       # 16-256MB: Edge Mode (Native Agent)
-    elif [ $TOTAL_MEM_MB -lt 1024 ]; then
-        echo "hybrid"     # 256MB-1GB: Hybrid Mode
-    else
-        echo "full"       # >1GB: Full Mode
-    fi
-}
-
-# 选择语言
-select_language() {
-    echo ""
-    echo "Please select language / 请选择语言:"
-    echo "  1) English"
-    echo "  2) 中文 (Chinese)"
-    echo ""
-    
-    # Try to read from /dev/tty if available (for piped execution)
-    if [ -t 0 ]; then
-        read -p "Select [1-2]: " lang_choice
-    else
-        read -p "Select [1-2]: " lang_choice < /dev/tty
-    fi
-    
-    mkdir -p /etc/orasrs
-    
-    case $lang_choice in
-        1)
-            echo '{"language": "en"}' > /etc/orasrs/cli-config.json
-            print_info "Language set to English"
-            ;;
-        2)
-            echo '{"language": "zh"}' > /etc/orasrs/cli-config.json
-            print_info "语言已设置为中文"
-            ;;
-        *)
-            echo '{"language": "en"}' > /etc/orasrs/cli-config.json
-            print_info "Invalid selection, defaulting to English"
-            ;;
-    esac
-}
-
-# 检查系统类型
+# Detect OS
 detect_os() {
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
         OS=$NAME
-        VER=$VERSION_ID
+        print_info "检测到操作系统: $OS"
     else
         print_error "无法检测操作系统"
         exit 1
     fi
-    
-    print_info "检测到操作系统: $OS"
 }
 
-# 检查依赖
-check_dependencies() {
-    print_info "检查依赖..."
+# Install dependencies
+install_dependencies() {
+    print_info "安装依赖..."
     
-    # 检查git
-    if ! command -v git &> /dev/null; then
-        print_info "安装git..."
-        if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
-            apt update && apt install -y git
-        elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
-            yum install -y git
-        elif [[ "$OS" == *"Fedora"* ]]; then
-            dnf install -y git
-        else
-            print_error "不支持的操作系统: $OS"
+    if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
+        apt update
+        apt install -y iptables ipset curl
+    elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
+        yum install -y iptables ipset curl
+    elif [[ "$OS" == *"Fedora"* ]]; then
+        dnf install -y iptables ipset curl
+    elif [[ "$OS" == *"Arch"* ]]; then
+        pacman -Sy --noconfirm iptables ipset curl
+    else
+        print_warning "未知操作系统，尝试使用通用方法..."
+    fi
+    
+    print_success "依赖安装完成"
+}
+
+# Create client script
+create_client_script() {
+    print_info "创建OraSRS客户端脚本..."
+    
+    cat > /usr/local/bin/orasrs-client << 'EOF'
+#!/bin/bash
+# OraSRS T0 Client (Linux Version) v3.3.6
+# Pure kernel-level defense with public threat feeds
+
+CONFIG_FILE="/etc/orasrs/config"
+LOG_FILE="/var/log/orasrs.log"
+IPSET_NAME="orasrs_threats"
+
+log() { echo "$(date): $1" >> $LOG_FILE; }
+
+# Read config
+get_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        . "$CONFIG_FILE"
+    else
+        LIMIT_RATE="${LIMIT_RATE:-20/s}"
+        LIMIT_BURST="${LIMIT_BURST:-50}"
+        SYNC_INTERVAL="${SYNC_INTERVAL:-3600}"
+    fi
+}
+
+# Initialize firewall
+init_firewall() {
+    get_config
+    
+    # Load kernel modules
+    modprobe ip_set 2>/dev/null || true
+    modprobe ip_set_hash_net 2>/dev/null || true
+    modprobe xt_set 2>/dev/null || true
+    modprobe xt_limit 2>/dev/null || true
+    modprobe xt_conntrack 2>/dev/null || true
+    
+    # Create ipset
+    ipset create $IPSET_NAME hash:net -exist 2>/dev/null
+    
+    # Get SSH port
+    SSH_PORT=$(ss -tlnp | grep sshd | awk '{print $4}' | grep -oP ':\K[0-9]+$' | head -1)
+    SSH_PORT=${SSH_PORT:-22}
+    
+    # Clean old rules
+    iptables -D INPUT -j orasrs_chain 2>/dev/null || true
+    iptables -F orasrs_chain 2>/dev/null || true
+    iptables -X orasrs_chain 2>/dev/null || true
+    
+    # Create custom chain
+    iptables -N orasrs_chain
+    
+    # 1. Accept loopback
+    iptables -A orasrs_chain -i lo -j ACCEPT
+    
+    # 2. Connection tracking
+    iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
+    
+    # 3. Threat blocking (T0)
+    iptables -A orasrs_chain -m set --match-set $IPSET_NAME src -j DROP
+    
+    # 4. SSH protection
+    iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --set
+    iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --update --seconds 60 --hitcount 4 -j DROP
+    iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -j ACCEPT
+    
+    # 5. SYN flood protection
+    iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT_RATE --limit-burst $LIMIT_BURST -j ACCEPT
+    iptables -A orasrs_chain -p tcp --syn -j DROP
+    
+    # Insert at top of INPUT chain
+    iptables -I INPUT 1 -j orasrs_chain
+    
+    log "Firewall initialized. Limit: $LIMIT_RATE, Burst: $LIMIT_BURST, SSH: $SSH_PORT"
+}
+
+# Sync threats from public feeds
+sync_threats() {
+    log "Starting threat sync from public feeds..."
+    
+    # Public threat feed URLs
+    URLS=(
+        "https://feodotracker.abuse.ch/downloads/ipblocklist.txt"
+        "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
+    )
+    
+    SUCCESS=0
+    for URL in "${URLS[@]}"; do
+        if curl -s --connect-timeout 10 "$URL" | grep -v "^#" | grep -E "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" > /tmp/orasrs_threats.txt; then
+            if [ -s /tmp/orasrs_threats.txt ]; then
+                SUCCESS=1
+                log "Downloaded threats from $URL"
+                break
+            fi
+        fi
+    done
+    
+    if [ $SUCCESS -eq 1 ]; then
+        # Atomic ipset update
+        ipset create ${IPSET_NAME}_tmp hash:net -exist
+        ipset flush ${IPSET_NAME}_tmp
+        while read ip; do
+            ipset add ${IPSET_NAME}_tmp "$ip" -exist
+        done < /tmp/orasrs_threats.txt
+        ipset swap ${IPSET_NAME}_tmp $IPSET_NAME
+        ipset destroy ${IPSET_NAME}_tmp
+        
+        THREAT_COUNT=$(ipset list $IPSET_NAME | grep -c "^[0-9]" || echo "0")
+        log "Sync completed. Threats loaded: $THREAT_COUNT"
+    else
+        log "Sync failed: All sources unreachable"
+    fi
+    
+    rm -f /tmp/orasrs_threats.txt
+}
+
+# Main daemon loop
+daemon() {
+    init_firewall
+    
+    while true; do
+        sync_threats
+        get_config
+        sleep $SYNC_INTERVAL
+    done
+}
+
+# Commands
+case "$1" in
+    start)
+        daemon &
+        echo $! > /var/run/orasrs.pid
+        log "OraSRS client started (PID: $!)"
+        ;;
+    stop)
+        if [ -f /var/run/orasrs.pid ]; then
+            PID=$(cat /var/run/orasrs.pid)
+            kill $PID 2>/dev/null || true
+            rm -f /var/run/orasrs.pid
+            log "OraSRS client stopped"
+        fi
+        ;;
+    reload)
+        init_firewall
+        ;;
+    status)
+        echo "=== OraSRS T0 Client Status ==="
+        echo "Backend: iptables/ipset"
+        echo ""
+        echo "--- IPTABLES (orasrs_chain) ---"
+        iptables -nvL orasrs_chain 2>/dev/null || echo "Chain not found"
+        echo ""
+        echo "--- IPSET ---"
+        THREAT_COUNT=$(ipset list $IPSET_NAME 2>/dev/null | grep -c "^[0-9]" || echo "0")
+        echo "Threats loaded: $THREAT_COUNT"
+        ;;
+    sync)
+        sync_threats
+        ;;
+    check)
+        if [ -z "$2" ]; then
+            echo "Usage: $0 check <IP>"
             exit 1
         fi
-    fi
-    
-    # 检查Node.js
-    if ! command -v node &> /dev/null; then
-        print_info "安装Node.js..."
-        # 安装Node.js 18.x
-        if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
-            curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-            apt install -y nodejs
-        elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            yum install -y nodejs
-        elif [[ "$OS" == *"Fedora"* ]]; then
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            dnf install -y nodejs
-        fi
-    fi
-    
-    # 检查npm
-    if ! command -v npm &> /dev/null; then
-        print_error "npm未安装"
+        ipset test $IPSET_NAME "$2" 2>/dev/null && echo "THREAT" || echo "SAFE"
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|reload|status|sync|check <IP>}"
         exit 1
-    fi
+        ;;
+esac
+EOF
     
-    print_success "依赖检查完成"
+    chmod +x /usr/local/bin/orasrs-client
+    print_success "客户端脚本创建完成"
 }
 
-# 检查 eBPF 依赖（可选）
-check_ebpf_dependencies() {
-    print_info "检查 eBPF 内核加速支持..."
+# Create config file
+create_config() {
+    print_info "创建配置文件..."
     
-    # 检查内核版本
-    KERNEL_VERSION=$(uname -r | cut -d. -f1-2)
-    KERNEL_MAJOR=$(echo $KERNEL_VERSION | cut -d. -f1)
-    KERNEL_MINOR=$(echo $KERNEL_VERSION | cut -d. -f2)
+    mkdir -p /etc/orasrs
+    cat > /etc/orasrs/config << 'EOF'
+# OraSRS T0 Configuration
+LIMIT_RATE="20/s"
+LIMIT_BURST="50"
+SYNC_INTERVAL="3600"
+EOF
     
-    if [ "$KERNEL_MAJOR" -lt 4 ] || ([ "$KERNEL_MAJOR" -eq 4 ] && [ "$KERNEL_MINOR" -lt 8 ]); then
-        print_warning "内核版本 $KERNEL_VERSION 不支持 eBPF XDP (需要 >= 4.8)"
-        print_info "eBPF 内核加速将被禁用，客户端将以纯缓存模式运行"
-        return 1
-    fi
-    
-    print_success "内核版本 $KERNEL_VERSION 支持 eBPF"
-    
-    # 检查 Python3
-    if ! command -v python3 &> /dev/null; then
-        print_warning "Python3 未安装，eBPF 功能需要 Python3"
-        return 1
-    fi
-    
-    # 检查 BCC 工具 - 多种方式验证
-    check_bcc_installed() {
-        # 方法1: 尝试导入 BCC Python 模块
-        if python3 -c "from bcc import BPF" 2>/dev/null; then
-            return 0
-        fi
-        
-        # 方法2: 检查 BCC 包是否已安装（针对不同发行版）
-        if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
-            if dpkg -l | grep -q python3-bpfcc 2>/dev/null; then
-                # 包已安装，但可能需要设置 PYTHONPATH
-                export PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
-                if python3 -c "from bcc import BPF" 2>/dev/null; then
-                    return 0
-                fi
-            fi
-        elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
-            if rpm -qa | grep -q python3-bcc 2>/dev/null; then
-                # 包已安装，尝试多个可能的路径
-                for pypath in "/usr/lib/python3.9/site-packages" "/usr/lib/python3.11/site-packages" "/usr/lib64/python3.9/site-packages" "/usr/lib64/python3.11/site-packages"; do
-                    if [ -d "$pypath" ]; then
-                        export PYTHONPATH="$pypath:$PYTHONPATH"
-                    fi
-                done
-                if python3 -c "from bcc import BPF" 2>/dev/null; then
-                    return 0
-                fi
-                # RHEL系统上，BCC可能需要额外配置，但包已安装就认为成功
-                print_info "BCC 包已安装，但 Python 导入测试失败。这在某些系统上是正常的。"
-                return 0
-            fi
-        elif [[ "$OS" == *"Fedora"* ]]; then
-            if rpm -qa | grep -q python3-bcc 2>/dev/null; then
-                export PYTHONPATH="/usr/lib/python3.11/site-packages:$PYTHONPATH"
-                if python3 -c "from bcc import BPF" 2>/dev/null; then
-                    return 0
-                fi
-            fi
-        fi
-        
-        # 方法3: 检查 BCC 工具是否存在
-        if command -v bcc-tools &> /dev/null || [ -d "/usr/share/bcc/tools" ]; then
-            print_info "BCC 工具已安装"
-            return 0
-        fi
-        
-        return 1
-    }
-    
-    if ! check_bcc_installed; then
-        print_warning "BCC (BPF Compiler Collection) 未安装"
-        print_info "是否安装 BCC 以启用 eBPF 内核加速？(y/n)"
-        
-        if [ -t 0 ]; then
-            read -p "选择 [y/n]: " install_bcc
-        else
-            read -p "选择 [y/n]: " install_bcc < /dev/tty
-        fi
-        
-        if [[ "$install_bcc" == "y" || "$install_bcc" == "Y" ]]; then
-            print_info "安装 BCC..."
-            if [[ "$OS" == *"Ubuntu"* || "$OS" == *"Debian"* ]]; then
-                apt update && apt install -y bpfcc-tools python3-bpfcc linux-headers-$(uname -r)
-            elif [[ "$OS" == *"CentOS"* || "$OS" == *"Red Hat"* || "$OS" == *"Rocky"* || "$OS" == *"AlmaLinux"* ]]; then
-                yum install -y bcc-tools python3-bcc kernel-devel-$(uname -r)
-            elif [[ "$OS" == *"Fedora"* ]]; then
-                dnf install -y bcc-tools python3-bcc kernel-devel-$(uname -r)
-            else
-                print_warning "不支持的操作系统，无法自动安装 BCC"
-                return 1
-            fi
-            
-            # 验证安装
-            if check_bcc_installed; then
-                print_success "BCC 安装成功"
-                return 0
-            else
-                print_warning "BCC 安装后验证失败，但包可能已正确安装"
-                print_info "eBPF 功能可能仍然可用，将继续安装"
-                return 0
-            fi
-        else
-            print_info "跳过 BCC 安装，eBPF 功能将被禁用"
-            return 1
-        fi
-    else
-        print_success "BCC 已安装"
-        return 0
-    fi
+    print_success "配置文件创建完成: /etc/orasrs/config"
 }
 
-# 克隆OraSRS项目
-clone_orasrs() {
-    print_info "克隆OraSRS项目..."
+# Create systemd service
+create_service() {
+    print_info "创建systemd服务..."
     
-    if [[ -d "/opt/orasrs" ]]; then
-        print_warning "/opt/orasrs 已存在，正在更新..."
-        cd /opt/orasrs
-        # 强制更新到最新版本，丢弃本地更改
-        git fetch origin lite-client
-        git reset --hard origin/lite-client
-    else
-        git clone https://github.com/srs-protocol/OraSRS-protocol.git /opt/orasrs
-        cd /opt/orasrs
-        git checkout lite-client
-    fi
-    
-    print_success "项目克隆完成"
-}
-
-# 安装Node.js依赖
-install_node_dependencies() {
-    print_info "安装Node.js依赖..."
-    
-    cd /opt/orasrs
-    
-    # 安装项目依赖
-    npm install
-    
-    # 确保所有必要的文件都存在
-    if [[ ! -f "/opt/orasrs/src/orasrs-simple-client.js" ]]; then
-        print_error "OraSRS简单客户端文件不存在"
-        exit 1
-    fi
-    
-    # 安装CLI工具
-    print_info "安装OraSRS CLI工具..."
-    chmod +x /opt/orasrs/src/orasrs-cli.js
-    
-    # 创建符号链接到 /usr/local/bin
-    if [ -f /opt/orasrs/src/orasrs-cli.js ]; then
-        ln -sf /opt/orasrs/src/orasrs-cli.js /usr/local/bin/orasrs-cli
-        print_success "CLI工具已安装: orasrs-cli"
-    fi
-    
-    print_success "Node.js依赖安装完成"
-}
-
-# 配置服务
-setup_service() {
-    print_info "配置系统服务..."
-    
-    # 检查系统是否支持systemd (通过检查init进程是否是systemd)
-    if [ -d /run/systemd/system ] || [ -e /run/systemd/private ]; then
-        # 检查服务文件是否存在
-        if [[ -f "/etc/systemd/system/orasrs-client.service" ]]; then
-            print_warning "服务文件已存在，跳过覆盖以保留自定义配置。"
-            print_info "更新 ORASRS_HOST 为 127.0.0.1 以限制本地访问..."
-            sed -i 's/Environment=ORASRS_HOST=0.0.0.0/Environment=ORASRS_HOST=127.0.0.1/' /etc/systemd/system/orasrs-client.service
-            systemctl daemon-reload 2>/dev/null || true
-        else
-            # 创建systemd服务文件
-            cat > /etc/systemd/system/orasrs-client.service << EOF
+    cat > /etc/systemd/system/orasrs.service << 'EOF'
 [Unit]
-Description=OraSRS Client Service
+Description=OraSRS T0 Threat Defense Service
 After=network.target
 
 [Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/orasrs
-ExecStart=/usr/bin/node /opt/orasrs/src/orasrs-simple-client.js
+Type=forking
+ExecStart=/usr/local/bin/orasrs-client start
+ExecStop=/usr/local/bin/orasrs-client stop
+ExecReload=/usr/local/bin/orasrs-client reload
+PIDFile=/var/run/orasrs.pid
 Restart=always
 RestartSec=10
-Environment=NODE_ENV=production
-Environment=ORASRS_PORT=3006
-Environment=ORASRS_HOST=127.0.0.1
-Environment=ORASRS_BLOCKCHAIN_ENDPOINT=https://api.orasrs.net
-Environment=ORASRS_CHAIN_ID=8888
-Environment=ORASRS_REGISTRY_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
 
 [Install]
 WantedBy=multi-user.target
 EOF
-
-            # 重载systemd配置
-            systemctl daemon-reload 2>/dev/null || true
-            
-            # 启用服务自启动
-            systemctl enable orasrs-client 2>/dev/null || true
-            
-            print_success "systemd服务配置完成"
-        fi
-    else
-        print_warning "系统不支持systemd，跳过服务配置"
-        print_info "可以手动启动服务: cd /opt/orasrs && node src/orasrs-simple-client.js &"
-    fi
+    
+    systemctl daemon-reload
+    systemctl enable orasrs
+    
+    print_success "systemd服务创建完成"
 }
 
-# 下载威胁情报数据
-download_threat_intelligence() {
-    print_info "下载威胁情报数据..."
-    
-    # 创建oracle目录
-    mkdir -p /opt/orasrs/oracle
-    
-    # 尝试从CDN下载（如果配置了）
-    # 目前从GitHub下载
-    if cd /opt/orasrs && [ -d .git ]; then
-        # 如果是git仓库，直接pull
-        git pull origin lite-client 2>/dev/null || true
-    fi
-    
-    # 检查威胁情报文件是否存在
-    if [ -f /opt/orasrs/oracle/threats_compact.json ]; then
-        print_success "威胁情报数据已加载: $(du -h /opt/orasrs/oracle/threats_compact.json | cut -f1)"
-        
-        # 初始化客户端缓存
-        if [ -f /opt/orasrs/scripts/tools/threat-data-loader.js ]; then
-            print_info "初始化威胁情报缓存..."
-            cd /opt/orasrs
-            node scripts/tools/threat-data-loader.js > /dev/null 2>&1 || print_warning "威胁情报缓存初始化失败（服务启动时会自动重试）"
-        fi
-    else
-        print_warning "威胁情报数据文件不存在"
-        print_info "服务启动时将自动从区块链同步"
-    fi
-    
-    # 创建缓存目录
-    mkdir -p /var/lib/orasrs
-    chmod 755 /var/lib/orasrs
-}
-
-# 配置防火墙
-setup_firewall() {
-    print_info "配置防火墙..."
-    
-    # 检查防火墙类型
-    if command -v ufw &> /dev/null; then
-        # Ubuntu/Debian 使用 ufw
-        ufw allow 3006/tcp
-        print_info "已为UFW防火墙开放端口3006"
-    elif command -v firewall-cmd &> /dev/null; then
-        # CentOS/RHEL 使用 firewalld
-        firewall-cmd --permanent --add-port=3006/tcp
-        firewall-cmd --reload
-        print_info "已为Firewalld开放端口3006"
-    elif command -v iptables &> /dev/null; then
-        # 使用 iptables
-        iptables -A INPUT -p tcp --dport 3006 -j ACCEPT
-        print_info "已为iptables开放端口3006"
-    else
-        print_warning "未检测到支持的防火墙，需手动开放端口3006"
-    fi
-}
-
-# 启动服务
+# Start service
 start_service() {
-    print_info "启动OraSRS客户端服务..."
+    print_info "启动OraSRS服务..."
     
-    # 检查系统是否支持systemd (通过检查init进程是否是systemd)
-    if [ -d /run/systemd/system ] || [ -e /run/systemd/private ]; then
-        systemctl restart orasrs-client 2>/dev/null || true
-        
-        # 等待服务启动
-        sleep 5
-        
-        # 检查服务状态
-        if systemctl is-active --quiet orasrs-client 2>/dev/null; then
-            print_success "OraSRS客户端服务启动成功"
-        else
-            print_warning "systemd服务可能未启动，尝试手动启动..."
-            cd /opt/orasrs
-            # 在后台启动服务并输出到日志
-            nohup node src/orasrs-simple-client.js > orasrs-client.log 2>&1 &
-            sleep 5
-            
-            # 检查进程是否启动
-            if pgrep -f "node.*orasrs-simple-client" > /dev/null; then
-                print_success "OraSRS客户端服务已手动启动"
-                echo "PID: $(pgrep -f 'node.*orasrs-simple-client')"
-            else
-                print_error "OraSRS客户端服务启动失败"
-                exit 1
-            fi
-        fi
+    systemctl start orasrs
+    sleep 2
+    
+    if systemctl is-active --quiet orasrs; then
+        print_success "OraSRS服务启动成功"
     else
-        print_warning "系统不支持systemd，尝试手动启动服务..."
-        cd /opt/orasrs
-        # 在后台启动服务并输出到日志
-        nohup node src/orasrs-simple-client.js > orasrs-client.log 2>&1 &
-        sleep 5
-        
-        # 检查进程是否启动
-        if pgrep -f "node.*orasrs-simple-client" > /dev/null; then
-            print_success "OraSRS客户端服务已手动启动"
-            echo "PID: $(pgrep -f 'node.*orasrs-simple-client')"
-        else
-            print_error "OraSRS客户端服务启动失败"
-            exit 1
-        fi
+        print_error "服务启动失败，查看日志: journalctl -u orasrs -f"
+        exit 1
     fi
 }
 
-# 显示安装完成信息
-show_completion_info() {
-    echo "-----------------------------------------------------------------------"
-    echo "OraSRS Agent v3.3.6 installed successfully."
-    echo "Performance: 0.001ms Kernel Latency validated."
-    echo "Status: This is the FINAL release. No further updates will be provided."
-    echo "Scientific Reference: DOI 10.31224/5985"
-    echo "-----------------------------------------------------------------------"
-    echo
-    echo -e "${GREEN}CLI命令 (推荐):${NC}"
-    echo "  查看状态: orasrs-cli status"
-    echo "  查询IP: orasrs-cli query <ip>"
-    echo "  初始化: orasrs-cli init"
-    echo "  统计信息: orasrs-cli stats"
-    echo "  查看配置: orasrs-cli config"
-    echo "  查看日志: orasrs-cli logs"
-    echo "  运行测试: orasrs-cli test"
-    echo "  内核加速: orasrs-cli kernel"
-    echo "  详细统计: orasrs-cli kernel --detailed"
-    echo
-    echo -e "${GREEN}服务管理命令:${NC}"
-    echo "  启动服务: sudo systemctl start orasrs-client"
-    echo "  停止服务: sudo systemctl stop orasrs-client"
-    echo "  重启服务: sudo systemctl restart orasrs-client"
-    echo "  查看状态: sudo systemctl status orasrs-client"
-    echo "  查看日志: sudo journalctl -u orasrs-client -f"
-    echo
-    echo -e "${GREEN}API端点:${NC}"
-    echo "  健康检查: http://localhost:3006/health"
-    echo "  风险查询: http://localhost:3006/orasrs/v1/query?ip=1.2.3.4"
-    echo "  威胁检测: http://localhost:3006/orasrs/v1/threats/detected"
-    echo "  威胁统计: http://localhost:3006/orasrs/v1/threats/stats"
-    echo
-    echo -e "${GREEN}重要提醒:${NC}"
-    echo "  此服务提供咨询建议，最终决策由客户端做出"
-    echo "  OraSRS不直接阻断流量，而是提供风险评估供客户端参考"
-    echo "  T2/T3 模块已禁用，客户端仅以 T0 内核加速模式独立运行"
-    echo
-    echo "-----------------------------------------------------------------------"
-    echo "创新源于拔网线，真理定格于 v3.3.6。"
-    echo "Innovation born from pulling the cable, truth crystallized in v3.3.6."
-    echo "-----------------------------------------------------------------------"
+# Show usage
+show_usage() {
+    echo ""
+    echo "=================================================="
+    echo "     OraSRS T0 Client 安装完成 (v3.3.6)"
+    echo "=================================================="
+    echo ""
+    echo "服务管理:"
+    echo "  systemctl start orasrs    - 启动服务"
+    echo "  systemctl stop orasrs     - 停止服务"
+    echo "  systemctl restart orasrs  - 重启服务"
+    echo "  systemctl status orasrs   - 查看状态"
+    echo ""
+    echo "命令行工具:"
+    echo "  orasrs-client status      - 查看防护状态"
+    echo "  orasrs-client sync        - 手动同步威胁数据"
+    echo "  orasrs-client check <IP>  - 检查IP是否在黑名单"
+    echo ""
+    echo "配置文件: /etc/orasrs/config"
+    echo "日志文件: /var/log/orasrs.log"
+    echo ""
+    echo "=================================================="
+    echo "OraSRS - T0 Kernel Defense (Pure iptables/ipset)"
+    echo "威胁源: Feodo Tracker + EmergingThreats"
+    echo "=================================================="
 }
 
-# 主函数
+# Main
 main() {
-    print_info "开始安装 OraSRS (Oracle Security Root Service) 客户端..."
+    echo "=================================================="
+    echo " OraSRS Linux T0 Client 安装程序 (v3.3.6 Final)"
+    echo "=================================================="
+    echo ""
+    print_warning "注意: 此版本仅包含 T0 内核防御功能"
+    print_warning "不包含 Node.js/区块链/T2/T3 功能"
+    echo ""
     
     check_root
-    select_language
-    
-    DEVICE_TYPE=$(detect_device_type)
-    print_info "💡 检测到设备类型: $DEVICE_TYPE"
-    
-    if [ "$DEVICE_TYPE" == "ultra-low" ]; then
-        print_warning "🚨 内存极低 (<16MB)。仅启用内核级防护，无法运行用户态代理。"
-        print_info "请手动加载 eBPF 程序。"
-        exit 0
-    fi
-    
-    if [ "$DEVICE_TYPE" == "edge" ]; then
-        print_info "🔧 内存受限设备 (<256MB)，将尝试安装原生边缘代理..."
-        detect_os
-        check_dependencies
-        
-        # Clone repo to get source
-        clone_orasrs
-        
-        # Try to build native agent
-        if [ -f "/opt/orasrs/src/agent/Makefile" ]; then
-            print_info "编译原生代理..."
-            cd /opt/orasrs/src/agent
-            if make native-agent; then
-                print_success "原生代理编译成功"
-                # Install binary
-                cp native-agent /usr/local/bin/orasrs-edge-agent
-                # Create systemd service for native agent
-                # (Simplified for now)
-                print_success "已安装到 /usr/local/bin/orasrs-edge-agent"
-                print_info "请手动配置运行: orasrs-edge-agent"
-                exit 0
-            else
-                print_error "原生代理编译失败，回退到标准安装..."
-            fi
-        else
-            print_warning "未找到原生代理源码，回退到标准安装..."
-        fi
-    fi
-
     detect_os
-    check_dependencies
-    check_ebpf_dependencies  # 检查 eBPF 支持（可选）
-    clone_orasrs
-    install_node_dependencies
-    setup_service
-    download_threat_intelligence
-    setup_firewall
+    install_dependencies
+    create_client_script
+    create_config
+    create_service
     start_service
-    show_completion_info
+    show_usage
+    
+    print_success "安装完成！"
 }
 
-# 执行主函数
-main
+main "$@"
