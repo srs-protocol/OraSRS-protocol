@@ -63,7 +63,7 @@ Luo, Z. (2025). Decentralized Threat Signaling Protocol (DTSP) using OraSRS. IET
 - **国产化支持**: 支持国密算法（SM2/SM3/SM4），适配长安链
 - **合规治理**: 自动区域合规引擎，满足GDPR/CCPA/等保2.0
 
-## 🛡️ 威胁情报系统 / Threat Intelligence System
+## 🛡️ 威胁情报系统 / Threat Intelligence System（研究参考）
 
 OraSRS 集成了生产级威胁情报系统，具有以下特性：
 
