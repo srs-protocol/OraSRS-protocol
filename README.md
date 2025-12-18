@@ -7,8 +7,8 @@
 
 > 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./README_zh-CN.md)**
 
-<!-- 镇宅之宝截图占位符 / Screenshot Placeholder -->
-<!-- ![16M DROP + 512MB RAM](path/to/screenshot.png) -->
+<img width="1589" height="921" alt="a0646081c5604d476c4e38b17e56dcb8" src="https://github.com/user-attachments/assets/51990e27-b6a8-4f6b-bbba-905455c7c446" />
+
 
 "The Reference Implementation of the IETF Decentralized Threat Signaling Protocol (DTSP). Achieving data-center-grade DDoS mitigation on resource-constrained IoT edge devices via kernel offloading."
 
