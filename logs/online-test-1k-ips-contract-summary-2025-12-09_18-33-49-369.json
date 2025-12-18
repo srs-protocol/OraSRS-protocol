@@ -1,0 +1,15 @@
+{
+  "test_summary": {
+    "test_name": "1000 IP Online Contract API Test",
+    "total_ips": 1000,
+    "target_api": "https://api.orasrs.net",
+    "successful_queries": 1000,
+    "failed_queries": 0,
+    "total_time_ms": 102441,
+    "avg_time_per_query_ms": "102.4410",
+    "requests_per_second": "9.76",
+    "success_rate": "100.00%",
+    "avg_risk_score": "0.0000",
+    "timestamp": "2025-12-09T18:33:49.372Z"
+  }
+}

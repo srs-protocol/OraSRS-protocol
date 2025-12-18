@@ -289,7 +289,7 @@ mod tests {
     #[tokio::test]
     async fn test_threat_routing() {
         let config = AgentConfig {
-            domestic_rpc: "http://localhost:9545".to_string(),
+            domestic_rpc: "https://api.orasrs.net".to_string(),
             overseas_rpc: "https://sepolia.optimism.io".to_string(),
             domestic_contract: Address::zero(),
             overseas_contract: Address::zero(),

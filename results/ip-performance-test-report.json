@@ -1,0 +1,23 @@
+{
+  "test_date": "2025-12-11T22:07:36.004Z",
+  "test_type": "IP Query Performance Test",
+  "parameters": {
+    "local_ip_count": 10000,
+    "chain_ip_count": 1000,
+    "sample_size": 1000
+  },
+  "local_results": {
+    "total_time_ms": 35,
+    "average_query_time_ms": "0.0026",
+    "average_response_time_ms": "0.0035",
+    "high_risk_count": 0,
+    "qps": "285714.29"
+  },
+  "chain_results": {
+    "total_time_ms": 1,
+    "average_query_time_ms": "34.8548",
+    "average_response_time_ms": "0.0010",
+    "high_risk_count": 535,
+    "qps": "1000000.00"
+  }
+}

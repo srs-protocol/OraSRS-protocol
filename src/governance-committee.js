@@ -668,4 +668,4 @@ class GovernanceCommittee {
   }
 }
 
-module.exports = GovernanceCommittee;
+export default GovernanceCommittee;

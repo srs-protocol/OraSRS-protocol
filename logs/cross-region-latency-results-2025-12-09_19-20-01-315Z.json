@@ -1,0 +1,71 @@
+{
+  "regionPerformance": {
+    "Asia": {
+      "totalRequests": 600,
+      "successfulRequests": 588,
+      "failedRequests": 12,
+      "totalLatency": 27712.324777534184,
+      "requestCount": 30,
+      "avgLatency": 46.187207962556975,
+      "successRate": 0.98,
+      "throughput": 0.3333333333333333
+    },
+    "Europe": {
+      "totalRequests": 450,
+      "successfulRequests": 411,
+      "failedRequests": 39,
+      "totalLatency": 43029.60552725168,
+      "requestCount": 30,
+      "avgLatency": 95.62134561611485,
+      "successRate": 0.9133333333333333,
+      "throughput": 0.25
+    },
+    "North America": {
+      "totalRequests": 450,
+      "successfulRequests": 391,
+      "failedRequests": 59,
+      "totalLatency": 65666.07837056236,
+      "requestCount": 30,
+      "avgLatency": 145.9246186012497,
+      "successRate": 0.8688888888888889,
+      "throughput": 0.25
+    },
+    "South America": {
+      "totalRequests": 300,
+      "successfulRequests": 239,
+      "failedRequests": 61,
+      "totalLatency": 58644.96213124209,
+      "requestCount": 30,
+      "avgLatency": 195.48320710414032,
+      "successRate": 0.7966666666666666,
+      "throughput": 0.16666666666666666
+    },
+    "Oceania": {
+      "totalRequests": 240,
+      "successfulRequests": 189,
+      "failedRequests": 51,
+      "totalLatency": 58631.09223110862,
+      "requestCount": 30,
+      "avgLatency": 244.29621762961924,
+      "successRate": 0.7875,
+      "throughput": 0.13333333333333333
+    },
+    "Africa": {
+      "totalRequests": 210,
+      "successfulRequests": 148,
+      "failedRequests": 62,
+      "totalLatency": 61606.5916981881,
+      "requestCount": 30,
+      "avgLatency": 293.3647223723243,
+      "successRate": 0.7047619047619048,
+      "throughput": 0.11666666666666667
+    }
+  },
+  "globalThroughput": 1.25,
+  "avgGlobalLatency": 140.12917988261648,
+  "totalRequests": 2250,
+  "successfulRequests": 1966,
+  "failedRequests": 284,
+  "detailedLogs": [],
+  "successRate": 0.8737777777777778
+}

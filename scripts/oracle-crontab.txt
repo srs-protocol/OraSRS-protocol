@@ -1,0 +1,15 @@
+# OraSRS Oracle Cron Job Setup
+
+# Add to system crontab
+# Run: sudo crontab -e
+
+# Run Oracle daily at midnight (0:00 AM)
+0 0 * * * /home/Great/SRS-Protocol/scripts/oracle-cron.sh
+
+# Alternative schedules:
+# Every 6 hours: 0 */6 * * * /home/Great/SRS-Protocol/scripts/oracle-cron.sh
+# Every 12 hours: 0 */12 * * * /home/Great/SRS-Protocol/scripts/oracle-cron.sh
+# Twice daily (midnight and noon): 0 0,12 * * * /home/Great/SRS-Protocol/scripts/oracle-cron.sh
+
+# View logs:
+# tail -f /var/log/orasrs-oracle.log

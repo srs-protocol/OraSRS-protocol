@@ -1,0 +1,29 @@
+[Unit]
+Description=Hardhat Health Monitor Daemon
+Documentation=https://github.com/srs-protocol/OraSRS-protocol
+After=hardhat-node.service
+Wants=hardhat-node.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/Great/SRS-Protocol
+ExecStart=/bin/bash /home/Great/SRS-Protocol/hardhat-health-monitor.sh start
+ExecStop=/bin/bash /home/Great/SRS-Protocol/hardhat-health-monitor.sh stop
+
+# 重启策略
+Restart=always
+RestartSec=30
+
+# 进程管理
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hardhat-monitor
+
+[Install]
+WantedBy=multi-user.target

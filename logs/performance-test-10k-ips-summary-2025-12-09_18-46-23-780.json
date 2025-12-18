@@ -1,0 +1,11 @@
+{
+  "test_summary": {
+    "test_name": "10000 IP Performance Test",
+    "total_ips": 10000,
+    "total_time_ms": 348,
+    "avg_time_per_ip_ms": "0.0348",
+    "requests_per_second": "28735.63",
+    "avg_risk_score": "0.4551",
+    "timestamp": "2025-12-09T18:46:23.814Z"
+  }
+}

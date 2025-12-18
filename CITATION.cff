@@ -10,14 +10,17 @@ license: Apache-2.0
 authors:
   - family-names: "Luo"
     given-names: "ZiQian"
+    orcid: "https://orcid.org/0009-0008-8644-8717"
 preferred-citation:
   type: article
   title: "OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement"
   authors:
     - family-names: "Luo"
       given-names: "ZiQian"
+      orcid: "https://orcid.org/0009-0008-8644-8717"
   doi: "10.31224/5985"
   url: "https://doi.org/10.31224/5985"
   year: 2025
+  status: "preprint"
   publisher:
     name: "Engineering Archive"

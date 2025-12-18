@@ -1,0 +1,46 @@
+\subsection{Performance Metrics}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Mean} & \textbf{Std} & \textbf{P95} & \textbf{Min} & \textbf{Max} \\
+\midrule
+Processing Time (ms) & 0.0353 & 0.0017 & 0.0373 & 0.0334 & 0.0376 \\
+Throughput (QPS) & 28423.83 & 1383.02 & 29819.67 & 26595.74 & 29940.12 \\
+\bottomrule
+\end{tabular}
+\caption{Performance Metrics Statistical Analysis}
+\label{tab:performance_stats}
+\end{table}
+
+\subsection{Accuracy Metrics}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Mean} & \textbf{Std} & \textbf{P95} & \textbf{Min} & \textbf{Max} \\
+\midrule
+Precision & 0.7625 & 0.0044 & 0.7664 & 0.7581 & 0.7669 \\
+Recall & 0.9078 & 0.0035 & 0.911 & 0.9043 & 0.9114 \\
+F1 & 0.8288 & 0.0011 & 0.8298 & 0.8277 & 0.8299 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy Metrics Statistical Analysis (Precision, Recall, F1)}
+\label{tab:accuracy_stats}
+\end{table}
+
+\subsection{Security Metrics}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Mean} & \textbf{Std} & \textbf{P95} & \textbf{Min} & \textbf{Max} \\
+\midrule
+Sybil Suppression & 0.9989 & 0.0004 & 0.9992 & 0.9985 & 0.9993 \\
+Attack Success Rate & 0.0254 & 0.0243 & 0.0501 & 0.0007 & 0.0503 \\
+Attack Cost & 423.8232 & 421.7138 & 948.2544 & 19.8918 & 1000.0 \\
+\bottomrule
+\end{tabular}
+\caption{Security Metrics Statistical Analysis}
+\label{tab:security_stats}
+\end{table}

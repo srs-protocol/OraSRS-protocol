@@ -1,0 +1,155 @@
+#!/bin/sh
+# =======================================================================================
+# OraSRS OpenWrt Firewall Rules - Complete Ruleset
+# 完整防火墙规则集 - 优化版
+# =======================================================================================
+# Version: 4.0.1 (Critical Security Fix)
+# Purpose: Comprehensive DDoS protection with SSH safeguards and threat intelligence
+# Deployment: /etc/firewall.user (auto-loaded on firewall restart)
+# Critical Fix: Threat intelligence blocking moved to Rule 3 (before SSH/SYN protection)
+# =======================================================================================
+
+# ===========================
+# 模块加载 (Kernel Modules)
+# ===========================
+# 确保所有必需的内核模块已加载
+modprobe ip_set 2>/dev/null || logger -t ORASRS "WARNING: ip_set module not available"
+modprobe ip_set_hash_net 2>/dev/null
+modprobe xt_set 2>/dev/null
+modprobe xt_limit 2>/dev/null
+modprobe xt_conntrack 2>/dev/null
+modprobe xt_recent 2>/dev/null
+
+# ===========================
+# 配置参数 (Configuration)
+# ===========================
+# 从 UCI 配置读取参数，如果不存在则使用默认值
+LIMIT_RATE=$(uci get orasrs.main.limit_rate 2>/dev/null || echo "20/s")
+LIMIT_BURST=$(uci get orasrs.main.limit_burst 2>/dev/null || echo "50")
+SSH_PORT=$(uci get dropbear.@dropbear[0].Port 2>/dev/null || echo "22")
+IPSET_NAME="orasrs_threats"
+
+# ===========================
+# IPSet 初始化
+# ===========================
+# 创建威胁 IP 集合（如果不存在）
+ipset create $IPSET_NAME hash:net family inet hashsize 4096 maxelem 65536 -exist 2>/dev/null
+
+# ===========================
+# 清理旧规则 (Cleanup)
+# ===========================
+# 安全地移除旧的 OraSRS 规则链
+iptables -D INPUT -j orasrs_chain 2>/dev/null
+iptables -D FORWARD -j orasrs_chain 2>/dev/null
+iptables -F orasrs_chain 2>/dev/null
+iptables -X orasrs_chain 2>/dev/null
+
+# ===========================
+# 创建自定义链 (Custom Chain)
+# ===========================
+iptables -N orasrs_chain
+
+# =======================================================================================
+# 核心规则 (Core Rules) - 按优先级排序
+# =======================================================================================
+
+# ───────────────────────────
+# 1️⃣ 本地回环保护 (Loopback)
+# ───────────────────────────
+# 允许所有本地回环流量（关键系统通信）
+iptables -A orasrs_chain -i lo -j ACCEPT
+
+# ───────────────────────────────────────────────
+# 2️⃣ 连接状态跟踪 (Connection Tracking)
+# ───────────────────────────────────────────────
+# 允许已建立和相关的连接（最高优先级，防止断连）
+iptables -A orasrs_chain -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# 丢弃无效连接（减少资源消耗）
+iptables -A orasrs_chain -m conntrack --ctstate INVALID -j DROP
+
+# ───────────────────────────────────────────────
+# 3️⃣ 威胁情报拦截 (Threat Intelligence) - 零容忍
+# ───────────────────────────────────────────────
+# 拦截已知威胁 IP（从 ipset 读取）
+# ⚠️ 关键：必须在 SSH/SYN 防护之前，确保黑名单 IP 零容忍
+# 性能优势：IPSet hash 查找 O(1) 比 limit 计算更快
+iptables -A orasrs_chain -m set --match-set $IPSET_NAME src -j DROP 2>/dev/null
+
+# ───────────────────────────────────────────────
+# 4️⃣ SSH 保护 (SSH Protection) - 三重保障
+# ───────────────────────────────────────────────
+# 4.1 允许已建立的 SSH 连接（已被规则 2 覆盖，此处为明确性保留）
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# 4.2 新 SSH 连接限速（防止暴力破解）
+# 使用 recent 模块进行更精细的限速控制
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --set
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --name SSH --update --seconds 60 --hitcount 4 -j DROP
+
+# 4.3 允许正常的新 SSH 连接（白名单优先）
+iptables -A orasrs_chain -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -j ACCEPT
+
+# ───────────────────────────────────────────────
+# 5️⃣ SYN Flood 防护 (SYN Flood Protection)
+# ───────────────────────────────────────────────
+# 5.1 允许正常速率的 SYN 包
+iptables -A orasrs_chain -p tcp --syn -m limit --limit $LIMIT_RATE --limit-burst $LIMIT_BURST -j ACCEPT
+
+# 5.2 丢弃超额 SYN 包（DDoS 防护）
+iptables -A orasrs_chain -p tcp --syn -j DROP
+
+# ───────────────────────────────────────────────
+# 6️⃣ ICMP 洪水防护 (ICMP Flood Protection)
+# ───────────────────────────────────────────────
+# 限制 ICMP Echo Request（ping）速率
+iptables -A orasrs_chain -p icmp --icmp-type echo-request -m limit --limit 5/s --limit-burst 10 -j ACCEPT
+iptables -A orasrs_chain -p icmp --icmp-type echo-request -j DROP
+
+# 允许其他必要的 ICMP 类型（如目标不可达、时间超时）
+iptables -A orasrs_chain -p icmp --icmp-type destination-unreachable -j ACCEPT
+iptables -A orasrs_chain -p icmp --icmp-type time-exceeded -j ACCEPT
+
+# ───────────────────────────────────────────────
+# 7️⃣ UDP Flood 防护 (UDP Flood Protection)
+# ───────────────────────────────────────────────
+# 限制 UDP 流量速率（可选，根据需求调整）
+# iptables -A orasrs_chain -p udp -m limit --limit 50/s --limit-burst 100 -j ACCEPT
+# iptables -A orasrs_chain -p udp -j DROP
+
+# ───────────────────────────────────────────────
+# 8️⃣ 日志记录 (Logging) - 低频率
+# ───────────────────────────────────────────────
+# 记录被丢弃的包（用于调试，生产环境可禁用）
+iptables -A orasrs_chain -m limit --limit 1/min --limit-burst 3 -j LOG --log-prefix "ORASRS-DROP: " --log-level 4
+
+# =======================================================================================
+# 应用规则 (Apply Rules)
+# =======================================================================================
+# 将自定义链插入到 INPUT 链的顶部（最高优先级）
+iptables -I INPUT 1 -j orasrs_chain
+
+# 可选：应用到 FORWARD 链（如果路由器需要保护转发流量）
+# iptables -I FORWARD 1 -j orasrs_chain
+
+# =======================================================================================
+# 日志记录 (System Log)
+# =======================================================================================
+logger -t ORASRS "Firewall rules loaded successfully | Limit: $LIMIT_RATE | Burst: $LIMIT_BURST | SSH: $SSH_PORT"
+
+# =======================================================================================
+# 验证命令 (Verification Commands)
+# =======================================================================================
+# 查看规则状态:
+#   iptables -nvL orasrs_chain
+#   iptables -nvL INPUT | grep orasrs
+#
+# 查看 IPSet:
+#   ipset list orasrs_threats
+#
+# 实时监控:
+#   watch -n1 'iptables -nvL orasrs_chain'
+#
+# 查看日志:
+#   logread | grep ORASRS
+# =======================================================================================

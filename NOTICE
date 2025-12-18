@@ -1,0 +1,121 @@
+OraSRS (Oracle Security Root Service) Protocol
+Copyright 2025 Luo ZiQian
+
+This product includes software developed by Luo ZiQian.
+
+================================================================================
+
+ORIGINAL INNOVATIONS AND MECHANISMS
+================================================================================
+
+The following core mechanisms and architectural designs were originally 
+conceived, designed, and implemented by Luo ZiQian in 2025:
+
+1. **Risk Control First (先风控后查询) Mechanism**
+   - Pioneering approach that performs risk assessment BEFORE allowing access
+   - Inverts traditional "detect-then-block" paradigm to "assess-then-allow"
+   - Enables proactive defense against zero-day threats based on IP reputation
+   - First implementation: 2025-12-14
+
+2. **Dynamic Ban Duration Stacking (动态封禁叠加)**
+   - Adaptive ban duration calculation based on threat severity
+   - Automatic duration extension for repeat offenders (local cache hits)
+   - Maximum duration selection for globally confirmed threats (blockchain hits)
+   - Temporal threat intelligence decay mechanism
+   - First implementation: 2025-12-14
+
+3. **Local-Blockchain Collaborative Decision Making (本地-链上协同决策)**
+   - Hybrid architecture combining local cache with blockchain consensus
+   - Multi-tier query strategy: whitelist → local cache → blockchain → new threat
+   - Asynchronous blockchain reporting to maintain low latency
+   - Distributed threat intelligence with local autonomy
+   - First implementation: 2025-12-14
+
+4. **High-Value Asset Protection (HVAP) Framework**
+   - Three-tier defense mechanism (L1/L2/L3) based on risk scoring
+   - PAM integration for SSH/system-level protection
+   - Emergency whitelist mechanism for false positive mitigation
+   - Zero-day protection through reputation-based access control
+   - First implementation: 2025-12-14
+
+5. **IoT Shield (物联网护盾) - Transparent Cleaning Layer**
+   - "Query-before-allow" gateway architecture for IoT devices
+   - Nginx auth_request integration for firmware-agnostic protection
+   - Reputation-based service hiding (stealth defense)
+   - Collective intelligence for resource-constrained devices
+   - First implementation: 2025-12-14
+
+6. **Advisory Service Model (咨询式服务模型)**
+   - Non-blocking risk assessment paradigm
+   - Client-autonomous decision making
+   - Transparent evidence-based recommendations
+   - Legal liability separation between assessment and enforcement
+
+================================================================================
+
+DESIGN PHILOSOPHY
+================================================================================
+
+The OraSRS protocol embodies a fundamental shift in cybersecurity architecture:
+
+- **From Signature to Reputation**: Moving beyond pattern matching to global 
+  IP reputation scoring, enabling defense against unknown threats.
+
+- **From Passive to Stealth**: Transforming exposed services into hidden 
+  endpoints where high-risk IPs cannot even detect service existence.
+
+- **From Terminal to Collective**: Empowering resource-constrained devices 
+  with global threat intelligence through gateway-based protection.
+
+These innovations solve critical problems in modern cybersecurity:
+- Zero-day vulnerability exploitation
+- IoT device protection without firmware modification
+- False positive mitigation in automated defense systems
+- Scalable threat intelligence sharing across heterogeneous networks
+
+================================================================================
+
+LICENSE
+================================================================================
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+================================================================================
+
+ATTRIBUTION REQUIREMENTS
+================================================================================
+
+When using, modifying, or distributing this software or derivative works:
+
+1. Retain this NOTICE file in all distributions
+2. Clearly attribute the original mechanisms to Luo ZiQian (2025)
+3. If publishing research or papers based on these mechanisms, cite:
+   - Author: Luo ZiQian
+   - Project: OraSRS (Oracle Security Root Service)
+   - Year: 2025
+   - Repository: https://github.com/srs-protocol/OraSRS-protocol
+
+4. Modified implementations must:
+   - Acknowledge the original design in documentation
+   - Use a different project name to avoid confusion
+   - Maintain the Apache 2.0 license
+
+================================================================================
+
+CONTACT
+================================================================================
+
+For questions about attribution, licensing, or collaboration:
+- Project: OraSRS Protocol
+- Repository: https://github.com/srs-protocol/OraSRS-protocol
+- Original Author: Luo ZiQian

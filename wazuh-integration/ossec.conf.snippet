@@ -1,0 +1,46 @@
+<!-- OraSRS Integration Configuration -->
+
+<!-- 1. Enable Integration -->
+<integration>
+  <name>custom-orasrs</name>
+  <hook_url>http://127.0.0.1:3006/orasrs/v1/query</hook_url>
+  <level>3</level> <!-- Check all alerts level 3 and above -->
+  <alert_format>json</alert_format>
+</integration>
+
+<!-- 2. Monitor OraSRS Alerts Log -->
+<localfile>
+  <log_format>json</log_format>
+  <location>/var/ossec/logs/orasrs-alerts.json</location>
+</localfile>
+
+<!-- 3. Active Response for OraSRS Threats -->
+<command>
+  <name>firewall-drop</name>
+  <executable>firewall-drop</executable>
+  <timeout_allowed>yes</timeout_allowed>
+</command>
+
+<!-- 24 Hours -->
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>100102</rules_id>
+  <timeout>86400</timeout>
+</active-response>
+
+<!-- 3 Days -->
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>100103</rules_id>
+  <timeout>259200</timeout>
+</active-response>
+
+<!-- 7 Days -->
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>100104</rules_id>
+  <timeout>604800</timeout>
+</active-response>

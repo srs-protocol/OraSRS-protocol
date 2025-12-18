@@ -3,7 +3,7 @@
  * 实现安全合规功能，包括数据保护、隐私保护和法规遵从
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class SecurityCompliance {
   constructor(options = {}) {
@@ -607,4 +607,4 @@ class SecurityCompliance {
   }
 }
 
-module.exports = SecurityCompliance;
+export default SecurityCompliance;

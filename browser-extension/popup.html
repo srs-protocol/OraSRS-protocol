@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OraSRS Security Plugin</title>
+  <style>
+    body {
+      width: 350px;
+      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      color: #2c3e50;
+      font-size: 18px;
+      margin: 0;
+    }
+    
+    .status {
+      background-color: #e8f4fd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .status-value {
+      font-weight: bold;
+      color: #2980b9;
+    }
+    
+    .controls {
+      margin-bottom: 20px;
+    }
+    
+    .control-group {
+      margin-bottom: 10px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+      color: #555;
+    }
+    
+    select, button {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    
+    button:hover {
+      background-color: #2980b9;
+    }
+    
+    .recent-threats {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .threat-item {
+      background-color: #fff;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+    
+    .threat-url {
+      font-weight: bold;
+      color: #e74c3c;
+      word-break: break-all;
+    }
+    
+    .threat-type {
+      color: #7f8c8d;
+      font-size: 11px;
+    }
+    
+    .no-threats {
+      text-align: center;
+      color: #7f8c8d;
+      font-style: italic;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🛡️ OraSRS Security Plugin</h1>
+    <p style="font-size: 12px; color: #7f8c8d; margin: 5px 0 0 0;">v2.0.1 | 基於區塊鏈的威脅情報</p>
+  </div>
+  
+  <div class="status">
+    <div class="status-item">
+      <span>擴展狀態:</span>
+      <span class="status-value" id="extension-status">啟用</span>
+    </div>
+    <div class="status-item">
+      <span>阻止威脅:</span>
+      <span class="status-value" id="blocked-count">0</span>
+    </div>
+    <div class="status-item">
+      <span>數據更新:</span>
+      <span class="status-value" id="last-update">剛剛</span>
+    </div>
+    <div class="status-item">
+      <span>當前頁面:</span>
+      <span class="status-value" id="current-page">加載中...</span>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <div class="control-group">
+      <label for="block-level">阻止級別:</label>
+      <select id="block-level">
+        <option value="critical">只阻止嚴重威脅</option>
+        <option value="high" selected>阻止高風險威脅</option>
+        <option value="medium">阻止中等+高風險威脅</option>
+        <option value="all">阻止所有威脅</option>
+      </select>
+    </div>
+    
+    <button id="manual-update">手動更新威脅數據</button>
+    <button id="view-report">查看詳細報告</button>
+  </div>
+  
+  <div>
+    <h3 style="margin: 0 0 10px 0; font-size: 14px;">最近阻止的威脅:</h3>
+    <div class="recent-threats" id="recent-threats">
+      <div class="no-threats">暫無威脅記錄</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

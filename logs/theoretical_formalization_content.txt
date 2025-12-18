@@ -1,0 +1,41 @@
+
+# Theoretical Formalization
+
+## Simplified Reputation Update Function
+
+We adopt a simplified reputation update function to model node behavior in the OraSRS protocol:
+
+$$R_i(t+1) = R_i(t) + lpha \cdot valid - eta \cdot invalid$$
+
+Where:
+- $R_i(t)$: Reputation of node $i$ at time $t$
+- $lpha$: Positive reward factor for valid contributions
+- $eta$: Penalty factor for invalid contributions
+- $valid$: Valid contribution score
+- $invalid$: Invalid contribution score
+
+This engineering-driven model effectively captures node behavior without complex mathematical derivation.
+
+## Attack Cost Function
+
+The attack cost function for Sybil attacks is simplified as:
+
+$$C_{attack} = N_{sybil} \cdot c_{id} + P_{penalty}$$
+
+Where:
+- $N_{sybil}$: Number of Sybil identities created
+- $c_{id}$: Cost per identity creation
+- $P_{penalty}$: Potential penalty upon detection
+
+## Detection Accuracy
+
+The F1 score calculation follows the standard formula:
+
+$$F1 = 2 \cdot rac{Precision \cdot Recall}{Precision + Recall}$$
+
+Where:
+- $Precision = rac{TP}{TP + FP}$ (True Positives over all positive predictions)
+- $Recall = rac{TP}{TP + FN}$ (True Positives over all actual positives)
+
+These simplified formulas provide theoretical grounding while maintaining engineering practicality.
+    

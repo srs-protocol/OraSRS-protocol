@@ -1,0 +1,70 @@
+{
+  "totalRounds": 10,
+  "finalHonestReputation": 0.9825444444444499,
+  "finalSybilReputation": 0.0015,
+  "sybilSuppressionRate": 0.9984733515023352,
+  "sybilDetectionRate": 1,
+  "overallResistanceScore": 0.9989313460516347,
+  "rounds": [
+    {
+      "round": 1,
+      "honestAvgReputation": 0.9208666666666635,
+      "sybilAvgReputation": 0.0003,
+      "sybilSuppressionRate": 0.9996742199377399
+    },
+    {
+      "round": 2,
+      "honestAvgReputation": 0.9416000000000122,
+      "sybilAvgReputation": 0.0010999999999999998,
+      "sybilSuppressionRate": 0.9988317757009346
+    },
+    {
+      "round": 3,
+      "honestAvgReputation": 0.9561222222222215,
+      "sybilAvgReputation": 0.0014999999999999996,
+      "sybilSuppressionRate": 0.9984311629150155
+    },
+    {
+      "round": 4,
+      "honestAvgReputation": 0.9660111111111145,
+      "sybilAvgReputation": 0.0006000000000000001,
+      "sybilSuppressionRate": 0.99937888913171
+    },
+    {
+      "round": 5,
+      "honestAvgReputation": 0.9730333333333406,
+      "sybilAvgReputation": 0.0008,
+      "sybilSuppressionRate": 0.999177828782844
+    },
+    {
+      "round": 6,
+      "honestAvgReputation": 0.9774111111111135,
+      "sybilAvgReputation": 0.0012,
+      "sybilSuppressionRate": 0.9987722668728046
+    },
+    {
+      "round": 7,
+      "honestAvgReputation": 0.9788000000000043,
+      "sybilAvgReputation": 0.0009,
+      "sybilSuppressionRate": 0.9990805067429506
+    },
+    {
+      "round": 8,
+      "honestAvgReputation": 0.9806444444444495,
+      "sybilAvgReputation": 0.0007000000000000001,
+      "sybilSuppressionRate": 0.9992861836887308
+    },
+    {
+      "round": 9,
+      "honestAvgReputation": 0.98175555555556,
+      "sybilAvgReputation": 0.0009,
+      "sybilSuppressionRate": 0.999083274859096
+    },
+    {
+      "round": 10,
+      "honestAvgReputation": 0.9825444444444499,
+      "sybilAvgReputation": 0.0015,
+      "sybilSuppressionRate": 0.9984733515023352
+    }
+  ]
+}

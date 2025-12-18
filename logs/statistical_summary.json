@@ -1,0 +1,74 @@
+{
+  "performance": {
+    "processing_time": {
+      "mean_ms": 0.0353,
+      "std_ms": 0.0017,
+      "p95_ms": 0.0373,
+      "p99_ms": 0.0375,
+      "min_ms": 0.0334,
+      "max_ms": 0.0376,
+      "samples": 3
+    },
+    "throughput": {
+      "mean_qps": 28423.83,
+      "std_qps": 1383.02,
+      "p95_qps": 29819.67,
+      "p99_qps": 29916.03,
+      "min_qps": 26595.74,
+      "max_qps": 29940.12,
+      "samples": 3
+    }
+  },
+  "accuracy": {
+    "precision": {
+      "mean": 0.7625,
+      "std": 0.0044,
+      "p95": 0.7664,
+      "min": 0.7581,
+      "max": 0.7669,
+      "samples": 2
+    },
+    "recall": {
+      "mean": 0.9078,
+      "std": 0.0035,
+      "p95": 0.911,
+      "min": 0.9043,
+      "max": 0.9114,
+      "samples": 2
+    },
+    "f1": {
+      "mean": 0.8288,
+      "std": 0.0011,
+      "p95": 0.8298,
+      "min": 0.8277,
+      "max": 0.8299,
+      "samples": 2
+    }
+  },
+  "security": {
+    "sybil_suppression": {
+      "mean": 0.9989,
+      "std": 0.0004,
+      "p95": 0.9992,
+      "min": 0.9985,
+      "max": 0.9993,
+      "samples": 2
+    },
+    "attack_success": {
+      "mean": 0.0254,
+      "std": 0.0243,
+      "p95": 0.0501,
+      "min": 0.0007,
+      "max": 0.0503,
+      "samples": 4
+    },
+    "attack_cost": {
+      "mean": 423.8232,
+      "std": 421.7138,
+      "p95": 948.2544,
+      "min": 19.8918,
+      "max": 1000.0,
+      "samples": 4
+    }
+  }
+}

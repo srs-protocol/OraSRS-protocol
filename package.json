@@ -1,40 +1,68 @@
 {
   "name": "orasrs-protocol",
-  "version": "1.0.0",
-  "description": "OraSRS (Oracle Security Root Service) - 咨询式风险评分服务",
-  "main": "srs-service.js",
+  "version": "3.3.6",
+  "description": "OraSRS Protocol - Decentralized Threat Intelligence",
+  "main": "src/srs-service.js",
+  "type": "module",
   "scripts": {
     "start": "node start-srs-service.js",
+    "start-client": "node orasrs-simple-client.js",
+    "start-enhanced": "node orasrs-enhanced-client.js",
     "test": "node test/orasrs.test.js",
     "test-integration": "node test-srs-integration.js",
     "dev": "nodemon start-srs-service.js",
     "lint": "eslint .",
-    "srs-engine": "node srs-engine.js"
+    "srs-engine": "node srs-engine.js",
+    "faucet": "npx hardhat run script/faucet.js --network sepolia",
+    "build-client": "bash build-client.sh",
+    "build-linux": "npx pkg orasrs-simple-client.js --targets node18-linux-x64 --output dist/orasrs-simple-client-linux",
+    "build-macos": "npx pkg orasrs-simple-client.js --targets node18-macos-x64 --output dist/orasrs-simple-client-macos",
+    "build-windows": "npx pkg orasrs-simple-client.js --targets node18-win-x64 --output dist/orasrs-simple-client-win.exe"
   },
   "keywords": [
     "security",
     "risk-assessment",
     "threat-intelligence",
     "cybersecurity",
-    "advisory-service"
+    "advisory-service",
+    "blockchain",
+    "decentralized"
   ],
   "author": "SRS Protocol Team",
   "license": "MIT",
+  "bin": {
+    "orasrs-cli": "./orasrs-cli.js"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
-    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.22.1",
     "rate-limiter-flexible": "^2.4.2"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
-    "@nomicfoundation/hardhat-ethers": "^4.0.3",
-    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.1.2",
+    "@nomicfoundation/hardhat-network-helpers": "^1.1.2",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@nomicfoundation/hardhat-verify": "^1.1.1",
+    "@typechain/ethers-v6": "^0.4.3",
+    "@typechain/hardhat": "^8.0.3",
+    "@types/mocha": "^10.0.10",
     "axios": "^1.6.0",
     "chai": "^4.5.0",
     "eslint": "^8.52.0",
     "ethers": "^6.16.0",
-    "hardhat": "^3.0.17",
-    "nodemon": "^3.0.1"
+    "hardhat": "^2.27.1",
+    "hardhat-gas-reporter": "^1.0.10",
+    "nodemon": "^3.0.1",
+    "pkg": "^5.8.1",
+    "solidity-coverage": "^0.8.16",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=14.0.0"

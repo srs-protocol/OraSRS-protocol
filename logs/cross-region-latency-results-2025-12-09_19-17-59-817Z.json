@@ -1,0 +1,71 @@
+{
+  "regionPerformance": {
+    "Asia": {
+      "totalRequests": 600,
+      "successfulRequests": 586,
+      "failedRequests": 14,
+      "totalLatency": 27567.695188259204,
+      "requestCount": 30,
+      "avgLatency": 45.94615864709867,
+      "successRate": 0.9766666666666667,
+      "throughput": 0.3333333333333333
+    },
+    "Europe": {
+      "totalRequests": 450,
+      "successfulRequests": 415,
+      "failedRequests": 35,
+      "totalLatency": 43056.44850583091,
+      "requestCount": 30,
+      "avgLatency": 95.68099667962424,
+      "successRate": 0.9222222222222223,
+      "throughput": 0.25
+    },
+    "North America": {
+      "totalRequests": 450,
+      "successfulRequests": 384,
+      "failedRequests": 66,
+      "totalLatency": 65426.08863068292,
+      "requestCount": 30,
+      "avgLatency": 145.39130806818426,
+      "successRate": 0.8533333333333334,
+      "throughput": 0.25
+    },
+    "South America": {
+      "totalRequests": 300,
+      "successfulRequests": 252,
+      "failedRequests": 48,
+      "totalLatency": 58498.55855717369,
+      "requestCount": 30,
+      "avgLatency": 194.99519519057895,
+      "successRate": 0.84,
+      "throughput": 0.16666666666666666
+    },
+    "Oceania": {
+      "totalRequests": 240,
+      "successfulRequests": 189,
+      "failedRequests": 51,
+      "totalLatency": 59043.17936204675,
+      "requestCount": 30,
+      "avgLatency": 246.01324734186147,
+      "successRate": 0.7875,
+      "throughput": 0.13333333333333333
+    },
+    "Africa": {
+      "totalRequests": 210,
+      "successfulRequests": 147,
+      "failedRequests": 63,
+      "totalLatency": 61783.34026537723,
+      "requestCount": 30,
+      "avgLatency": 294.20638221608203,
+      "successRate": 0.7,
+      "throughput": 0.11666666666666667
+    }
+  },
+  "globalThroughput": 1.25,
+  "avgGlobalLatency": 140.16680467083145,
+  "totalRequests": 2250,
+  "successfulRequests": 1973,
+  "failedRequests": 277,
+  "detailedLogs": [],
+  "successRate": 0.8768888888888889
+}

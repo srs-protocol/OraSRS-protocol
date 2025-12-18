@@ -893,4 +893,4 @@ class ArchitectureCoordinator {
   }
 }
 
-module.exports = ArchitectureCoordinator;
+export default ArchitectureCoordinator;

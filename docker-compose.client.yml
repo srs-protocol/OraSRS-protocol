@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  orasrs-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client.secure
+    container_name: orasrs-client
+    # 限制网络访问，只允许本地访问
+    network_mode: "host"  # 或者使用自定义网络
+    cap_add:
+      - NET_ADMIN  # 需要管理iptables和ipset
+      - NET_RAW    # 需要网络原始套接字
+    # 限制资源使用
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpu_quota: 50000  # 限制CPU使用（50%）
+    # 只读文件系统（除了特定目录）
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    volumes:
+      # 挂载必要的系统目录以访问网络功能
+      - /dev/log:/dev/log
+      # 如果需要持久化数据，可挂载特定目录
+    environment:
+      - NODE_ENV=production
+      - RPC_URL=${RPC_URL:-https://api.orasrs.net}
+      - CONTRACT_ADDR=${CONTRACT_ADDR}
+      - LOCAL_ACCESS_ONLY=true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # 限制系统调用
+    # 注意：根据实际需要调整这些限制
+    sysctls:
+      - net.ipv4.conf.lo.route_localnet=1
+    command: [
+      "sh", "-c", 
+      "sudo ipset create orasrs_blacklist hash:ip timeout 0 maxelem 200000 -exist && node src/ClientLite.ts"
+    ]
+
+# 可选：如果需要web界面来监控状态
+  orasrs-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.client.secure
+    container_name: orasrs-dashboard
+    ports:
+      - "127.0.0.1:3000:3000"  # 仅绑定到localhost
+    environment:
+      - NODE_ENV=production
+      - LOCALHOST_ONLY=true
+    restart: unless-stopped
+    depends_on:
+      - orasrs-client

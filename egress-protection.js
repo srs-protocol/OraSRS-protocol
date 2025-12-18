@@ -1,0 +1,383 @@
+/**
+ * OraSRS Egress Protection Module
+ * Integrates eBPF egress filter with OraSRS client
+ */
+
+import { spawn } from 'child_process';
+import { EventEmitter } from 'events';
+
+class EgressProtection extends EventEmitter {
+    constructor(config) {
+        super();
+        this.config = config;
+        this.enabled = config.egressProtection?.enabled || false;
+        this.mode = config.egressProtection?.mode || 'monitor';
+        this.interface = config.egressProtection?.interface || 'eth0';
+        this.updateInterval = config.egressProtection?.cacheUpdateInterval || 300000; // 5 minutes
+        this.riskThreshold = config.egressProtection?.riskThreshold || 80;
+
+        this.ebpfProcess = null;
+        this.updateTimer = null;
+        this.riskCache = new Map();
+    }
+
+    /**
+     * Start the egress protection module
+     */
+    async start(blockchainConnector) {
+        if (!this.enabled) {
+            console.log('[Egress] Egress protection disabled in configuration');
+            return;
+        }
+
+        this.blockchainConnector = blockchainConnector;
+
+        console.log(`[Egress] Starting egress protection in ${this.mode} mode...`);
+
+        try {
+            // Start eBPF loader
+            await this.startEBPF();
+
+            // Start cache update loop
+            this.startCacheUpdates();
+
+            console.log('[Egress] ✅ Egress protection started successfully');
+        } catch (error) {
+            console.error('[Egress] ⚠️  Failed to start eBPF:', error.message);
+            console.log('[Egress] ℹ️  Continuing in cache-only mode (eBPF disabled)');
+            this.enabled = false;
+            // Don't throw - allow client to continue without eBPF
+        }
+    }
+
+    /**
+     * Start the eBPF loader process
+     */
+    async startEBPF() {
+        return new Promise((resolve, reject) => {
+            // Start Python eBPF loader
+            this.ebpfProcess = spawn('python3', [
+                '/opt/orasrs/ebpf/egress_loader.py',
+                '--mode', this.mode,
+                '--interface', this.interface,
+                '--daemon'
+            ], {
+                stdio: ['pipe', 'pipe', 'pipe']
+            });
+
+            let hasResolved = false;
+            let errorOutput = '';
+
+            this.ebpfProcess.stdout.on('data', (data) => {
+                const output = data.toString().trim();
+                if (output) {
+                    console.log(`[Egress/eBPF] ${output}`);
+                }
+            });
+
+            this.ebpfProcess.stderr.on('data', (data) => {
+                const error = data.toString().trim();
+                errorOutput += error + '\n';
+                if (error && !error.includes('WARNING')) {
+                    console.error(`[Egress/eBPF] ${error}`);
+                }
+            });
+
+            this.ebpfProcess.on('error', (error) => {
+                console.error('[Egress] eBPF process error:', error.message);
+                if (!hasResolved) {
+                    hasResolved = true;
+                    reject(error);
+                }
+            });
+
+            this.ebpfProcess.on('exit', (code, signal) => {
+                if (code !== 0 && code !== null && !hasResolved) {
+                    console.error(`[Egress] eBPF process exited with code ${code}`);
+                    if (errorOutput.includes('bpf_helpers.h')) {
+                        console.error('[Egress] ⚠️  BPF headers not found. Install libbpf-devel or run without eBPF.');
+                    }
+                    hasResolved = true;
+                    reject(new Error(`eBPF process exited with code ${code}`));
+                }
+            });
+
+            // Give it a moment to start
+            setTimeout(() => {
+                if (!hasResolved) {
+                    if (this.ebpfProcess && !this.ebpfProcess.killed) {
+                        hasResolved = true;
+                        resolve();
+                    } else {
+                        hasResolved = true;
+                        reject(new Error('eBPF process failed to start'));
+                    }
+                }
+            }, 2000);
+        });
+    }
+
+    /**
+     * Start periodic cache updates
+     */
+    startCacheUpdates() {
+        console.log(`[Egress] Starting cache updates every ${this.updateInterval / 1000}s`);
+
+        // Initial update
+        this.updateRiskCache();
+
+        // Periodic updates
+        this.updateTimer = setInterval(() => {
+            this.updateRiskCache();
+        }, this.updateInterval);
+    }
+
+    /**
+     * Update risk cache from blockchain
+     */
+    async updateRiskCache() {
+        try {
+            console.log('[Egress] Updating risk cache...');
+
+            // Get high-risk IPs from blockchain
+            const highRiskIPs = await this.getHighRiskIPs();
+
+            let updateCount = 0;
+            for (const ipData of highRiskIPs) {
+                await this.updateIPRisk(ipData.ip, ipData.score, ipData.isBlocked);
+                updateCount++;
+            }
+
+            console.log(`[Egress] ✅ Updated ${updateCount} high-risk IPs in cache`);
+            this.emit('cache-updated', { count: updateCount });
+
+        } catch (error) {
+            console.error('[Egress] Failed to update risk cache:', error.message);
+        }
+    }
+
+    /**
+     * Get high-risk IPs from blockchain
+     */
+    async getHighRiskIPs() {
+        // In production, query blockchain for high-risk IPs
+        // For now, use local threat detection data
+
+        const highRiskIPs = [];
+
+        // Query local threat database
+        if (this.blockchainConnector) {
+            try {
+                // This would query the blockchain for IPs with score >= threshold
+                // Simplified implementation
+                const cachedThreats = this.blockchainConnector.threatCache || new Map();
+
+                for (const [ip, data] of cachedThreats) {
+                    if (data.risk_score >= this.riskThreshold) {
+                        highRiskIPs.push({
+                            ip: ip,
+                            score: data.risk_score,
+                            isBlocked: data.risk_score >= 90
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('[Egress] Error querying threats:', error.message);
+            }
+        }
+
+        return highRiskIPs;
+    }
+
+    /**
+     * Update risk for a specific IP
+     */
+    async updateIPRisk(ipAddress, score, isBlocked = false) {
+        if (!this.ebpfProcess || this.ebpfProcess.killed) {
+            return;
+        }
+
+        try {
+            // Send update command to eBPF loader via stdin
+            const command = JSON.stringify({
+                action: 'update',
+                ip: ipAddress,
+                score: score,
+                isBlocked: isBlocked,
+                ttl: 3600 // 1 hour
+            }) + '\n';
+
+            // Safely write to stdin with error handling
+            try {
+                this.ebpfProcess.stdin.write(command, (err) => {
+                    if (err && err.code !== 'EPIPE') {
+                        console.error(`[Egress] Error writing to eBPF stdin:`, err.message);
+                    }
+                });
+            } catch (writeError) {
+                // Ignore EPIPE errors - process has exited
+                if (writeError.code !== 'EPIPE') {
+                    console.error(`[Egress] Write error:`, writeError.message);
+                }
+            }
+
+            // Update local cache
+            this.riskCache.set(ipAddress, {
+                score: score,
+                isBlocked: isBlocked,
+                updatedAt: Date.now()
+            });
+
+        } catch (error) {
+            console.error(`[Egress] Failed to update IP ${ipAddress}:`, error.message);
+        }
+    }
+
+    /**
+     * Get statistics from eBPF filter
+     */
+    async getStatistics() {
+        if (!this.enabled || !this.ebpfProcess) {
+            return null;
+        }
+
+        // Request stats from eBPF process
+        try {
+            const command = JSON.stringify({ action: 'stats' }) + '\n';
+            if (this.ebpfProcess && !this.ebpfProcess.killed) {
+                this.ebpfProcess.stdin.write(command, (err) => {
+                    if (err && err.code !== 'EPIPE') {
+                        console.error('[Egress] Error writing stats request:', err.message);
+                    }
+                });
+            }
+        } catch (error) {
+            if (error.code !== 'EPIPE') {
+                console.error('[Egress] Failed to request stats:', error.message);
+            }
+        }
+
+        return {
+            enabled: this.enabled,
+            mode: this.mode,
+            interface: this.interface,
+            cacheSize: this.riskCache.size,
+            riskThreshold: this.riskThreshold,
+            // These will be populated by eBPF stats
+            totalPackets: 0,
+            highRiskHits: 0,
+            blockedPackets: 0,
+            allowedPackets: 0
+        };
+    }
+
+    /**
+     * Update configuration dynamically without restart
+     */
+    async updateConfig(newConfig) {
+        console.log('[Egress] Updating configuration...');
+
+        const changes = [];
+
+        // Update mode
+        if (newConfig.mode && newConfig.mode !== this.mode) {
+            if (!['monitor', 'enforce', 'disabled'].includes(newConfig.mode)) {
+                throw new Error(`Invalid mode: ${newConfig.mode}`);
+            }
+
+            const oldMode = this.mode;
+            this.mode = newConfig.mode;
+            changes.push(`mode: ${oldMode} → ${this.mode}`);
+
+            // Send mode update to eBPF
+            if (this.ebpfProcess && !this.ebpfProcess.killed) {
+                const modeMap = { 'disabled': 0, 'monitor': 1, 'enforce': 2 };
+                const command = JSON.stringify({
+                    action: 'set_mode',
+                    mode: modeMap[this.mode]
+                }) + '\n';
+                this.ebpfProcess.stdin.write(command);
+            }
+        }
+
+        // Update risk threshold
+        if (newConfig.riskThreshold && newConfig.riskThreshold !== this.riskThreshold) {
+            const oldThreshold = this.riskThreshold;
+            this.riskThreshold = newConfig.riskThreshold;
+            changes.push(`riskThreshold: ${oldThreshold} → ${this.riskThreshold}`);
+        }
+
+        // Update cache interval
+        if (newConfig.cacheUpdateInterval && newConfig.cacheUpdateInterval !== this.updateInterval) {
+            const oldInterval = this.updateInterval;
+            this.updateInterval = newConfig.cacheUpdateInterval;
+            changes.push(`cacheUpdateInterval: ${oldInterval} → ${this.updateInterval}`);
+
+            // Restart cache update timer
+            if (this.updateTimer) {
+                clearInterval(this.updateTimer);
+                this.startCacheUpdates();
+            }
+        }
+
+        if (changes.length > 0) {
+            console.log(`[Egress] Configuration updated: ${changes.join(', ')}`);
+            this.emit('config-updated', { changes });
+        } else {
+            console.log('[Egress] No configuration changes');
+        }
+
+        return { success: true, changes };
+    }
+
+    /**
+     * Get detailed statistics including performance metrics
+     */
+    async getDetailedStatistics() {
+        const basicStats = await this.getStatistics();
+
+        if (!basicStats) {
+            return null;
+        }
+
+        return {
+            ...basicStats,
+            performance: {
+                avgQueryLatency: 0.001, // Will be populated by eBPF
+                peakTPS: 0,
+                memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 // MB
+            },
+            riskDistribution: {
+                low: 0,
+                medium: 0,
+                high: 0,
+                critical: 0
+            },
+            uptime: process.uptime()
+        };
+    }
+
+    /**
+     * Stop the egress protection module
+     */
+    stop() {
+        console.log('[Egress] Stopping egress protection...');
+
+        // Stop cache updates
+        if (this.updateTimer) {
+            clearInterval(this.updateTimer);
+            this.updateTimer = null;
+        }
+
+        // Stop eBPF process
+        if (this.ebpfProcess && !this.ebpfProcess.killed) {
+            this.ebpfProcess.kill('SIGTERM');
+            this.ebpfProcess = null;
+        }
+
+        this.riskCache.clear();
+        console.log('[Egress] Egress protection stopped');
+    }
+}
+
+export default EgressProtection;

@@ -1,514 +1,198 @@
-// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
 
-import "./ThreatEvidence.sol";
-import "./OraSRSGovernance.sol";
-
-/**
- * @title OraSRS 威胁情报协调合约
- * @dev 用于协调和管理全局威胁情报数据
- * @author OraSRS Protocol
- * @notice 该合约负责威胁情报的全局协调、信誉管理和合规验证
- */
 contract ThreatIntelligenceCoordination {
-    // 威胁情报结构
-    struct GlobalThreatIntel {
-        string threatId;               // 威胁ID
-        string sourceIP;              // 威胁源IP
-        uint256 threatLevel;          // 威胁级别
-        uint256 threatType;           // 威胁类型
-        uint256 confidence;           // 置信度 (0-100)
-        uint256 credibility;          // 可信度 (0-100)
-        string evidenceHash;          // 证据哈希
-        string context;               // 上下文信息
-        uint256 lastUpdated;          // 最后更新时间
-        uint256 expirationTime;       // 过期时间
-        bool isGlobalThreat;          // 是否为全球威胁
-        string region;                // 区域限制
-        uint256 totalVotes;           // 总投票数
-        uint256 positiveVotes;        // 正面投票数
-        uint256 negativeVotes;        // 负面投票数
-    }
-    
-    // 节点信誉结构
-    struct NodeReputation {
-        uint256 totalReports;         // 总报告数
-        uint256 accurateReports;      // 准确报告数
-        uint256 totalNodeVotes;       // 总投票数
-        uint256 positiveNodeVotes;    // 正面投票数
-        uint256 reputationScore;      // 信誉分数 (0-1000)
-        uint256 lastActivity;         // 最后活动时间
-        bool isActive;                // 是否活跃
-        address governanceAddr;       // 治理地址
-        string nodeId;                // 节点ID
-        string registrationProof;     // 注册证明
-    }
-    
-    // 威胁级别枚举（复制自ThreatEvidence合约）
+    // 威胁级别枚举
     enum ThreatLevel { Info, Warning, Critical, Emergency }
     
-    // 威胁类型枚举（复制自ThreatEvidence合约）
-    enum ThreatType { DDoS, Malware, Phishing, BruteForce, SuspiciousConnection, AnomalousBehavior, IoCMatch }
-    
-    // 合约状态
-    enum ContractState { Active, Paused, EmergencyStopped }
-    ContractState public contractState;
-    
-    // 威胁情报映射
-    mapping(string => GlobalThreatIntel) public globalThreatIntel;  // 威胁ID到全局威胁情报
-    mapping(string => mapping(address => bool)) public threatVotes; // 威胁ID到节点的投票记录
-    mapping(address => NodeReputation) public nodeReputations;      // 节点信誉记录
-    mapping(string => uint256) public threatIdToIndex;              // 威胁ID到索引的映射
-    mapping(ThreatType => uint256) public threatTypeCount;          // 按威胁类型统计
-    string[] public threatList;                                     // 威胁列表
-    
-    // 重要参数
-    address public owner;
-    address public governanceContract;
-    address public threatEvidenceContract;
-    uint256 public constant MIN_CONFIDENCE = 70;                   // 最小置信度
-    uint256 public constant MIN_CREDIBILITY = 60;                  // 最小可信度
-    uint256 public constant THREAT_EXPIRATION = 30 days;           // 威胁过期时间
-    uint256 public constant VOTE_COOLDOWN = 1 hours;               // 投票冷却期
-    uint256 public constant MAX_THREAT_LEVEL = 100;                // 最大威胁级别
-    
-    // 事件
-    event GlobalThreatAdded(string indexed threatId, string sourceIP, uint256 threatLevel, uint256 timestamp);
-    event GlobalThreatUpdated(string indexed threatId, uint256 newThreatLevel, uint256 timestamp);
-    event GlobalThreatRemoved(string indexed threatId, string reason, uint256 timestamp);
-    event NodeReputationUpdated(address indexed node, uint256 newReputation, uint256 timestamp);
-    event ThreatVoted(string indexed threatId, address indexed voter, bool support, uint256 timestamp);
-    event ContractStateChanged(ContractState newState, uint256 timestamp);
-    
-    // 修饰符
-    modifier onlyActiveContract() {
-        require(contractState == ContractState.Active, "Contract is not active");
-        _;
+    // 威胁情报结构
+    struct ThreatIntel {
+        string sourceIP;
+        string targetIP;
+        ThreatLevel threatLevel;
+        uint256 timestamp;
+        string threatType;
+        bool isActive;
     }
     
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
-        _;
-    }
+    // 存储威胁情报
+    mapping(string => ThreatIntel) public threatIntels;  // IP -> ThreatIntel
+    mapping(string => bool) public isThreatIP;          // IP -> 是否为威胁IP
+    mapping(string => uint256) public threatScores;     // IP -> 威胁分数
     
-    modifier onlyGovernance() {
-        require(msg.sender == governanceContract, "Only governance can call this function");
-        _;
-    }
+    // 为了支持获取所有IP，我们需要一个数组来存储IP地址
+    string[] public allThreatIPs;
+    mapping(string => uint256) private ipIndex;  // IP到数组索引的映射，用于快速删除
     
-    modifier onlyAuthorizedNode() {
-        // 放宽节点验证条件，只要注册即可，无需高信誉分数
-        require(nodeReputations[msg.sender].governanceAddr != address(0), "Only registered nodes can call this function");
-        _;
-    }
+    event ThreatIntelAdded(string indexed ip, ThreatLevel level, string threatType, uint256 timestamp);
+    event ThreatIntelRemoved(string indexed ip, uint256 timestamp);
+    event ThreatScoreUpdated(string indexed ip, uint256 score, uint256 timestamp);
     
     /**
      * @dev 构造函数
-     * @param _governanceContract 治理合约地址
-     * @param _threatEvidenceContract 威胁证据合约地址
      */
-    constructor(address _governanceContract, address _threatEvidenceContract) {
-        owner = msg.sender;
-        governanceContract = _governanceContract;
-        threatEvidenceContract = _threatEvidenceContract;
-        contractState = ContractState.Active;
-        
-        // 初始化治理节点信誉
-        nodeReputations[_governanceContract] = NodeReputation({
-            totalReports: 0,
-            accurateReports: 0,
-            totalNodeVotes: 0,
-            positiveNodeVotes: 0,
-            reputationScore: 1000,
-            lastActivity: block.timestamp,
-            isActive: true,
-            governanceAddr: _governanceContract,
-            nodeId: "governance-node",
-            registrationProof: "initial-governance-setup"
-        });
+    constructor() {
     }
     
     /**
-     * @dev 添加全局威胁情报
-     * @param threatId 威胁ID
-     * @param sourceIP 威胁源IP
-     * @param threatLevel 威胁级别
-     * @param threatType 威胁类型
-     * @param confidence 置信度
-     * @param evidenceHash 证据哈希
-     * @param context 上下文信息
-     * @param globalThreatFlag 是否为全球威胁
-     * @param region 区域限制
+     * @dev 添加威胁情报
      */
-    function addGlobalThreat(
-        string memory threatId,
+    function addThreatIntel(
+        string memory _ip,
+        ThreatLevel _threatLevel,
+        string memory _threatType
+    ) external {
+        require(bytes(_ip).length > 0, "IP cannot be empty");
+        
+        threatIntels[_ip] = ThreatIntel({
+            sourceIP: _ip,
+            targetIP: "",
+            threatLevel: _threatLevel,
+            timestamp: block.timestamp,
+            threatType: _threatType,
+            isActive: true
+        });
+        
+        isThreatIP[_ip] = true;
+        
+        // 如果IP不在列表中，则添加到列表
+        if (ipIndex[_ip] == 0) {
+            allThreatIPs.push(_ip);
+            ipIndex[_ip] = allThreatIPs.length; // 存储索引，从1开始，0表示不存在
+        }
+        
+        emit ThreatIntelAdded(_ip, _threatLevel, _threatType, block.timestamp);
+    }
+    
+    /**
+     * @dev 更新威胁分数
+     */
+    function updateThreatScore(string memory _ip, uint256 _score) external {
+        require(bytes(_ip).length > 0, "IP cannot be empty");
+        threatScores[_ip] = _score;
+        
+        emit ThreatScoreUpdated(_ip, _score, block.timestamp);
+    }
+    
+    /**
+     * @dev 获取威胁分数
+     */
+    function getThreatScore(string memory _ip) external view returns (uint256) {
+        return threatScores[_ip];
+    }
+    
+    /**
+     * @dev 移除威胁情报
+     */
+    function removeThreatIntel(string memory _ip) external {
+        threatIntels[_ip].isActive = false;
+        isThreatIP[_ip] = false;
+        
+        // 从数组中移除IP
+        uint256 index = ipIndex[_ip];
+        if (index > 0 && index <= allThreatIPs.length) {
+            // 将最后一个元素移到被删除元素的位置
+            string memory lastIP = allThreatIPs[allThreatIPs.length - 1];
+            allThreatIPs[index - 1] = lastIP;
+            // 更新最后一个元素的索引
+            ipIndex[lastIP] = index;
+            // 删除最后一个元素
+            allThreatIPs.pop();
+            // 重置被删除IP的索引
+            delete ipIndex[_ip];
+        }
+        
+        emit ThreatIntelRemoved(_ip, block.timestamp);
+    }
+    
+    /**
+     * @dev 检查IP是否为威胁IP
+     */
+    function isThreatSource(string memory _ip) external view returns (bool) {
+        return isThreatIP[_ip] && threatIntels[_ip].isActive;
+    }
+    
+    /**
+     * @dev 获取威胁情报
+     */
+    function getThreatIntel(string memory _ip) external view returns (
         string memory sourceIP,
-        uint256 threatLevel,
-        uint256 threatType,
-        uint256 confidence,
-        string memory evidenceHash,
-        string memory context,
-        bool globalThreatFlag,
-        string memory region
-    ) external onlyAuthorizedNode onlyActiveContract {
-        require(bytes(threatId).length > 0, "Threat ID is required");
-        require(bytes(sourceIP).length > 0, "Source IP is required");
-        require(threatLevel <= MAX_THREAT_LEVEL, "Threat level too high");
-        require(confidence <= 100, "Confidence must be <= 100");
-        require(bytes(evidenceHash).length > 0, "Evidence hash is required");
-        
-        // 检查威胁是否已存在
-        require(bytes(globalThreatIntel[threatId].threatId).length == 0, "Threat already exists");
-        
-        // 创建威胁情报记录
-        GlobalThreatIntel memory newThreat = GlobalThreatIntel({
-            threatId: threatId,
-            sourceIP: sourceIP,
-            threatLevel: threatLevel,
-            threatType: threatType,
-            confidence: confidence,
-            credibility: 50, // 初始可信度为50
-            evidenceHash: evidenceHash,
-            context: context,
-            lastUpdated: block.timestamp,
-            expirationTime: block.timestamp + THREAT_EXPIRATION,
-            isGlobalThreat: globalThreatFlag,
-            region: region,
-            totalVotes: 0,
-            positiveVotes: 0,
-            negativeVotes: 0
-        });
-        
-        globalThreatIntel[threatId] = newThreat;
-        threatList.push(threatId);
-        threatIdToIndex[threatId] = threatList.length - 1;
-        
-        // 更新节点统计
-        updateNodeStats(msg.sender, true);
-        
-        emit GlobalThreatAdded(threatId, sourceIP, threatLevel, block.timestamp);
-    }
-    
-    /**
-     * @dev 更新全局威胁情报
-     * @param threatId 威胁ID
-     * @param newThreatLevel 新威胁级别
-     * @param newConfidence 新置信度
-     * @param context 上下文信息
-     */
-    function updateGlobalThreat(
-        string memory threatId,
-        uint256 newThreatLevel,
-        uint256 newConfidence,
-        string memory context
-    ) external onlyAuthorizedNode onlyActiveContract {
-        GlobalThreatIntel storage threat = globalThreatIntel[threatId];
-        require(bytes(threat.threatId).length > 0, "Threat does not exist");
-        require(newThreatLevel <= MAX_THREAT_LEVEL, "Threat level too high");
-        require(newConfidence <= 100, "Confidence must be <= 100");
-        
-        threat.threatLevel = newThreatLevel;
-        threat.confidence = newConfidence;
-        threat.context = context;
-        threat.lastUpdated = block.timestamp;
-        
-        // 更新节点统计
-        updateNodeStats(msg.sender, true);
-        
-        emit GlobalThreatUpdated(threatId, newThreatLevel, block.timestamp);
-    }
-    
-    /**
-     * @dev 对威胁进行投票
-     * @param threatId 威胁ID
-     * @param support 是否支持
-     */
-    function voteOnThreat(string memory threatId, bool support) external onlyAuthorizedNode onlyActiveContract {
-        GlobalThreatIntel storage threat = globalThreatIntel[threatId];
-        require(bytes(threat.threatId).length > 0, "Threat does not exist");
-        
-        // 检查是否已投票
-        require(!threatVotes[threatId][msg.sender], "Already voted on this threat");
-        
-        // 更新投票统计
-        threat.totalVotes++;
-        if (support) {
-            threat.positiveVotes++;
-        } else {
-            threat.negativeVotes++;
-        }
-        
-        // 记录投票
-        threatVotes[threatId][msg.sender] = true;
-        
-        // 更新节点统计
-        NodeReputation storage node = nodeReputations[msg.sender];
-        node.totalNodeVotes++;
-        if (support) {
-            node.positiveNodeVotes++;
-        }
-        
-        // 更新可信度（简单算法）
-        if (threat.totalVotes > 0) {
-            threat.credibility = (threat.positiveVotes * 100) / threat.totalVotes;
-        }
-        
-        emit ThreatVoted(threatId, msg.sender, support, block.timestamp);
-    }
-    
-    /**
-     * @dev 移除全局威胁
-     * @param threatId 威胁ID
-     * @param reason 移除原因
-     */
-    function removeGlobalThreat(string memory threatId, string memory reason) external onlyGovernance {
-        GlobalThreatIntel storage threat = globalThreatIntel[threatId];
-        require(bytes(threat.threatId).length > 0, "Threat does not exist");
-        
-        // 从威胁列表中移除
-        uint256 index = threatIdToIndex[threatId];
-        require(index < threatList.length, "Index out of bounds");
-        
-        string memory lastThreatId = threatList[threatList.length - 1];
-        threatList[index] = lastThreatId;
-        threatList.pop();
-        
-        // 更新索引映射
-        threatIdToIndex[lastThreatId] = index;
-        delete threatIdToIndex[threatId];
-        
-        // 删除威胁记录
-        delete globalThreatIntel[threatId];
-        
-        emit GlobalThreatRemoved(threatId, reason, block.timestamp);
-    }
-    
-    /**
-     * @dev 注册节点（宽松注册，无任何限制）
-     * @param nodeAddr 节点地址
-     * @param nodeId 节点ID
-     */
-    function registerNode(address nodeAddr, string memory nodeId) external {
-        // 移除已注册检查，允许重新注册以提高灵活性
-        if (nodeReputations[nodeAddr].governanceAddr == address(0)) {
-            // 新节点注册
-            nodeReputations[nodeAddr] = NodeReputation({
-                totalReports: 0,
-                accurateReports: 0,
-                totalNodeVotes: 0,
-                positiveNodeVotes: 0,
-                reputationScore: 50, // 新节点初始信誉分数降低，更宽松
-                lastActivity: block.timestamp,
-                isActive: true,
-                governanceAddr: msg.sender,
-                nodeId: nodeId,
-                registrationProof: "open_registration" // 无需注册证明
-            });
-        } else {
-            // 已注册节点更新信息
-            nodeReputations[nodeAddr].nodeId = nodeId;
-            nodeReputations[nodeAddr].lastActivity = block.timestamp;
-            nodeReputations[nodeAddr].isActive = true;
-        }
-        
-        emit NodeReputationUpdated(nodeAddr, nodeReputations[nodeAddr].reputationScore, block.timestamp);
-    }
-    
-    /**
-     * @dev 更新节点信誉
-     * @param nodeAddr 节点地址
-     * @param newReputationScore 新信誉分数
-     */
-    function updateNodeReputation(address nodeAddr, uint256 newReputationScore) external onlyGovernance {
-        require(nodeReputations[nodeAddr].governanceAddr != address(0), "Node not registered");
-        require(newReputationScore <= 1000, "Reputation score must be <= 1000");
-        
-        nodeReputations[nodeAddr].reputationScore = newReputationScore;
-        nodeReputations[nodeAddr].lastActivity = block.timestamp;
-        
-        emit NodeReputationUpdated(nodeAddr, newReputationScore, block.timestamp);
-    }
-    
-    /**
-     * @dev 激活/停用节点
-     * @param nodeAddr 节点地址
-     * @param active 激活状态
-     */
-    function setNodeActive(address nodeAddr, bool active) external onlyGovernance {
-        require(nodeReputations[nodeAddr].governanceAddr != address(0), "Node not registered");
-        
-        nodeReputations[nodeAddr].isActive = active;
-        nodeReputations[nodeAddr].lastActivity = block.timestamp;
-    }
-    
-    /**
-     * @dev 获取全局威胁列表
-     * @param offset 偏移量
-     * @param limit 限制数量
-     */
-    function getGlobalThreatList(uint256 offset, uint256 limit) external view returns (
-        string[] memory returnThreatIds,
-        string[] memory returnSourceIPs,
-        uint256[] memory returnThreatLevels,
-        uint256[] memory returnThreatTypes,
-        uint256[] memory returnConfidences,
-        uint256[] memory returnCredibilities
+        string memory targetIP,
+        ThreatLevel threatLevel,
+        uint256 timestamp,
+        string memory threatType,
+        bool isActive
     ) {
-        uint256 count = limit > threatList.length - offset ? threatList.length - offset : limit;
-        count = count > threatList.length ? threatList.length : count;
+        ThreatIntel memory intel = threatIntels[_ip];
+        return (
+            intel.sourceIP,
+            intel.targetIP,
+            intel.threatLevel,
+            intel.timestamp,
+            intel.threatType,
+            intel.isActive
+        );
+    }
+    
+    /**
+     * @dev 批量更新多个IP的威胁分数
+     */
+    function batchUpdateThreatScores(string[] memory _ips, uint256[] memory _scores) external {
+        require(_ips.length == _scores.length, "IP and score arrays must have same length");
         
-        returnThreatIds = new string[](count);
-        returnSourceIPs = new string[](count);
-        returnThreatLevels = new uint256[](count);
-        returnThreatTypes = new uint256[](count);
-        returnConfidences = new uint256[](count);
-        returnCredibilities = new uint256[](count);
+        for (uint i = 0; i < _ips.length; i++) {
+            threatScores[_ips[i]] = _scores[i];
+            emit ThreatScoreUpdated(_ips[i], _scores[i], block.timestamp);
+        }
+    }
+    
+    /**
+     * @dev 获取多个IP的威胁分数
+     */
+    function getThreatScores(string[] memory _ips) external view returns (uint256[] memory) {
+        uint256[] memory scores = new uint256[](_ips.length);
+        for (uint i = 0; i < _ips.length; i++) {
+            scores[i] = threatScores[_ips[i]];
+        }
+        return scores;
+    }
+    
+    /**
+     * @dev 获取所有威胁IP的数量
+     */
+    function getThreatIPsCount() external view returns (uint256) {
+        return allThreatIPs.length;
+    }
+    
+    /**
+     * @dev 获取指定范围内的威胁IP
+     */
+    function getThreatIPs(uint256 offset, uint256 count) external view returns (string[] memory ips) {
+        require(offset < allThreatIPs.length, "Offset out of bounds");
         
+        uint256 actualCount = count;
+        if (offset + actualCount > allThreatIPs.length) {
+            actualCount = allThreatIPs.length - offset;
+        }
+        
+        ips = new string[](actualCount);
+        for (uint256 i = 0; i < actualCount; i++) {
+            ips[i] = allThreatIPs[offset + i];
+        }
+    }
+    
+    /**
+     * @dev 获取所有威胁IP（限制数量以防止gas耗尽）
+     */
+    function getAllThreatIPs(uint256 maxCount) external view returns (string[] memory ips) {
+        uint256 count = allThreatIPs.length;
+        if (maxCount < count) {
+            count = maxCount;
+        }
+        
+        ips = new string[](count);
         for (uint256 i = 0; i < count; i++) {
-            string memory threatId = threatList[offset + i];
-            GlobalThreatIntel memory threat = globalThreatIntel[threatId];
-            
-            returnThreatIds[i] = threat.threatId;
-            returnSourceIPs[i] = threat.sourceIP;
-            returnThreatLevels[i] = threat.threatLevel;
-            returnThreatTypes[i] = threat.threatType;
-            returnConfidences[i] = threat.confidence;
-            returnCredibilities[i] = threat.credibility;
+            ips[i] = allThreatIPs[i];
         }
-    }
-    
-    /**
-     * @dev 获取节点信誉信息
-     * @param nodeAddr 节点地址
-     */
-    function getNodeReputation(address nodeAddr) external view returns (
-        uint256 totalReports,
-        uint256 accurateReports,
-        uint256 totalNodeVotes,
-        uint256 positiveNodeVotes,
-        uint256 reputationScore,
-        uint256 lastActivity,
-        bool isActive,
-        string memory nodeId,
-        string memory registrationProof
-    ) {
-        NodeReputation memory node = nodeReputations[nodeAddr];
-        return (
-            node.totalReports,
-            node.accurateReports,
-            node.totalNodeVotes,
-            node.positiveNodeVotes,
-            node.reputationScore,
-            node.lastActivity,
-            node.isActive,
-            node.nodeId,
-            node.registrationProof
-        );
-    }
-    
-    /**
-     * @dev 获取威胁情报详情
-     * @param threatId 威胁ID
-     */
-    function getThreatIntelDetails(string memory threatId) external view returns (
-        string memory returnSourceIP,
-        uint256 returnThreatLevel,
-        uint256 returnThreatType,
-        uint256 returnConfidence,
-        uint256 returnCredibility,
-        string memory returnEvidenceHash,
-        string memory returnContext,
-        uint256 returnLastUpdated,
-        uint256 returnExpirationTime,
-        bool returnIsGlobalThreat,
-        string memory returnRegion
-    ) {
-        GlobalThreatIntel memory threat = globalThreatIntel[threatId];
-        return (
-            threat.sourceIP,
-            threat.threatLevel,
-            threat.threatType,
-            threat.confidence,
-            threat.credibility,
-            threat.evidenceHash,
-            threat.context,
-            threat.lastUpdated,
-            threat.expirationTime,
-            threat.isGlobalThreat,
-            threat.region
-        );
-    }
-    
-    function getThreatCountByType(ThreatType _threatType) external view returns (uint256) {
-        return threatTypeCount[_threatType];
-    }
-    
-    /**
-     * @dev 检查威胁是否为全球威胁
-     * @param threatId 威胁ID
-     */
-    function isGlobalThreat(string memory threatId) external view returns (bool) {
-        GlobalThreatIntel memory threat = globalThreatIntel[threatId];
-        return threat.isGlobalThreat && threat.expirationTime > block.timestamp;
-    }
-    
-    /**
-     * @dev 获取威胁总数
-     */
-    function getThreatCount() external view returns (uint256) {
-        return threatList.length;
-    }
-    
-    /**
-     * @dev 治理功能：暂停合约
-     */
-    function pauseContract() external onlyGovernance {
-        contractState = ContractState.Paused;
-        emit ContractStateChanged(ContractState.Paused, block.timestamp);
-    }
-    
-    /**
-     * @dev 治理功能：恢复合约
-     */
-    function resumeContract() external onlyGovernance {
-        contractState = ContractState.Active;
-        emit ContractStateChanged(ContractState.Active, block.timestamp);
-    }
-    
-    /**
-     * @dev 治理功能：紧急停止
-     */
-    function emergencyStop() external onlyGovernance {
-        contractState = ContractState.EmergencyStopped;
-        emit ContractStateChanged(ContractState.EmergencyStopped, block.timestamp);
-    }
-    
-    /**
-     * @dev 更新节点统计信息
-     * @param nodeAddr 节点地址
-     * @param isReport 是否为报告操作
-     */
-    function updateNodeStats(address nodeAddr, bool isReport) internal {
-        NodeReputation storage node = nodeReputations[nodeAddr];
-        node.lastActivity = block.timestamp;
-        
-        if (isReport) {
-            node.totalReports++;
-            // 简单信誉更新算法 - 实际应用中会更复杂
-            if (node.totalReports > 0) {
-                node.reputationScore = 100 + (node.accurateReports * 900) / node.totalReports;
-                node.reputationScore = node.reputationScore > 1000 ? 1000 : node.reputationScore;
-            }
-        }
-    }
-    
-    /**
-     * @dev 检查节点是否已注册（宽松检查）
-     * @param nodeAddr 节点地址
-     */
-    function hasSufficientReputation(address nodeAddr) external view returns (bool) {
-        NodeReputation memory node = nodeReputations[nodeAddr];
-        // 放宽条件：只要注册即可，无需特定信誉分数
-        return node.governanceAddr != address(0);
     }
 }

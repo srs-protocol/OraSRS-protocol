@@ -1,0 +1,7 @@
+{
+  "blockchainEndpoint": "https://api.orasrs.net",
+  "registryAddress": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "port": 3006,
+  "publicIP": "localhost",
+  "configPath": "/etc/orasrs/node-config.json"
+}

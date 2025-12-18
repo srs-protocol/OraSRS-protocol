@@ -1,0 +1,70 @@
+{
+  "totalRounds": 10,
+  "finalHonestReputation": 0.9832000000000054,
+  "finalSybilReputation": 0.0007000000000000001,
+  "sybilSuppressionRate": 0.9992880390561432,
+  "sybilDetectionRate": 1,
+  "overallResistanceScore": 0.9995016273393003,
+  "rounds": [
+    {
+      "round": 1,
+      "honestAvgReputation": 0.9215999999999962,
+      "sybilAvgReputation": 0.001,
+      "sybilSuppressionRate": 0.9989149305555556
+    },
+    {
+      "round": 2,
+      "honestAvgReputation": 0.9420666666666786,
+      "sybilAvgReputation": 0.0006000000000000001,
+      "sybilSuppressionRate": 0.999363102398981
+    },
+    {
+      "round": 3,
+      "honestAvgReputation": 0.9561111111111112,
+      "sybilAvgReputation": 0.001,
+      "sybilSuppressionRate": 0.9989540964555491
+    },
+    {
+      "round": 4,
+      "honestAvgReputation": 0.9667111111111161,
+      "sybilAvgReputation": 0.0004,
+      "sybilSuppressionRate": 0.9995862259206473
+    },
+    {
+      "round": 5,
+      "honestAvgReputation": 0.9723111111111188,
+      "sybilAvgReputation": 0.0008,
+      "sybilSuppressionRate": 0.9991772180829182
+    },
+    {
+      "round": 6,
+      "honestAvgReputation": 0.9776777777777812,
+      "sybilAvgReputation": 0.0008,
+      "sybilSuppressionRate": 0.9991817344955735
+    },
+    {
+      "round": 7,
+      "honestAvgReputation": 0.9797444444444493,
+      "sybilAvgReputation": 0.0021000000000000003,
+      "sybilSuppressionRate": 0.9978565839164408
+    },
+    {
+      "round": 8,
+      "honestAvgReputation": 0.9812555555555609,
+      "sybilAvgReputation": 0.001,
+      "sybilSuppressionRate": 0.9989808974896108
+    },
+    {
+      "round": 9,
+      "honestAvgReputation": 0.9824777777777821,
+      "sybilAvgReputation": 0.0014000000000000002,
+      "sybilSuppressionRate": 0.9985750313832374
+    },
+    {
+      "round": 10,
+      "honestAvgReputation": 0.9832000000000054,
+      "sybilAvgReputation": 0.0007000000000000001,
+      "sybilSuppressionRate": 0.9992880390561432
+    }
+  ]
+}
