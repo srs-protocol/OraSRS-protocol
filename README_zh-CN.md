@@ -15,6 +15,8 @@
 >
 > *创新源于拔网线，真理定格于 v3.3.6。*  
 > *Innovation born from pulling the cable, truth crystallized in v3.3.6.*
+>
+> 📹 **测试视频 / Test Video**: [OraSRS v3.3.6 部署与性能测试](https://www.youtube.com/watch?v=yNBE58Og1cg)
 
 ### 🛡️ OraSRS (Oracle Security Root Service)
 

@@ -18,6 +18,8 @@
 
 <img width="1589" height="921" alt="a0646081c5604d476c4e38b17e56dcb8" src="https://github.com/user-attachments/assets/51990e27-b6a8-4f6b-bbba-905455c7c446" />
 
+> 📹 **Test Video**: [OraSRS v3.3.6 Deployment & Performance Test](https://www.youtube.com/watch?v=yNBE58Og1cg)
+
 ### 🛡️ OraSRS (Oracle Security Root Service)
 
 OraSRS started as an advisory risk scoring service for assessing IP and domain threats. In the current final public release (v3.3.6), the project focus has converged into two parts:

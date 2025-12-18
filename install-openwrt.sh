@@ -337,7 +337,7 @@ install_node_client() {
     curl -fsSL "$CLIENT_URL" -o /usr/lib/orasrs/orasrs-lite.js
     
     # 下载 client-onboarding.js (用于初始化)
-    ONBOARDING_URL="${REPO_URL}/client-onboarding.js"
+    ONBOARDING_URL="${REPO_URL}/src/client-onboarding.js"
     print_info "Downloading onboarding script from $ONBOARDING_URL"
     curl -fsSL "$ONBOARDING_URL" -o /usr/lib/orasrs/client-onboarding.js
 

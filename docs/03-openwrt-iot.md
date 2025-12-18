@@ -12,16 +12,20 @@ OraSRS supports OpenWrt routers and IoT devices, providing lightweight threat in
 # Method 1: One-click installation via curl (Recommended)
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-openwrt.sh | sh
 ```
-目前的 OpenWrt 客户端版本安装后，需要您手动执行以下命令来激活防火墙规则：
+**Post-Installation Manual Activation:**
+
+Currently, the OpenWrt client requires manual activation of firewall rules after installation:
 
 ```bash
-# 1. 加载防火墙规则
+# 1. Load the firewall rules
 sh /etc/firewall.user
 
-# 2. 重启防火墙以应用更改
+# 2. Restart firewall to apply changes
 /etc/init.d/firewall restart
 ```
-验证 OraSRS 是否正在保护您的设备：
+
+**Verify OraSRS is Protecting Your Device:**
+
 ```bash
 iptables -nvL orasrs_chain
 ```
