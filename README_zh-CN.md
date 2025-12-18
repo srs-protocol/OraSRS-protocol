@@ -47,7 +47,26 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 - **客户端威胁情报完全同步**：支持增量差分同步。
 - **Linux 支持**：完善的 Linux 客户端和服务守护。
 - **OraSRS OpenWrt 客户端**：支持 OpenWrt 23.05+，提供 Hybrid/Edge 模式。
-- **T0-T3 初步验证完成**：实现了从本地启发式检测 (T0) 到全球共识 (T3) 的完整流程。
+- **T0初步验证完成**：试验性测试部分了从本地防护模块T0 
+## ⚠️ Testing Environment & Public RPC / 测试环境与公网 RPC
+
+**Current Status:** Alpha / High-Frequency Debugging (高度调试阶段)
+
+We provide a public RPC endpoint bridging to our internal Hardhat Network to help developers reproduce test results.
+为了方便开发者复现测试结果，我们开放了连接至内部 Hardhat 测试网的公网 RPC 接口。
+
+| Configuration | Value |
+| :--- | :--- |
+| **RPC URL** | `https://api.orasrs.net` |
+| **Network Type** | Hardhat Ephemeral Testnet |
+| **Chain ID** | `31337` |
+| **Symbol** | `ORA` |
+
+**🛑 Critical Warnings (重要警告):**
+
+* **Data Volatility (数据易失性):** The chain state may be reset manually or automatically during debugging. Do not rely on data persistence. (链上数据可能会在调试过程中随时重置，请勿依赖数据的持久性。)
+* **No Real Value (无真实价值):** This is a simulation network. **DO NOT** use real wallets containing Mainnet assets. Use a fresh, empty wallet profile for testing. (这是一个模拟网络。**严禁**使用包含主网资产的真实钱包进行连接，请使用全新的空钱包或测试专用账户。)
+* **Stability (稳定性):** The endpoint `api.orasrs.net` is provided "as is" for testing purposes and may experience downtime. (该接口仅供测试使用，可能会出现不稳定的情况。)
 
 ---
 
