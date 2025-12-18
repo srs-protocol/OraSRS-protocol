@@ -44,6 +44,12 @@ Verify that OraSRS is protecting your device:
 
 iptables -nvL orasrs_chain
 ```
+## 🚧 Project Status
+
+- **T0 Module (Local Enforcement):** ✅ **Stable & Active** (As seen in the demo video)
+- **T1-T3 Modules (Decentralized Consensus):** ⚠️ **Experimental / Disabled by Default**
+    - *The logic for blockchain querying and risk IP consensus is implemented but currently disabled to ensure client stability on resource-constrained devices.*
+
 ## Documentation
 
 For detailed information, please refer to the [documentation directory](docs/):
