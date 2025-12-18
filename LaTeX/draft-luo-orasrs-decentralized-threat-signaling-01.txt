@@ -1,0 +1,179 @@
+
+Network Working Group                                        Luo
+Internet-Draft                                              OraSRS Protocol
+Intended status: Standards Track                            2025-12-19
+Expires: June 16, 2026
+
+
+    Decentralized Threat Signaling Protocol (DTSP) using OraSRS
+                 draft-luo-orasrs-decentralized-threat-signaling-01
+
+
+   abstract
+
+   This document specifies the Decentralized Threat Signaling Protocol
+   (DTSP), a mechanism for distributed edge clients to collaboratively
+   detect, report, and mitigate network threats. The protocol defines a
+   state machine for threat lifecycle management (T0-T3), a standardized
+   data format for threat signaling, and security mechanisms to prevent
+   abuse in a permissionless environment.
+
+
+
+
+0. Introduction
+
+
+   The increasing sophistication of network attacks requires a
+   collaborative defense mechanism that operates at the edge.
+   Centralized threat intelligence systems suffer from single points of
+   failure and latency issues. DTSP enables a decentralized network of
+   edge clients to share threat intelligence in real-time, leveraging a
+   blockchain-based consensus mechanism for verification.
+
+
+1. Terminology
+
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 {{RFC2119}} {{!RFC8174}} when, and only when, they appear in all
+   capitals, as shown here.
+
+
+2. Protocol Logic
+
+
+   The lifecycle of a threat in DTSP is modeled as a Finite State
+   Machine (FSM). Each edge client maintains the state of detected
+   threats.
+
+
+2.1. State Machine
+
+
+   The FSM consists of the following states:
+
+   o  **IDLE**: No threat detected.
+   o  **OPTIMISTIC_BLOCK (T0)**: Local detection of suspicious activity. Immediate local mitigation.
+   o  **REPORTED (T1)**: Threat evidence submitted to the network.
+   o  **VERIFIED (T2)**: Network consensus reached. Threat confirmed.
+   o  **GLOBAL_ENFORCE (T3)**: Global propagation of the threat signature.
+   o  **EXPIRED**: Threat entry validity period ended.
+
+
+2.1. State Transitions
+
+
+
+2.1.1. T0: Local Detection
+
+
+   The Edge Client MUST transition to the `OPTIMISTIC_BLOCK` state
+   immediately upon detection of traffic matching local heuristic rules
+   (e.g., high-frequency connection attempts).
+
+   In this state, the client:
+   1.  MUST block the source IP locally.
+   2.  SHOULD generate a `ThreatEvidence` package.
+
+
+2.1.1. T1: Signaling
+
+
+   The Edge Client MUST transition to the `REPORTED` state after
+   generating valid evidence. The client sends a `ThreatSignal` message
+   to the network.
+
+   To prevent front-running, the client MUST use a Commit-Reveal scheme:
+   1.  **Commit**: Send `Hash(Evidence + Salt)`.
+   2.  **Reveal**: Send `Evidence + Salt` after a random delay.
+
+
+2.1.1. T2: Verification
+
+
+   The state transitions to `VERIFIED` when the network (via Smart
+   Contract or Oracle) validates the evidence.
+   A threat is considered verified if:
+   `Sum(Reputation(Reporters)) > Threshold`
+
+
+2.1.1. T3: Global Enforcement
+
+
+   Upon entering the `GLOBAL_ENFORCE` state, the threat signature is
+   added to the Global Blocklist.
+   All participating clients MUST synchronize this list and enforce
+   blocking rules via their local kernel datapath (e.g., eBPF).
+
+
+9. Data Format
+
+
+
+9.1. Threat Signal
+
+
+   The `ThreatSignal` message is used to report a detected threat. It is
+   serialized using JSON.
+
+   Field            Type        Description
+   ---------------- ----------- --------------------------------------------------
+   `version`        uint8       Protocol version (e.g., 1)
+   `type`           uint8       Threat type (0=DDoS, 1=Scanning, 2=Malware)
+   `source_ip`      bytes       IP address of the attacker (4 or 16 bytes for IPv4/IPv6)
+   `target_ip`      bytes       IP address of the victim (4 or 16 bytes for IPv4/IPv6, optional)
+   `timestamp`      uint64      Unix timestamp of detection (ms)
+   `evidence`       bytes       Cryptographic proof or log snippet
+   `signature`      bytes       Digital signature of the reporting client
+
+
+9.1. Evidence Package
+
+
+   Field            Type        Description
+   ---------------- ----------- --------------------------------------------------
+   `packet_dump`    bytes       Sample of malicious packets (pcap format)
+   `flow_stats`     struct      Flow statistics (PPS, BPS, duration)
+   `heuristics`     string      ID of the heuristic rule triggered
+
+
+12. Security Considerations
+
+
+
+12.1. Sybil Attack Defense
+
+
+   To prevent Sybil attacks where an adversary creates multiple
+   identities to flood the network with false reports, DTSP utilizes a
+   Reputation System.
+
+   o  Each client MUST stake tokens to participate in reporting.
+   o  The weight of a report is proportional to the client's `ReputationScore`.
+   o  `ReputationScore` increases with valid reports and decreases with false positives.
+
+
+12.1. Commit-Reveal Mechanism
+
+
+   To prevent "free-riding" (copying others' reports) or front-running:
+
+   1.  Clients MUST NOT broadcast raw evidence immediately.
+   2.  Clients MUST broadcast `Commit = Hash(Evidence   Nonce)`.
+   3.  After `T_reveal` blocks, clients MUST broadcast `Reveal = (Evidence, Nonce)`.
+   4.  The network verifies `Hash(Reveal) == Commit`.
+
+
+15. IANA Considerations
+
+
+   This document has no IANA actions.
+
+
+
+
+
+Ziqian Luo                Expires June 16, 2026              [Page 1]

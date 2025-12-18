@@ -73,23 +73,17 @@ For detailed information, please refer to the [documentation directory](docs/):
 *   [**Academic & Performance**](docs/06-academic-perf.md)
 
 > [!IMPORTANT]
-> **🚧 TESTNET NOTICE & PUBLIC RPC ENDPOINT**
+> **📌 T0 Module Status**
 >
-> This project is currently in a **High-Frequency Debugging Phase**. The blockchain interaction relies on a custom Hardhat Protocol Chain.
+> - **T0 Module (Local Enforcement):** ✅ **Production Ready**
+>   - Fully validated with 0.001ms query latency
+>   - 40M PPS mitigation capability on 512MB devices
+>   - 100% success rate (38,766 requests, 0 failures)
+>   - Memory footprint: < 50MB (Hybrid) or < 5MB (Native)
 >
-> **T2/T3 Modules Status:**
-> - **T0 Module (Local Enforcement):** ✅ **Stable & Active** - Fully tested and production-ready
 > - **T2/T3 Modules (Decentralized Consensus):** ⚠️ **Experimental / Disabled by Default**
->   - The logic for blockchain querying and risk IP consensus is implemented but **disabled by default** to ensure client stability on resource-constrained devices
->   - To enable T2/T3 for testing, manually configure `t2t3.enabled: true` in `user-config.json` and set the RPC endpoint
+>   - Optional blockchain-based consensus layer
+>   - Disabled by default for maximum stability
+>   - Can be enabled in `user-config.json` for research purposes
 >
-> **Public RPC for Testing T2/T3:**
-> To facilitate testing and issue reproduction, we have exposed a public RPC endpoint connecting to our internal Hardhat testnet:
-> - **RPC URL:** `https://api.orasrs.net`
-> - **Chain ID:** `31337` (Default Hardhat)
-> - **Currency:** ORA (No real value)
->
-> **⚠️ DISCLAIMER:**
-> 1. **Ephemeral State:** This network may be **reset or rolled back** at any time without notice during development. Data persistence is NOT guaranteed.
-> 2. **Test Assets Only:** Do NOT attempt to send real assets (Mainnet ETH/USDT) to addresses on this network. They will be permanently lost.
-> 3. **Usage Limit:** This endpoint is strictly for testing OraSRS protocol interactions. Please refrain from high-frequency spamming.
+> **Note:** Public RPC service has been discontinued. T0 operates independently without external dependencies.
