@@ -3,11 +3,11 @@
 [![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/srs-protocol/OraSRS-protocol)](https://github.com/srs-protocol/OraSRS-protocol/releases)
-[![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/00)
+[![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/00/)
 
 > 🇺🇸 **English Version: [Click here for the English README](./README.md)**
 
-> ⚠️ **测试阶段声明**: 本项目处于 Beta 测试阶段。详见 [快速开始](docs/01-getting-started.md)。
+> ⚠️ **测试阶段声明**: 本项目处于 Beta 测试阶段。详见 [快速开始](docs/01-getting-started_zh-CN.md)。
 
 OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为 IP 和域名提供风险评估。OraSRS 与传统的威胁情报服务不同，它不直接阻断流量，而是提供风险评分供客户端参考。
 
@@ -17,13 +17,13 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 
 | 文档 | 说明 |
 |------|------|
-| [**01-快速开始**](docs/01-getting-started.md) | 安装指南、部署模式选择 (Linux/Docker) |
-| [**02-用户指南**](docs/02-user-guide.md) | CLI 命令、SDK 使用、桌面客户端 |
-| [**03-OpenWrt & IoT**](docs/03-openwrt-iot.md) | OpenWrt 安装、IoT Shield、透明代理 |
-| [**04-核心架构**](docs/04-architecture.md) | 协议规范、原创机制、威胁情报系统 |
-| [**05-高级集成**](docs/05-integrations.md) | Wazuh 集成、HVAP (SSH保护)、浏览器扩展 |
-| [**06-学术与性能**](docs/06-academic-perf.md) | 论文引用、性能基准测试、17M抗压报告 |
-| [**07-Hardhat 服务**](docs/07-hardhat-service.md) | 本地开发链服务守护进程指南 |
+| [**01-快速开始**](docs/01-getting-started_zh-CN.md) | 安装指南、部署模式选择 (Linux/Docker) |
+| [**02-用户指南**](docs/02-user-guide_zh-CN.md) | CLI 命令、SDK 使用、桌面客户端 |
+| [**03-OpenWrt & IoT**](docs/03-openwrt-iot_zh-CN.md) | OpenWrt 安装、IoT Shield、透明代理 |
+| [**04-核心架构**](docs/04-architecture_zh-CN.md) | 协议规范、原创机制、威胁情报系统 |
+| [**05-高级集成**](docs/05-integrations_zh-CN.md) | Wazuh 集成、HVAP (SSH保护)、浏览器扩展 |
+| [**06-学术与性能**](docs/06-academic-perf_zh-CN.md) | 论文引用、性能基准测试、17M抗压报告 |
+| [**07-Hardhat 服务**](docs/07-hardhat-service_zh-CN.md) | 本地开发链服务守护进程指南 |
 
 ## 项目概述
 
@@ -48,6 +48,7 @@ OraSRS (Oracle Security Root Service) 是一个咨询式风险评分服务，为
 - **Linux 支持**：完善的 Linux 客户端和服务守护。
 - **OraSRS OpenWrt 客户端**：支持 OpenWrt 23.05+，提供 Hybrid/Edge 模式。
 - **T0初步验证完成**：试验性测试部分了从本地防护模块T0 
+
 ## ⚠️ Testing Environment & Public RPC / 测试环境与公网 RPC
 
 **Current Status:** Alpha / High-Frequency Debugging (高度调试阶段)

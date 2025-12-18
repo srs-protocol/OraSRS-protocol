@@ -91,11 +91,11 @@ OraSRS 集成了生产级威胁情报系统，具有以下特性：
 | 月带宽/客户端 | ~618KB |
 
 ## 📚 协议规范 / Protocol Specifications
-- [v0.1 规范文档](../SRS_PROTOCOL_SPEC.md)
-- [SecurityRiskAssessment v2.0 威胁情报协议](../OraSRS_v2.0_Threat_Intelligence_Protocol.md)
-- [共识参数白皮书](../CONSENSUS_PARAMETERS_WHITEPAPER.md)
-- [国密算法集成指南](../SM_CRYPTO_INTEGRATION.md)
-- [设计哲学](design.md)
+- [v0.1 规范文档](protocol/SRS_PROTOCOL_SPEC.md)
+- [SecurityRiskAssessment v2.0 威胁情报协议](protocol/OraSRS_v2.0_Threat_Intelligence_Protocol.md)
+- [共识参数白皮书](protocol/CONSENSUS_PARAMETERS_WHITEPAPER.md)
+- [国密算法集成指南](protocol/SM_CRYPTO_INTEGRATION.md)
+- [设计哲学](protocol/OraSRS_v2.0_Framework_Design.md)
 
 ## 🧩 智能合约 / Smart Contracts
 - [威胁情报协调合约](../contracts/ThreatIntelligenceCoordination.sol)

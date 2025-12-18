@@ -95,6 +95,6 @@ config iot_shield 'main'
 - 🏭 Industrial controllers (PLC/SCADA)
 
 **Related Documentation:**
-- [OpenWrt Client Guide](../OPENWRT_CLIENT_GUIDE.md)
-- [T0-T3 Defense Mechanisms](../OPENWRT_T0_T3_MECHANISMS.md)
-- [IoT Shield Design](../IOT_SHIELD.md)
+- [OpenWrt Client Guide](openwrt/OPENWRT_CLIENT_GUIDE.md)
+- [T0-T3 Defense Mechanisms](openwrt/OPENWRT_T0_T3_MECHANISMS.md)
+- [IoT Shield Design](openwrt/IOT_SHIELD.md)

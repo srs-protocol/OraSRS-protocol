@@ -46,14 +46,14 @@ Retry 4+: Wait 60 seconds (Max)
 
 ```bash
 # Automatically install and start all services
-sudo bash /home/Great/SRS-Protocol/deploy-hardhat-daemon.sh
+sudo bash /home/Great/SRS-Protocol/scripts/deploy/deploy-hardhat-daemon.sh
 ```
 
 ### Manual Deployment
 
 ```bash
 # 1. Install Service
-sudo bash /home/Great/SRS-Protocol/manage-hardhat-service.sh install
+sudo bash /home/Great/SRS-Protocol/scripts/tools/manage-hardhat-service.sh install
 
 # 2. Start Hardhat Node
 sudo systemctl start hardhat-node
@@ -94,16 +94,16 @@ sudo journalctl -u hardhat-node -n 50
 
 ```bash
 # Start Monitor
-sudo bash manage-hardhat-service.sh monitor
+sudo bash scripts/tools/manage-hardhat-service.sh monitor
 
 # Stop Monitor
-sudo bash manage-hardhat-service.sh monitor-stop
+sudo bash scripts/tools/manage-hardhat-service.sh monitor-stop
 
 # View Monitor Status
-sudo bash manage-hardhat-service.sh monitor-status
+sudo bash scripts/tools/manage-hardhat-service.sh monitor-status
 
 # Execute Health Check
-sudo bash manage-hardhat-service.sh health-check
+sudo bash scripts/tools/manage-hardhat-service.sh health-check
 
 # View Monitor Logs
 sudo tail -f /var/log/hardhat-monitor.log
@@ -113,7 +113,7 @@ sudo tail -f /var/log/hardhat-monitor.log
 
 ```bash
 # Test auto-restart function
-sudo bash manage-hardhat-service.sh test-restart
+sudo bash scripts/tools/manage-hardhat-service.sh test-restart
 ```
 
 ## Health Check Mechanism
@@ -154,8 +154,8 @@ sudo bash manage-hardhat-service.sh test-restart
 ├── hardhat-node.service              # systemd service config
 ├── hardhat-health-monitor.service    # monitor service config
 ├── hardhat-health-monitor.sh         # health monitor daemon
-├── manage-hardhat-service.sh         # service management script
-├── deploy-hardhat-daemon.sh          # one-click deployment script
+├── scripts/tools/manage-hardhat-service.sh         # service management script
+├── scripts/deploy/deploy-hardhat-daemon.sh          # one-click deployment script
 └── start-secure-hardhat-node.sh      # secure start script (legacy)
 
 /etc/systemd/system/

@@ -529,5 +529,5 @@ await client.rebuildCache();
 
 - [GitHub Repository](https://github.com/srs-protocol/OraSRS-protocol)
 - [API Documentation](../api.md)
-- [Client Implementation Guide](../CLIENT_IMPLEMENTATION_GUIDE.md)
+- [Client Implementation Guide](CLIENT_IMPLEMENTATION_GUIDE.md)
 - [Issue Tracker](https://github.com/srs-protocol/OraSRS-protocol/issues)

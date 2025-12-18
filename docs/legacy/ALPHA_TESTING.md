@@ -32,7 +32,7 @@
    - 协议本身完全开源（Apache 2.0 许可证）
    - 您可以自由部署私有的 OraSRS 网络
    - 私有网络**无需连接主协议链**，所有数据本地闭环
-   - 参见：[私有网络部署指南](docs/private-network-zh.md)
+   - 参见：[私有网络部署指南](../private-network-zh.md)
 
 2. **学习和研究**
    - 阅读源代码和学术论文
@@ -57,7 +57,7 @@
    - The protocol is fully open source (Apache 2.0 license)
    - You can freely deploy private OraSRS networks
    - Private networks **do not need to connect to the main protocol chain**, all data stays local
-   - See: [Private Network Deployment Guide](docs/private-network-zh.md)
+   - See: [Private Network Deployment Guide](../private-network-zh.md)
 
 2. **Learn and Research**
    - Read source code and academic papers

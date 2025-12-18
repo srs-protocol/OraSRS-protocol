@@ -93,8 +93,8 @@ console.log(data.response.risk_level);
 
 **完整文档 / Full Documentation:**
 
-- [SDK Usage Guide / SDK 使用指南](../SDK_USAGE_GUIDE.md)
-- [API Reference / API 参考](../api.md)
+- [SDK Usage Guide / SDK 使用指南](guides/SDK_USAGE_GUIDE.md)
+- [API Reference / API 参考](api.md)
 
 ## 💻 OraSRS 轻量级客户端 (桌面版)
 
@@ -115,5 +115,5 @@ npm run tauri dev
 ```
 
 ## 🧩 客户端库 / Client Libraries
-- [客户端实现指南 / Client Implementation Guide](../CLIENT_IMPLEMENTATION_GUIDE.md)
+- [客户端实现指南 / Client Implementation Guide](guides/CLIENT_IMPLEMENTATION_GUIDE.md)
 - Node.js: `npm install @SRA-client`

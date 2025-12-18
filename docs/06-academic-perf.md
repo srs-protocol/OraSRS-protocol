@@ -72,21 +72,21 @@ Edge Client Memory (RSS): 3.88 MB
 | File | Description | Link |
 |------|-------------|------|
 | `benchmark-kernel-acceleration.sh` | Comprehensive Performance Benchmark Script | [View Source](../benchmark-kernel-acceleration.sh) |
-| `verify-native-agent.sh` | Native Agent Memory Verification Script | [View Source](../verify-native-agent.sh) |
+| `verify-native-agent.sh` | Native Agent Memory Verification Script | [View Source](../test/verify-native-agent.sh) |
 | `src/agent/native_edge_agent.c` | Native Agent C Source | [View Source](../src/agent/native_edge_agent.c) |
-| `orasrs-edge-agent.py` | Python Lightweight Agent Source | [View Source](../orasrs-edge-agent.py) |
+| `orasrs-edge-agent.py` | Python Lightweight Agent Source | [View Source](../src/agent/orasrs-edge-agent.py) |
 | `docs/MEMORY_USAGE_EXPLANATION.md` | Detailed Memory Analysis Report | [View Doc](MEMORY_USAGE_EXPLANATION.md) |
 
 ### PoC Defense Report
 
 We conducted an extreme stress test on the OpenWrt client, successfully mitigating 17 million DDoS attacks.
 
-👉 [Read Full Report](../PoC_DEFENSE_REPORT.md)
+👉 [Read Full Report](performance/PoC_DEFENSE_REPORT.md)
 
 ## 🧪 Performance Testing Tools
-- [One-Click Performance Test Script](../run-performance-test.sh)
-- [IP Performance Test Script](../test-ip-performance-advanced.js)
-- [Precision and Sybil Test Script](../precision-sybil-test.js)
+- [One-Click Performance Test Script](../scripts/tools/run-performance-test.sh)
+- [IP Performance Test Script](../test/test-ip-performance-advanced.js)
+- [Precision and Sybil Test Script](../test/precision-sybil-test.js)
 - [Economic Model Simulation Script](../economic-simulation.js)
-- [Performance Test Report](../oraSRS-client-performance-report.json)
-- [Performance Test Guide](../PERFORMANCE_TEST_GUIDE.md)
+- [Performance Test Report](../results/oraSRS-client-performance-report.json)
+- [Performance Test Guide](performance/PERFORMANCE_TEST_GUIDE.md)

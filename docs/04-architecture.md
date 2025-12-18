@@ -93,11 +93,11 @@ OraSRS integrates a production-grade threat intelligence system with the followi
 | Monthly Bandwidth/Client | ~618KB |
 
 ## 📚 Protocol Specifications
-- [v0.1 Specification Document](../SRS_PROTOCOL_SPEC.md)
-- [SecurityRiskAssessment v2.0 Threat Intelligence Protocol](../OraSRS_v2.0_Threat_Intelligence_Protocol.md)
-- [Consensus Parameters Whitepaper](../CONSENSUS_PARAMETERS_WHITEPAPER.md)
-- [SM Crypto Integration Guide](../SM_CRYPTO_INTEGRATION.md)
-- [Design Philosophy](design.md)
+- [v0.1 Specification Document](protocol/SRS_PROTOCOL_SPEC.md)
+- [SecurityRiskAssessment v2.0 Threat Intelligence Protocol](protocol/OraSRS_v2.0_Threat_Intelligence_Protocol.md)
+- [Consensus Parameters Whitepaper](protocol/CONSENSUS_PARAMETERS_WHITEPAPER.md)
+- [SM Crypto Integration Guide](protocol/SM_CRYPTO_INTEGRATION.md)
+- [Design Philosophy](protocol/OraSRS_v2.0_Framework_Design.md)
 
 ## 🧩 Smart Contracts
 - [Threat Intelligence Coordination Contract](../contracts/ThreatIntelligenceCoordination.sol)

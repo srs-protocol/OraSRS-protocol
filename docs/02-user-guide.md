@@ -86,8 +86,8 @@ console.log(data.response.risk_level);
 
 **Full Documentation:**
 
-- [SDK Usage Guide](../SDK_USAGE_GUIDE.md)
-- [API Reference](../api.md)
+- [SDK Usage Guide](guides/SDK_USAGE_GUIDE.md)
+- [API Reference](api.md)
 
 ## 💻 OraSRS Lite Client (Desktop)
 
@@ -108,5 +108,5 @@ npm run tauri dev
 ```
 
 ## 🧩 Client Libraries
-- [Client Implementation Guide](../CLIENT_IMPLEMENTATION_GUIDE.md)
+- [Client Implementation Guide](guides/CLIENT_IMPLEMENTATION_GUIDE.md)
 - Node.js: `npm install @SRA-client`

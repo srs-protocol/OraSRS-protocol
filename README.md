@@ -9,7 +9,6 @@
 
 <img width="1589" height="921" alt="a0646081c5604d476c4e38b17e56dcb8" src="https://github.com/user-attachments/assets/51990e27-b6a8-4f6b-bbba-905455c7c446" />
 
-
 "The Reference Implementation of the IETF Decentralized Threat Signaling Protocol (DTSP). Achieving data-center-grade DDoS mitigation on resource-constrained IoT edge devices via kernel offloading."
 
 ## Key Achievements
@@ -26,6 +25,7 @@ One-click installation for Linux/OpenWrt:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
+```
 
 ### ⚠️ Activation & Verification (Important)
 
@@ -60,6 +60,7 @@ For detailed information, please refer to the [documentation directory](docs/):
 *   [**Architecture**](docs/04-architecture.md)
 *   [**Integrations**](docs/05-integrations.md)
 *   [**Academic & Performance**](docs/06-academic-perf.md)
+
 > [!IMPORTANT]
 > **🚧 TESTNET NOTICE & PUBLIC RPC ENDPOINT**
 >

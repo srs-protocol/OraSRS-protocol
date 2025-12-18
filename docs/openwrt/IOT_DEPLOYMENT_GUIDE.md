@@ -480,10 +480,10 @@ nft list table inet orasrs
 
 ## 更多资源 / More Resources
 
-- [主项目 README](../README.md)
-- [OpenWrt 安装指南](../OPENWRT_INSTALLATION_GUIDE.md)
-- [透明代理设置](../TRANSPARENT_PROXY_SETUP.md)
-- [IoT Shield 设计](../IOT_SHIELD.md)
+- [主项目 README](../../README.md)
+- [OpenWrt 安装指南](OPENWRT_INSTALLATION_GUIDE.md)
+- [透明代理设置](IOT_SHIELD.md)
+- [IoT Shield 设计](IOT_SHIELD.md)
 - [GitHub Issues](https://github.com/srs-protocol/OraSRS-protocol/issues)
 
 ## 支持 / Support

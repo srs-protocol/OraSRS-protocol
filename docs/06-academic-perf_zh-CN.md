@@ -72,21 +72,21 @@ Edge Client Memory (RSS): 3.88 MB
 | 文件 | 说明 | 链接 |
 |------|------|------|
 | `benchmark-kernel-acceleration.sh` | 综合性能基准测试脚本 | [查看源码](../benchmark-kernel-acceleration.sh) |
-| `verify-native-agent.sh` | 原生代理内存验证脚本 | [查看源码](../verify-native-agent.sh) |
+| `verify-native-agent.sh` | 原生代理内存验证脚本 | [查看源码](../test/verify-native-agent.sh) |
 | `src/agent/native_edge_agent.c` | 原生代理 C 源码 | [查看源码](../src/agent/native_edge_agent.c) |
-| `orasrs-edge-agent.py` | Python 轻量代理源码 | [查看源码](../orasrs-edge-agent.py) |
+| `orasrs-edge-agent.py` | Python 轻量代理源码 | [查看源码](../src/agent/orasrs-edge-agent.py) |
 | `docs/MEMORY_USAGE_EXPLANATION.md` | 详细内存分析报告 | [查看文档](MEMORY_USAGE_EXPLANATION.md) |
 
 ### 实战防御报告 / PoC Defense Report
 
 我们对 OpenWrt 客户端进行了极限压力测试，成功抵御了 1700万次 DDoS 攻击。
 
-👉 [阅读完整报告 / Read Full Report](../PoC_DEFENSE_REPORT.md)
+👉 [阅读完整报告 / Read Full Report](performance/PoC_DEFENSE_REPORT.md)
 
 ## 🧪 性能测试工具 / Performance Testing Tools
-- [一键性能测试脚本](../run-performance-test.sh)
-- [IP性能测试脚本](../test-ip-performance-advanced.js)
-- [精度和抗女巫测试脚本](../precision-sybil-test.js)
+- [一键性能测试脚本](../scripts/tools/run-performance-test.sh)
+- [IP性能测试脚本](../test/test-ip-performance-advanced.js)
+- [精度和抗女巫测试脚本](../test/precision-sybil-test.js)
 - [经济模型仿真脚本](../economic-simulation.js)
-- [性能测试报告](../oraSRS-client-performance-report.json)
-- [性能测试指南](../PERFORMANCE_TEST_GUIDE.md)
+- [性能测试报告](../results/oraSRS-client-performance-report.json)
+- [性能测试指南](performance/PERFORMANCE_TEST_GUIDE.md)

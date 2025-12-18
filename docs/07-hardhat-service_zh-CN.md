@@ -46,14 +46,14 @@
 
 ```bash
 # 自动安装和启动所有服务
-sudo bash /home/Great/SRS-Protocol/deploy-hardhat-daemon.sh
+sudo bash /home/Great/SRS-Protocol/scripts/deploy/deploy-hardhat-daemon.sh
 ```
 
 ### 手动部署
 
 ```bash
 # 1. 安装服务
-sudo bash /home/Great/SRS-Protocol/manage-hardhat-service.sh install
+sudo bash /home/Great/SRS-Protocol/scripts/tools/manage-hardhat-service.sh install
 
 # 2. 启动 Hardhat 节点
 sudo systemctl start hardhat-node
@@ -94,16 +94,16 @@ sudo journalctl -u hardhat-node -n 50
 
 ```bash
 # 启动监控
-sudo bash manage-hardhat-service.sh monitor
+sudo bash scripts/tools/manage-hardhat-service.sh monitor
 
 # 停止监控
-sudo bash manage-hardhat-service.sh monitor-stop
+sudo bash scripts/tools/manage-hardhat-service.sh monitor-stop
 
 # 查看监控状态
-sudo bash manage-hardhat-service.sh monitor-status
+sudo bash scripts/tools/manage-hardhat-service.sh monitor-status
 
 # 执行健康检查
-sudo bash manage-hardhat-service.sh health-check
+sudo bash scripts/tools/manage-hardhat-service.sh health-check
 
 # 查看监控日志
 sudo tail -f /var/log/hardhat-monitor.log
@@ -113,7 +113,7 @@ sudo tail -f /var/log/hardhat-monitor.log
 
 ```bash
 # 测试自动重启功能
-sudo bash manage-hardhat-service.sh test-restart
+sudo bash scripts/tools/manage-hardhat-service.sh test-restart
 ```
 
 ## 健康检查机制
@@ -154,8 +154,8 @@ sudo bash manage-hardhat-service.sh test-restart
 ├── hardhat-node.service              # systemd 服务配置
 ├── hardhat-health-monitor.service    # 监控服务配置
 ├── hardhat-health-monitor.sh         # 健康监控守护进程
-├── manage-hardhat-service.sh         # 服务管理脚本
-├── deploy-hardhat-daemon.sh          # 一键部署脚本
+├── scripts/tools/manage-hardhat-service.sh         # 服务管理脚本
+├── scripts/deploy/deploy-hardhat-daemon.sh          # 一键部署脚本
 └── start-secure-hardhat-node.sh      # 安全启动脚本（旧版）
 
 /etc/systemd/system/

@@ -286,4 +286,4 @@ CHECK_INTERVAL=60
 
 - [Hardhat 官方文档](https://hardhat.org/)
 - [systemd 服务管理](https://www.freedesktop.org/software/systemd/man/systemd.service.html)
-- [OraSRS 协议文档](../README.md)
+- [OraSRS 协议文档](../../README.md)

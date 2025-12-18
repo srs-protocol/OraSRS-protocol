@@ -484,7 +484,7 @@ opkg upgrade orasrs-client
 
 ## 更多资源 / More Resources
 
-- [主项目 README](../README.md)
-- [SDK 使用指南](../SDK_USAGE_GUIDE.md)
-- [客户端实现指南](../CLIENT_IMPLEMENTATION_GUIDE.md)
-- [IoT Shield 设计文档](../IOT_SHIELD.md)
+- [主项目 README](../../README.md)
+- [SDK 使用指南](../guides/SDK_USAGE_GUIDE.md)
+- [客户端实现指南](../guides/CLIENT_IMPLEMENTATION_GUIDE.md)
+- [IoT Shield 设计文档](IOT_SHIELD.md)

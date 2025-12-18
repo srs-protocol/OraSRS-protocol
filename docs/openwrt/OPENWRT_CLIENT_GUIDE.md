@@ -689,7 +689,7 @@ cp /tmp/orasrs.bak /etc/config/orasrs
 - [T0-T3 防御机制详解](OPENWRT_T0_T3_MECHANISMS.md)
 - [T3 模块优化文档](OPENWRT_T3_OPTIMIZATION.md)
 - [部署指南](OPENWRT_DEPLOYMENT_GUIDE.md)
-- [快速参考](QUICK_DEPLOY_REFERENCE.md)
+- [快速参考](../../docs/guides/QUICK_DEPLOY_REFERENCE.md)
 
 ---
 
