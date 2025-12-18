@@ -1,7 +1,15 @@
 #!/bin/bash
 
-# OraSRS (Oracle Security Root Service) 一键安装脚本
-# 适用于 Linux 系统
+# OraSRS Installation Script - Final Version (v3.3.6)
+# -----------------------------------------------------------------------
+# [IMPORTANT] Project Status: CONCLUDED / 已结项
+# This is the final stable version of the OraSRS Hybrid. 
+# Optimized for Kernel T0 Defense (40M PPS @ 512MB RAM).
+# -----------------------------------------------------------------------
+# 说明：本项目已达成科研目标，即日起停止代码更新及公网 RPC 服务。
+# 核心逻辑已定格为 IETF 草案标准：draft-luo-orasrs-decentralized-threat-signaling-01
+# Scientific Reference: DOI 10.31224/5985
+# -----------------------------------------------------------------------
 
 set -e  # 遇到错误时退出
 
@@ -470,7 +478,12 @@ start_service() {
 
 # 显示安装完成信息
 show_completion_info() {
-    print_success "OraSRS客户端安装完成！"
+    echo "-----------------------------------------------------------------------"
+    echo "OraSRS Agent v3.3.6 installed successfully."
+    echo "Performance: 0.001ms Kernel Latency validated."
+    echo "Status: This is the FINAL release. No further updates will be provided."
+    echo "Scientific Reference: DOI 10.31224/5985"
+    echo "-----------------------------------------------------------------------"
     echo
     echo -e "${GREEN}CLI命令 (推荐):${NC}"
     echo "  查看状态: orasrs-cli status"
@@ -490,9 +503,6 @@ show_completion_info() {
     echo "  查看状态: sudo systemctl status orasrs-client"
     echo "  查看日志: sudo journalctl -u orasrs-client -f"
     echo
-    echo -e "${GREEN}客户端更新:${NC}"
-    echo "  一键更新: curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/update-client.sh | bash"
-    echo
     echo -e "${GREEN}API端点:${NC}"
     echo "  健康检查: http://localhost:3006/health"
     echo "  风险查询: http://localhost:3006/orasrs/v1/query?ip=1.2.3.4"
@@ -502,8 +512,12 @@ show_completion_info() {
     echo -e "${GREEN}重要提醒:${NC}"
     echo "  此服务提供咨询建议，最终决策由客户端做出"
     echo "  OraSRS不直接阻断流量，而是提供风险评估供客户端参考"
+    echo "  T2/T3 模块已禁用，客户端仅以 T0 内核加速模式独立运行"
     echo
-    print_success "安装完成！请检查服务状态并根据需要调整配置。"
+    echo "-----------------------------------------------------------------------"
+    echo "创新源于拔网线，真理定格于 v3.3.6。"
+    echo "Innovation born from pulling the cable, truth crystallized in v3.3.6."
+    echo "-----------------------------------------------------------------------"
 }
 
 # 主函数

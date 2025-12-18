@@ -5,6 +5,13 @@
         "blockchainEndpoint": "https://api.orasrs.net",
         "chainId": 8888
     },
+    "t2t3": {
+        "enabled": false,
+        "comment": "T2/T3 modules (decentralized consensus) are experimental and disabled by default. To enable for testing, set enabled=true and configure rpcEndpoint below.",
+        "rpcEndpoint": "https://api.orasrs.net",
+        "rpcEndpoint_comment": "For testing: Use https://api.orasrs.net (Chain ID: 31337, Hardhat testnet). See project documentation for details.",
+        "chainId": 31337
+    },
     "egressProtection": {
         "enabled": true,
         "mode": "monitor",

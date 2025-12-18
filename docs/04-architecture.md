@@ -1,5 +1,7 @@
 # Core Architecture
 
+[![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
+
 <img width="1024" height="559" alt="47f4b9dfc9849f605f62647fb0b0f917" src="https://github.com/user-attachments/assets/81492cea-400d-4781-88c1-f88a5390a6c1" />
 
 > 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./04-architecture_zh-CN.md)**
@@ -8,7 +10,7 @@
 
 OraSRS implements the **Decentralized Threat Signaling Protocol (DTSP)** as defined in the following IETF Internet-Draft:
 
-> **[draft-luo-orasrs-decentralized-threat-signaling-00](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)**
+> **[draft-luo-orasrs-decentralized-threat-signaling-01](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)**
 >
 > * **Title:** Decentralized Threat Signaling Protocol (DTSP) using OraSRS
 > * **Status:** Active Internet-Draft
@@ -16,7 +18,7 @@ OraSRS implements the **Decentralized Threat Signaling Protocol (DTSP)** as defi
 
 To cite this specification:
 ```text
-Luo, Z. (2025). Decentralized Threat Signaling Protocol (DTSP) using OraSRS. IETF Internet-Draft draft-luo-orasrs-decentralized-threat-signaling-00.
+Luo, Z. (2025). Decentralized Threat Signaling Protocol (DTSP) using OraSRS. IETF Internet-Draft draft-luo-orasrs-decentralized-threat-signaling-01.
 ```
 
 ## 🏆 Original Innovation Declaration
@@ -93,6 +95,7 @@ OraSRS integrates a production-grade threat intelligence system with the followi
 | Monthly Bandwidth/Client | ~618KB |
 
 ## 📚 Protocol Specifications
+- [Design Rationale](protocol/DESIGN_RATIONALE.md) - Philosophy and approach behind OraSRS
 - [v0.1 Specification Document](protocol/SRS_PROTOCOL_SPEC.md)
 - [SecurityRiskAssessment v2.0 Threat Intelligence Protocol](protocol/OraSRS_v2.0_Threat_Intelligence_Protocol.md)
 - [Consensus Parameters Whitepaper](protocol/CONSENSUS_PARAMETERS_WHITEPAPER.md)

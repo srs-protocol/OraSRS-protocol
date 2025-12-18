@@ -1,12 +1,14 @@
 # 核心架构 / Core Architecture
 
+[![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
+
 > 🇺🇸 **English Version: [Click here for the English Documentation](./04-architecture.md)**
 
 ## 📜 Protocol Specification (协议规范)
 
 OraSRS implements the **Decentralized Threat Signaling Protocol (DTSP)** as defined in the following IETF Internet-Draft:
 
-> **[draft-luo-orasrs-decentralized-threat-signaling-00](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)**
+> **[draft-luo-orasrs-decentralized-threat-signaling-01](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)**
 >
 > * **Title:** Decentralized Threat Signaling Protocol (DTSP) using OraSRS
 > * **Status:** Active Internet-Draft
@@ -14,7 +16,7 @@ OraSRS implements the **Decentralized Threat Signaling Protocol (DTSP)** as defi
 
 To cite this specification:
 ```text
-Luo, Z. (2025). Decentralized Threat Signaling Protocol (DTSP) using OraSRS. IETF Internet-Draft draft-luo-orasrs-decentralized-threat-signaling-00.
+Luo, Z. (2025). Decentralized Threat Signaling Protocol (DTSP) using OraSRS. IETF Internet-Draft draft-luo-orasrs-decentralized-threat-signaling-01.
 ```
 
 ## 🏆 原创机制声明 / Original Innovation Declaration
@@ -91,6 +93,7 @@ OraSRS 集成了生产级威胁情报系统，具有以下特性：
 | 月带宽/客户端 | ~618KB |
 
 ## 📚 协议规范 / Protocol Specifications
+- [设计原理](protocol/DESIGN_RATIONALE_zh-CN.md) - OraSRS 背后的设计哲学与方法
 - [v0.1 规范文档](protocol/SRS_PROTOCOL_SPEC.md)
 - [SecurityRiskAssessment v2.0 威胁情报协议](protocol/OraSRS_v2.0_Threat_Intelligence_Protocol.md)
 - [共识参数白皮书](protocol/CONSENSUS_PARAMETERS_WHITEPAPER.md)

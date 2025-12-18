@@ -865,3 +865,67 @@ curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-c
 - 三层架构 (边缘/共识/智能)
 - 国密算法支持
 - 跨链威胁情报同步
+
+---
+
+## 引用与署名 / Citation & Attribution
+
+OraSRS 是一个公开的科研项目和开放协议。  
+如果你在以下场景中使用了本项目的 **框架、协议设计(T0–T3 架构)、DTSP 思路** 或直接集成了 **OraSRS‑Core (T0)**:
+
+- 在产品 / 固件 / 网关 中集成本项目的防御框架;
+- 在论文、报告中使用了本项目的协议设计或实验数据;
+- 在自己的系统中实现了兼容 DTSP 的威胁信令;
+
+请在你的 **产品说明书、技术白皮书或学术论文** 中,至少做如下引用和署名。
+
+### 学术引用 / Academic Citation
+
+推荐引用如下预印本(带 DOI)和 IETF 草稿:
+
+**中文:**
+
+> 罗子谦. OraSRS:具有限时风险执行的合规轻量级去中心化威胁情报协议[J/OL]. Engineering Archive, 2025. DOI: 10.31224/5985.  
+> IETF Internet‑Draft: Luo, Z. "Decentralized Threat Signaling Protocol (DTSP) using OraSRS", draft‑luo‑orasrs‑decentralized‑threat‑signaling‑00.
+
+**英文:**
+
+> Luo, Z. (2025). *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time‑Bounded Risk Enforcement.* Engineering Archive. https://doi.org/10.31224/5985  
+> Luo, Z. *Decentralized Threat Signaling Protocol (DTSP) using OraSRS.* IETF Internet‑Draft, draft‑luo‑orasrs‑decentralized‑threat‑signaling‑00.
+
+**BibTeX 示例:**
+
+```bibtex
+@article{luo2025orasrs,
+  title   = {OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement},
+  author  = {Luo, ZiQian},
+  year    = {2025},
+  doi     = {10.31224/5985},
+  url     = {https://doi.org/10.31224/5985},
+  publisher = {Engineering Archive},
+  note    = {Preprint. Code available at: https://github.com/srs-protocol/OraSRS-protocol}
+}
+```
+
+### 产品说明书中的参考表述 / Suggested Wording for Product Manuals
+
+如果你的产品使用了 OraSRS 的 T0 框架或整体设计,建议在产品说明书或技术文档中加入类似表述:
+
+**中文示例:**
+
+> 本设备的边缘防护能力基于 OraSRS 协议提出的 T0 内核防御设计[罗子谦, 2025],  
+> 在资源受限环境下实现了对随机源 SYN 洪水和 C2 外连的本地拦截。
+
+**英文示例:**
+
+> The edge defense capability of this device is based on the T0 kernel defense design of the OraSRS protocol [Luo, 2025],  
+> providing local mitigation against random‑source SYN floods and C2 outbound connections on resource‑constrained hardware.
+
+---
+
+## 相关文档 / Related Documentation
+
+- [设计原理 / Design Rationale](DESIGN_RATIONALE.md) | [中文版](DESIGN_RATIONALE_zh-CN.md)
+- [IETF Draft](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)
+- [架构文档 / Architecture](../04-architecture.md)
+

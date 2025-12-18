@@ -2,8 +2,17 @@
 
 [![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/srs-protocol/OraSRS-protocol)](https://github.com/srs-protocol/OraSRS-protocol/releases)
-[![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/00/)
+[![Release](https://img.shields.io/badge/Release-v3.3.6_FINAL-red)](https://github.com/srs-protocol/OraSRS-protocol/releases)
+[![IETF Draft](https://img.shields.io/badge/IETF-draft--01-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/01/)
+
+> **🎯 Project Concluded | 项目已结项**
+>
+> **Performance Target Met:** 0.001ms Query Latency | 40M PPS Mitigation  
+> **Final Version:** v3.3.6 - No further updates will be provided  
+> **Protocol Standardized:** IETF draft-luo-orasrs-decentralized-threat-signaling-01
+>
+> *创新源于拔网线，真理定格于 v3.3.6。*  
+> *Innovation born from pulling the cable, truth crystallized in v3.3.6.*
 
 > 🇨🇳 **中文用户：[点击这里查看中文文档 (Chinese Documentation)](./README_zh-CN.md)**
 
@@ -58,6 +67,8 @@ For detailed information, please refer to the [documentation directory](docs/):
 *   [**User Guide**](docs/02-user-guide.md)
 *   [**OpenWrt & IoT**](docs/03-openwrt-iot.md)
 *   [**Architecture**](docs/04-architecture.md)
+*   [**DTSP Protocol Specification**](docs/protocol/DTSP_SPECIFICATION.md) - Complete protocol specification with T0-T3 communication logic
+*   [**Design Rationale**](docs/protocol/DESIGN_RATIONALE.md) - Philosophy and approach behind OraSRS
 *   [**Integrations**](docs/05-integrations.md)
 *   [**Academic & Performance**](docs/06-academic-perf.md)
 
@@ -66,7 +77,13 @@ For detailed information, please refer to the [documentation directory](docs/):
 >
 > This project is currently in a **High-Frequency Debugging Phase**. The blockchain interaction relies on a custom Hardhat Protocol Chain.
 >
-> **Public RPC for Reproduction:**
+> **T2/T3 Modules Status:**
+> - **T0 Module (Local Enforcement):** ✅ **Stable & Active** - Fully tested and production-ready
+> - **T2/T3 Modules (Decentralized Consensus):** ⚠️ **Experimental / Disabled by Default**
+>   - The logic for blockchain querying and risk IP consensus is implemented but **disabled by default** to ensure client stability on resource-constrained devices
+>   - To enable T2/T3 for testing, manually configure `t2t3.enabled: true` in `user-config.json` and set the RPC endpoint
+>
+> **Public RPC for Testing T2/T3:**
 > To facilitate testing and issue reproduction, we have exposed a public RPC endpoint connecting to our internal Hardhat testnet:
 > - **RPC URL:** `https://api.orasrs.net`
 > - **Chain ID:** `31337` (Default Hardhat)

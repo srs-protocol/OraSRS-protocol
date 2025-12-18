@@ -83,7 +83,88 @@ We conducted an extreme stress test on the OpenWrt client, successfully mitigati
 
 👉 [Read Full Report](performance/PoC_DEFENSE_REPORT.md)
 
+---
+
+## 🎯 Benchmark Standard for Researchers
+
+### Reference Benchmark Script
+
+We encourage researchers and implementers to use our standardized benchmark script as a **comparison baseline** for DTSP implementations:
+
+```bash
+./benchmark-kernel-acceleration.sh
+```
+
+### Why Use This Benchmark?
+
+1. **Reproducibility**: Standardized test methodology
+2. **Comparability**: Common baseline for performance claims
+3. **Transparency**: Open-source, auditable test procedures
+4. **Real-world**: Tests actual threat detection scenarios
+
+### Benchmark Metrics
+
+The reference benchmark measures:
+
+| Metric | Target | Reference Result (v3.3.6) |
+|--------|--------|---------------------------|
+| **API Latency (P95)** | < 50ms | 19-24ms ✅ |
+| **eBPF Query Time** | < 0.04ms | 0.001ms ✅ (40x better) |
+| **Throughput (Concurrent 10-50)** | > 1000 req/s | 1162 req/s ✅ |
+| **Memory Usage (1500 threats)** | < 50MB | 25.45 MB ✅ |
+| **Stress Test Success Rate** | 100% | 100% (38,766 requests) ✅ |
+
+### How to Compare Your Implementation
+
+If you're implementing DTSP or a similar protocol, please:
+
+1. **Run the benchmark** on comparable hardware
+2. **Report all metrics** (not just favorable ones)
+3. **Document your environment**:
+   - CPU cores and model
+   - Available RAM
+   - Kernel version
+   - eBPF support (yes/no)
+4. **Include P50, P95, P99 latencies** (not just averages)
+5. **Test with same dataset size** (1500+ threat entries)
+6. **Cite this work** if using our benchmark:
+
+```bibtex
+@article{luo2025orasrs,
+  title={OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement},
+  author={Luo, ZiQian},
+  year={2025},
+  doi={10.31224/5985},
+  url={https://doi.org/10.31224/5985},
+  publisher={Engineering Archive}
+}
+```
+
+### Benchmark Comparison Template
+
+When publishing results, we recommend this format:
+
+```markdown
+## Performance Comparison
+
+| Implementation | API Latency | eBPF Query | Throughput | Memory |
+|----------------|-------------|------------|------------|--------|
+| OraSRS (baseline) | 24ms | 0.001ms | 1162 req/s | 25MB |
+| Your Implementation | Xms | Xms | X req/s | XMB |
+
+**Test Environment**: [Your specs]
+**Dataset Size**: [Number of threats]
+**Benchmark Script**: benchmark-kernel-acceleration.sh
+```
+
+### Latest Benchmark Report
+
+📊 [View Latest Benchmark Results](performance/KERNEL_ACCELERATION_BENCHMARK.md) (2025-12-19)
+
+---
+
 ## 🧪 Performance Testing Tools
+- [Kernel Acceleration Benchmark Report](performance/KERNEL_ACCELERATION_BENCHMARK.md) - Latest benchmark results (2025-12-19)
 - [One-Click Performance Test Script](../scripts/tools/run-performance-test.sh)
 - [IP Performance Test Script](../test/test-ip-performance-advanced.js)
 - [Precision and Sybil Test Script](../test/precision-sybil-test.js)
