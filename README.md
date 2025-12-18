@@ -82,6 +82,7 @@ In the early PoC phase, OraSRS used a protocol chain to record some threat intel
   - Disabled by default to ensure maximum stability and predictable behavior;
   - Can theoretically be enabled in `user-config.json` for local experiments, **but no support is provided, and no public RPC / protocol chain services are offered**;
   - For distribution/consensus capabilities, it is recommended to implement a backend suitable for your scenario (centralized DB, consortium chain, internal control service, etc.) based on the DTSP protocol specification.
+  > **Enterprise / Consortium Integration**: The T2/T3 consensus layer is disabled in the public release to ensure simplicity. Organizations requiring inter-node threat signaling, global reputation synchronization, or consortium blockchain integration based on the DTSP standard should reference the protocol specification or contact the author for architectural consulting.
 
 ## Documentation
 
