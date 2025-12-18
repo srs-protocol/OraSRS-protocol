@@ -26,7 +26,7 @@ One-click installation for Linux/OpenWrt:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/srs-protocol/OraSRS-protocol/lite-client/install-orasrs-client.sh | bash
-```
+
 ### ⚠️ Activation & Verification (Important)
 
 Currently, for the OpenWrt client, you need to manually activate the firewall rules after installation:
@@ -37,7 +37,7 @@ sh /etc/firewall.user
 
 # 2. Restart firewall to apply changes
 /etc/init.d/firewall restart
-
+```
 ## Documentation
 
 For detailed information, please refer to the [documentation directory](docs/):
