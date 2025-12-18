@@ -3,7 +3,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/srs-protocol/OraSRS-protocol)](https://github.com/srs-protocol/OraSRS-protocol/releases)
-[![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)]((https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/00))
+[![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/00)
 
 > 🇺🇸 **English Version: [Click here for the English README](./README.md)**
 
