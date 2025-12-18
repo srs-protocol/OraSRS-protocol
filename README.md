@@ -60,3 +60,18 @@ For detailed information, please refer to the [documentation directory](docs/):
 *   [**Architecture**](docs/04-architecture.md)
 *   [**Integrations**](docs/05-integrations.md)
 *   [**Academic & Performance**](docs/06-academic-perf.md)
+> [!IMPORTANT]
+> **🚧 TESTNET NOTICE & PUBLIC RPC ENDPOINT**
+>
+> This project is currently in a **High-Frequency Debugging Phase**. The blockchain interaction relies on a custom Hardhat Protocol Chain.
+>
+> **Public RPC for Reproduction:**
+> To facilitate testing and issue reproduction, we have exposed a public RPC endpoint connecting to our internal Hardhat testnet:
+> - **RPC URL:** `https://api.orasrs.net`
+> - **Chain ID:** `31337` (Default Hardhat)
+> - **Currency:** ORA (No real value)
+>
+> **⚠️ DISCLAIMER:**
+> 1. **Ephemeral State:** This network may be **reset or rolled back** at any time without notice during development. Data persistence is NOT guaranteed.
+> 2. **Test Assets Only:** Do NOT attempt to send real assets (Mainnet ETH/USDT) to addresses on this network. They will be permanently lost.
+> 3. **Usage Limit:** This endpoint is strictly for testing OraSRS protocol interactions. Please refrain from high-frequency spamming.
