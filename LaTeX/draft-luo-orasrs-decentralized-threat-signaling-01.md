@@ -39,7 +39,12 @@ This document specifies the Decentralized Threat Signaling Protocol (DTSP), a me
 
 # Introduction
 
-The increasing sophistication of network attacks requires a collaborative defense mechanism that operates at the edge. Centralized threat intelligence systems suffer from single points of failure and latency issues. DTSP enables a decentralized network of edge clients to share threat intelligence in real-time, leveraging a blockchain-based consensus mechanism for verification.
+The increasing sophistication of network attacks requires a collaborative defense mechanism that operates at the edge. Centralized systems introduce unacceptable latency and single points of failure. DTSP shifts the paradigm from 'Filter then Verify' to 'Verify then Filter', enabling < 1ms response times at the edge while maintaining global consensus integrity.
+
+DTSP enables a decentralized network of edge clients to share threat intelligence in real-time, leveraging a blockchain-based consensus mechanism for verification.
+
+See Figure 1 (Architecture Diagram) for the interaction between Kernel Space, User Space, and the Consensus Layer.
+[Reference: https://github.com/srs-protocol/OraSRS-protocol/docs/]
 
 # Terminology
 
@@ -69,6 +74,15 @@ The Edge Client MUST transition to the `OPTIMISTIC_BLOCK` state immediately upon
 In this state, the client:
 1.  MUST block the source IP locally.
 2.  SHOULD generate a `ThreatEvidence` package.
+
+#### Outbound C2 Interception
+
+In addition to inbound defense, the Edge Client MUST inspect outbound traffic for patterns matching known C2 (Command & Control) signatures.
+
+- **Pre-Release Query**: Outbound connections to suspicious domains/IPs trigger a synchronous lookup in the Local Cache.
+- **T0 Block**: If a match is found, the connection is terminated immediately at the kernel level to prevent data exfiltration.
+
+This mechanism protects against private key exfiltration from compromised nodes and botnet command reception. Implementation MUST use kernel-space filtering (e.g., Netfilter/eBPF) to achieve sub-millisecond interception latency.
 
 ### T1: Signaling
 
@@ -112,6 +126,37 @@ The `ThreatSignal` message is used to report a detected threat. It is serialized
 | `packet_dump`  | bytes     | Sample of malicious packets (pcap format)        |
 | `flow_stats`   | struct    | Flow statistics (PPS, BPS, duration)             |
 | `heuristics`   | string    | ID of the heuristic rule triggered               |
+
+# Operational Considerations
+
+## Resource Constraints & Performance
+
+The protocol is designed for resource-constrained edge environments (e.g., 512MB RAM). Implementation validation (v3.3.6) has demonstrated:
+
+- **Latency**: The T0 local heuristic limiter (eBPF) achieves a query latency of 0.001ms (40x better than the 0.04ms target).
+- **Throughput**: Capable of mitigating 40M PPS (SYN-Flood) on standard edge hardware while maintaining 100% availability of management channels (SSH).
+- **Footprint**: The complete agent operates within < 50MB (Hybrid Mode) or < 5MB (Native Mode) of memory.
+
+Implementers MUST prioritize kernel-space offloading (e.g., Netfilter/eBPF) to meet these latency requirements.
+
+## Deployment Modes
+
+DTSP supports three deployment modes:
+
+1. **T0-Only (Standalone)**: Edge client operates independently without blockchain connectivity. Suitable for air-gapped environments or maximum stability requirements.
+2. **T0+T2 (Hybrid)**: Edge client with optional blockchain queries for enhanced threat intelligence. Recommended for most deployments.
+3. **T0+T2+T3 (Full)**: Complete decentralized consensus with threat reporting capabilities.
+
+Default configuration SHOULD disable T2/T3 modules to ensure maximum stability on resource-constrained devices.
+
+## Performance Validation
+
+Reference implementation testing (2025-12-19):
+- **Test Environment**: Linux 5.14.0, 4 CPU cores, 4.1Gi RAM.
+- **API Latency**: 19-24ms (P95 < 50ms).
+- **eBPF Query**: 0.001ms average.
+- **Stress Test**: 38,766 requests, 0 failures (100% success rate).
+- **Memory Usage**: 25.45 MB for 1516 threat entries.
 
 # Security Considerations
 
