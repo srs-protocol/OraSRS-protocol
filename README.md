@@ -38,6 +38,12 @@ sh /etc/firewall.user
 # 2. Restart firewall to apply changes
 /etc/init.d/firewall restart
 ```
+Verify that OraSRS is protecting your device:
+
+```Bash
+
+iptables -nvL orasrs_chain
+```
 ## Documentation
 
 For detailed information, please refer to the [documentation directory](docs/):
