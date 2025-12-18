@@ -65,7 +65,7 @@ Luo, Z. (2025). Decentralized Threat Signaling Protocol (DTSP) using OraSRS. IET
 - **National Standard Support**: Supports SM algorithms (SM2/SM3/SM4), adapted for ChainMaker.
 - **Compliance Governance**: Automatic regional compliance engine, meeting GDPR/CCPA/MLPS 2.0 requirements.
 
-## 🛡️ Threat Intelligence System
+## 🛡️ Threat Intelligence System（Reference Study）
 
 OraSRS integrates a production-grade threat intelligence system with the following features:
 
