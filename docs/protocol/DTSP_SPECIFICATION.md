@@ -1,7 +1,7 @@
 # Decentralized Threat Signaling Protocol (DTSP) Specification
 
 [![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
-[![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/00/)
+[![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)
 
 > **Academic Citation**: Luo, Z. (2025). *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement.* Engineering Archive. https://doi.org/10.31224/5985
 
@@ -613,7 +613,7 @@ Researchers implementing DTSP SHOULD use the reference benchmark:
 
 This specification is based on:
 
-**IETF Internet-Draft**: [draft-luo-orasrs-decentralized-threat-signaling-01](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/00/)
+**IETF Internet-Draft**: [draft-luo-orasrs-decentralized-threat-signaling-01](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)
 
 ---
 

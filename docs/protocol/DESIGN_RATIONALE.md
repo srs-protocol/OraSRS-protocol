@@ -192,12 +192,12 @@ Recommended citation of the following preprint (with DOI) and IETF draft:
 **Chinese:**
 
 > 罗子谦. OraSRS:具有限时风险执行的合规轻量级去中心化威胁情报协议[J/OL]. Engineering Archive, 2025. DOI: 10.31224/5985.  
-> IETF Internet‑Draft: Luo, Z. "Decentralized Threat Signaling Protocol (DTSP) using OraSRS", draft‑luo‑orasrs‑decentralized‑threat‑signaling‑00.
+> IETF Internet‑Draft: Luo, Z. "Decentralized Threat Signaling Protocol (DTSP) using OraSRS", draft‑luo‑orasrs‑decentralized‑threat‑signaling‑01.
 
 **English:**
 
 > Luo, Z. (2025). *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time‑Bounded Risk Enforcement.* Engineering Archive. https://doi.org/10.31224/5985  
-> Luo, Z. *Decentralized Threat Signaling Protocol (DTSP) using OraSRS.* IETF Internet‑Draft, draft‑luo‑orasrs‑decentralized‑threat‑signaling‑00.
+> Luo, Z. *Decentralized Threat Signaling Protocol (DTSP) using OraSRS.* IETF Internet‑Draft, draft‑luo‑orasrs‑decentralized‑threat‑signaling‑01.
 
 **BibTeX Example:**
 
