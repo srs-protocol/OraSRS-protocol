@@ -3,7 +3,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.31224%2F5985-blue)](https://doi.org/10.31224/5985)
 [![IETF Draft](https://img.shields.io/badge/IETF-Active_Draft-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)
 
-> **Academic Citation**: Luo, Z. (2025). *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement.* Engineering Archive. https://doi.org/10.31224/5985
+> **Academic Citation**: Luo, ZiQian. (2025). *OraSRS: A Compliant and Lightweight Decentralized Threat Intelligence Protocol with Time-Bounded Risk Enforcement.* Engineering Archive. https://doi.org/10.31224/5985
 
 ---
 
