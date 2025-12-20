@@ -73,20 +73,16 @@ sh /etc/firewall.user
 ```bash
 iptables -nvL orasrs_chain
 ```
-### 🤖 Version Declaration: The "First‑Unit" (初号机)
+### ⚠️Physical Boundary Warning and Logical Closed-Loop Declaration (v3.3.6 FINAL)
 
-**v3.3.6 is the “Logic Validation Completed” release.**  
-It marks the definitive milestone where the **DTSP logic loop** was fully closed and validated as a survivability baseline.
+"Logical verification has reached its peak, physical resources have reached the red line."
 
-Later internal iterations (v5.x) explored deeper kernel‑level “surgical” optimizations (e.g., reducing softirq pressure and tightening L3/L4 decision matrices).  
-However, **v3.3.6 remains the “First‑Unit / Truth Baseline”** because:
+### 1. Logical Verification: Feasibility of Survival Protocol 
+v3.3.6 proves the rigor of the DTSP protocol's logical chain: as long as "survival protocol" can be completed through verifiable signaling identifiers/tokens, the system can logically separate high-entropy attack traffic from low-entropy trusted traffic and perform deterministic actions (dropping/rate limiting/circuit breaking) on ​​high-risk entities. Conclusion: As long as the DTSP signaling identity can be identified, the system knows "who to deal with." This logic is the "brain," and closed-loop verification has been completed in v3.3.6.
 
-- It proved **Defense Pre‑positioning** is feasible on **512MB‑class** hardware (survivability first, not luxury).
-- It validated the **DTSP signaling/execution model** as a practical baseline for edge/IoT survivability in dense networks.
-- **Performance Note (Honest Boundary):** under extreme multi‑source floods (e.g., 4 attacking terminals), v3.3.6 may show SSH jitter or loss due to **OS scheduling / user‑space context switching and softirq queueing**.  
-  This is a **physical resource constraint** (bandwidth/PPS/CPU time budget), not a failure of the defense logic.
+### 2. Physical Reflection: The Ultimate Truth About "Unable to Withstand" 🛠️ When four endpoints launched an extreme attack, the system experienced SSH disconnection and response freeze. This isn't a conceptual error, but rather an overdraft of physical budget (typically manifested as link saturation or exhaustion of PPS/softIRQ budget): Bottleneck identification: A 512MB device cannot handle the heavy context switching and softIRQ queuing resulting from user-space involvement in decision-making. Real-world application: The common direction for high-performance firewalls has never been "smarter analytics," but rather earlier execution. The industry typically uses ASIC/FPGA hardware data planes or eBPF/XDP to push decisions down to earlier data paths. Value proposition: They rely on expensive hardware or cloud infrastructure; while I, on a 512MB router, used a general-purpose CPU and user-space logic to conduct a hard-fought verification of "route feasibility"—proving the absolute validity of the logic.
 
-In short: **v3.3.6 proves the Soul (Logic).** Later versions only optimized the **Body (Performance)**.
+### 3. Architectural Conclusion: The Inevitable Path of Forward-Moving Defense 🚀 The "Unable to Withstand" Failure of v3.3.6 Proves that to overcome higher-intensity physical attacks, defense must be moved further forward: The Cost of Survival: Under the physical limit of 512MB, without moving more critical processing logic to earlier data planes (such as XDP/eBPF or equivalent hardware data planes), any defense involving high-frequency user-space participation will eventually be overwhelmed by the "queue storm" under extreme PPS/softirq pressure. The Truth: v3.3.6 left behind the blueprint for "defense logic," proving that the path is viable. As for physical attacks with more than 3 terminals, that's an engineering hurdle that needs to be overcome later by "hardening/sinking" the logic.
 
 ### 🧩 Architecture & Historical Components
 
