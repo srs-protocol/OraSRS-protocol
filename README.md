@@ -5,6 +5,7 @@
 [![Release](https://img.shields.io/badge/Release-v3.3.6_FINAL-red)](https://github.com/srs-protocol/OraSRS-protocol/releases)
 [![IETF Draft](https://img.shields.io/badge/IETF-draft--01-blue)](https://datatracker.ietf.org/doc/draft-luo-orasrs-decentralized-threat-signaling/)
 
+
 > **🎯 Project Concluded | 项目已结项**
 >
 > **Performance Target Met:** 0.001ms Query Latency | 40M PPS Mitigation  
@@ -72,6 +73,20 @@ sh /etc/firewall.user
 ```bash
 iptables -nvL orasrs_chain
 ```
+### 🤖 Version Declaration: The "First‑Unit" (初号机)
+
+**v3.3.6 is the “Logic Validation Completed” release.**  
+It marks the definitive milestone where the **DTSP logic loop** was fully closed and validated as a survivability baseline.
+
+Later internal iterations (v5.x) explored deeper kernel‑level “surgical” optimizations (e.g., reducing softirq pressure and tightening L3/L4 decision matrices).  
+However, **v3.3.6 remains the “First‑Unit / Truth Baseline”** because:
+
+- It proved **Defense Pre‑positioning** is feasible on **512MB‑class** hardware (survivability first, not luxury).
+- It validated the **DTSP signaling/execution model** as a practical baseline for edge/IoT survivability in dense networks.
+- **Performance Note (Honest Boundary):** under extreme multi‑source floods (e.g., 4 attacking terminals), v3.3.6 may show SSH jitter or loss due to **OS scheduling / user‑space context switching and softirq queueing**.  
+  This is a **physical resource constraint** (bandwidth/PPS/CPU time budget), not a failure of the defense logic.
+
+In short: **v3.3.6 proves the Soul (Logic).** Later versions only optimized the **Body (Performance)**.
 
 ### 🧩 Architecture & Historical Components
 
@@ -116,11 +131,25 @@ For detailed information, please refer to the [documentation directory](docs/):
 
 ## 👨‍💻 Developer Note
 
-> It turns out that as long as you start from the real problem, you can get things done even with limited resources.
-> OraSRS started as "a 512MB device that had to be unplugged due to DDoS",
-> and ended as a verified, publicly standardized T0 kernel defense protocol implementation.
->
-> Innovation should start from reality, not from PPTs;
-> Papers shouldn't be fluff, protocols can be transparent, and security shouldn't be a privilege for the few.
-> 
-> —— Z. Luo (OraSRS Protocol Author)
+> “Innovation born from pulling the cable, truth crystallized in v3.3.6.”
+
+OraSRS v3.3.6 is more than a tool — it is a **Survival Protocol**.
+
+My philosophy is simple:
+
+1. **Defense Pre‑positioning**  
+   Push the battlefield to the very edge (kernel/XDP/early data path).  
+   Do not wait for cloud rules, AI verdicts, or human intervention before a device can survive.
+
+2. **Entropy Reduction**  
+   Use deterministic logic to wash away the high‑entropy chaos of floods and state exhaustion.  
+   If the traffic does not satisfy the physical logic of the system, it should be removed as early as possible.
+
+3. **Protocolized Survival**  
+   Survival shouldn’t be an optional configuration or an expensive add‑on.  
+   It should be an inherent property of the protocol baseline (DTSP‑T0).
+
+It turns out that if you start from the real problem, you can get things done even with limited resources.  
+OraSRS started from a router that had to be unplugged due to DDoS — and ended as a verified protocol baseline that asserts **sovereignty of traffic** at the edge.
+
+—— Z. Luo (OraSRS Protocol Author)
