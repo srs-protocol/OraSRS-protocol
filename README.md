@@ -148,4 +148,4 @@ My philosophy is simple:
 It turns out that if you start from the real problem, you can get things done even with limited resources.  
 OraSRS started from a router that had to be unplugged due to DDoS — and ended as a verified protocol baseline that asserts **sovereignty of traffic** at the edge.
 
-—— Z. Luo (OraSRS Protocol Author)
+—— Luo ZiQian (OraSRS Protocol Author)
