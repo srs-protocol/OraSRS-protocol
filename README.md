@@ -72,6 +72,16 @@ sh /etc/firewall.user
 ```bash
 iptables -nvL orasrs_chain
 ```
+### ⚠️Physical Boundary Warning and Logical Closed-Loop Declaration (v3.3.6 FINAL)
+
+"Logical verification has reached its peak, physical resources have reached the red line."
+
+### 1. Logical Verification: Feasibility of Survival Protocol 
+v3.3.6 proves the rigor of the DTSP protocol's logical chain: as long as "survival protocol" can be completed through verifiable signaling identifiers/tokens, the system can logically separate high-entropy attack traffic from low-entropy trusted traffic and perform deterministic actions (dropping/rate limiting/circuit breaking) on ​​high-risk entities. Conclusion: As long as the DTSP signaling identity can be identified, the system knows "who to deal with." This logic is the "brain," and closed-loop verification has been completed in v3.3.6.
+
+### 2. Physical Reflection: The Ultimate Truth About "Unable to Withstand" 🛠️ When four endpoints launched an extreme attack, the system experienced SSH disconnection and response freeze. This isn't a conceptual error, but rather an overdraft of physical budget (typically manifested as link saturation or exhaustion of PPS/softIRQ budget): Bottleneck identification: A 512MB device cannot handle the heavy context switching and softIRQ queuing resulting from user-space involvement in decision-making. Real-world application: The common direction for high-performance firewalls has never been "smarter analytics," but rather earlier execution. The industry typically uses ASIC/FPGA hardware data planes or eBPF/XDP to push decisions down to earlier data paths. Value proposition: They rely on expensive hardware or cloud infrastructure; while I, on a 512MB router, used a general-purpose CPU and user-space logic to conduct a hard-fought verification of "route feasibility"—proving the absolute validity of the logic.
+
+### 3. Architectural Conclusion: The Inevitable Path of Forward-Moving Defense 🚀 The "Unable to Withstand" Failure of v3.3.6 Proves that to overcome higher-intensity physical attacks, defense must be moved further forward: The Cost of Survival: Under the physical limit of 512MB, without moving more critical processing logic to earlier data planes (such as XDP/eBPF or equivalent hardware data planes), any defense involving high-frequency user-space participation will eventually be overwhelmed by the "queue storm" under extreme PPS/softirq pressure. The Truth: v3.3.6 left behind the blueprint for "defense logic," proving that the path is viable. As for physical attacks with more than 3 terminals, that's an engineering hurdle that needs to be overcome later by "hardening/sinking" the logic.
 
 ### 🧩 Architecture & Historical Components
 
@@ -116,11 +126,25 @@ For detailed information, please refer to the [documentation directory](docs/):
 
 ## 👨‍💻 Developer Note
 
-> It turns out that as long as you start from the real problem, you can get things done even with limited resources.
-> OraSRS started as "a 512MB device that had to be unplugged due to DDoS",
-> and ended as a verified, publicly standardized T0 kernel defense protocol implementation.
->
-> Innovation should start from reality, not from PPTs;
-> Papers shouldn't be fluff, protocols can be transparent, and security shouldn't be a privilege for the few.
-> 
-> —— Z. Luo (OraSRS Protocol Author)
+> “Innovation born from pulling the cable, truth crystallized in v3.3.6.”
+
+OraSRS v3.3.6 is more than a tool — it is a **Survival Protocol**.
+
+My philosophy is simple:
+
+1. **Defense Pre‑positioning**  
+   Push the battlefield to the very edge (kernel/XDP/early data path).  
+   Do not wait for cloud rules, AI verdicts, or human intervention before a device can survive.
+
+2. **Entropy Reduction**  
+   Use deterministic logic to wash away the high‑entropy chaos of floods and state exhaustion.  
+   If the traffic does not satisfy the physical logic of the system, it should be removed as early as possible.
+
+3. **Protocolized Survival**  
+   Survival shouldn’t be an optional configuration or an expensive add‑on.  
+   It should be an inherent property of the protocol baseline (DTSP‑T0).
+
+It turns out that if you start from the real problem, you can get things done even with limited resources.  
+OraSRS started from a router that had to be unplugged due to DDoS — and ended as a verified protocol baseline that asserts **sovereignty of traffic** at the edge.
+
+—— Z. Luo (OraSRS Protocol Author)
